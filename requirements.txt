@@ -1,0 +1,9 @@
+# pyali runtime + test dependencies
+numpy>=1.24
+scipy>=1.10
+scikit-image>=0.21
+scikit-learn>=1.3
+h5py>=3.8           # reading/writing .mat (HDF5) files; a pure-python fallback exists
+matplotlib>=3.9     # static result figures
+plotly>=5.0         # interactive cell-traces HTML
+pytest>=7.0         # tests only
