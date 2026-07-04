@@ -45,6 +45,16 @@ class Params:
     dbscan_eps: float = 1.5
     dbscan_min_pts: int = 3
 
+    # trace extraction: whitened GLS (opt-in; default OFF preserves the MATLAB-faithful pinv)
+    # See scripts/snr_compare.py for the py-vs-py A/B validation recipe. When False, cell_traces
+    # are byte-for-byte the original unweighted pseudoinverse (all golden tests stay green).
+    whiten_traces: bool = False              # True => noise-weighted GLS instead of unweighted pinv
+    whiten_ridge: float = 1e-3               # ridge lambda as a fraction of mean(diag(F^T W F))
+    whiten_sigma_floor_pct: float = 5.0      # floor per-pixel noise at this percentile (guards 1/sigma^2)
+    whiten_isolated_only: bool = True        # only whiten cells with no overlapping-footprint neighbor
+                                             #   (overlapping cells keep the faithful pinv row) -- guards
+                                             #   against the neighbor-crosstalk backfire mode
+
     def std_frames_index(self):
         """Baseline frames as a 0-indexed concatenated array (from ``std_ranges``)."""
         import numpy as np

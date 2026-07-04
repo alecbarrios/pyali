@@ -1,0 +1,28 @@
+HIGH-FREQUENCY SNR COMPARISON
+============================================================
+   pyali: 6GP002_test_set/101034_P02_6w_A1_JF608_6GP002_DIV37_burst98/analysis/ALI_Result.mat
+  matlab: 6GP002_test_set/Analysis/101034_P02_6w_A1_JF608_6GP002_DIV37_burst98/ALI_Result.mat
+cells: pyali=351  matlab=352  matched=351
+params: fps=800.0 high-pass=20.0Hz spike_k=4.0sigma match<= 6.0px
+
+PAIRED SIMILARITY (matched cells; how alike are the two extractions)
+  corr_raw : median=1.0000  mean=0.9999  n=351
+  corr_hp  : median=1.0000  mean=0.9983  n=351
+  coh_hi   : median=1.0000  mean=0.9980  n=351
+
+HIGH-FREQUENCY SNR METRICS (paired medians; 'pyali>matlab frac' = fraction of matched cells where pyali wins)
+  metric              pyali med   matlab med  py>ml frac  wilcoxon p   note
+  noise_sigma           0.05123      0.05123       0.521    7.12e-01   lower=better (less HF noise)
+  snr_median              4.736        4.736       0.465    2.09e-01   higher=better
+  snr_p90                 5.833        5.833       0.474    4.11e-01   higher=better
+  snr_max                 6.697        6.695       0.477    5.46e-01   higher=better
+  spectral_hf_snr         1.254         1.25       0.519    1.94e-01   higher=better (excess HF power over noise floor)
+  n_spikes                   14           14       0.006    1.80e-01   detected events
+
+INTERPRETATION GUIDE
+  * corr_hp ~ 1 and coh_hi ~ 1  => the two pipelines extract the SAME high-freq
+    waveform; any SNR gap is then real algorithmic difference, not noise.
+  * If py snr medians ~= ml and py>ml frac ~ 0.5 with large wilcoxon p =>
+    the port is FAITHFUL (no lossiness); improvements must target BOTH pipelines.
+  * If py noise_sigma higher / py snr lower with small p => the port is lossier;
+    inspect the per_cell_metrics.csv rows with lowest corr_hp for the culprits.

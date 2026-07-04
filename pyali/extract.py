@@ -431,3 +431,129 @@ def pinv_traces(movie, footprint):
     pinv_fp = np.linalg.pinv(flat_fp, rcond=rcond)             # [N, H*W]
     flat_mov = (-movie).reshape(T, H * W).T                     # [H*W, T]
     return pinv_fp @ flat_mov                                   # [N, T]
+
+
+# --------------------------------------------------------------------------- #
+# Whitened GLS trace extraction (opt-in; Params.whiten_traces)
+# --------------------------------------------------------------------------- #
+def per_pixel_noise_map(filtered_movie, std_frames, floor_pct=5.0):
+    """Per-pixel high-frequency noise std from the baseline (no-stimulus) frames.
+
+    ``sigma_pix[h, w] = 1.4826 * MAD_over_time( filtered_movie[std_frames, h, w] )`` — the same
+    moving-median high-pass band the SNR metric scores. Floored at the ``floor_pct`` percentile
+    of the positive values so that ``1/sigma^2`` weights never explode.
+
+    Parameters
+    ----------
+    filtered_movie : (T, H, W) float array (from :func:`temporal_filter`)
+    std_frames : array of int (0-indexed baseline frames)
+    floor_pct : float
+
+    Returns
+    -------
+    (H, W) ndarray of per-pixel noise std.
+    """
+    base = filtered_movie[np.asarray(std_frames, int)]                 # [n_base, H, W]
+    med = np.median(base, axis=0)
+    sigma = 1.4826 * np.median(np.abs(base - med[None]), axis=0)       # [H, W]
+    pos = sigma[sigma > 0]
+    if pos.size:
+        sigma = np.maximum(sigma, np.percentile(pos, floor_pct))
+    else:                                                              # degenerate: uniform weights
+        sigma = np.ones_like(sigma)
+    return sigma
+
+
+def footprint_isolated_mask(footprint):
+    """Boolean ``[N]`` mask: True where a footprint's support bounding box overlaps no other.
+
+    Uses nonzero-pixel bounding boxes (conservative: touching boxes count as overlapping), so
+    cells that share any spatial support fall back to the faithful pinv row.
+    """
+    H, W, N = footprint.shape
+    boxes = np.zeros((N, 4))                                           # rmin, rmax, cmin, cmax
+    for n in range(N):
+        rows = np.any(footprint[:, :, n] != 0, axis=1)
+        cols = np.any(footprint[:, :, n] != 0, axis=0)
+        if not rows.any():
+            boxes[n] = (-1, -1, -1, -1)                               # empty footprint
+            continue
+        rr = np.where(rows)[0]; cc = np.where(cols)[0]
+        boxes[n] = (rr[0], rr[-1], cc[0], cc[-1])
+    isolated = np.ones(N, bool)
+    for i in range(N):
+        ri0, ri1, ci0, ci1 = boxes[i]
+        if ri0 < 0:
+            continue
+        for j in range(N):
+            if j == i or boxes[j, 0] < 0:
+                continue
+            rj0, rj1, cj0, cj1 = boxes[j]
+            if ri0 <= rj1 and rj0 <= ri1 and ci0 <= cj1 and cj0 <= ci1:   # boxes intersect
+                isolated[i] = False
+                break
+    return isolated
+
+
+def whitened_gls_traces(movie, footprint, noise_map, ridge_frac=1e-3):
+    """Noise-weighted (GLS/BLUE) trace extraction.
+
+    ``cell_traces = (Fᵀ W F + λI)⁻¹ Fᵀ W (-movie)`` with ``W = diag(1/sigma_pix²)`` — the
+    minimum-variance estimator under spatially heteroscedastic pixel noise, versus the unweighted
+    :func:`pinv_traces` which implicitly assumes equal per-pixel noise.
+
+    Parameters
+    ----------
+    movie : (T, H, W) float array (processed)
+    footprint : (H, W, N) float array
+    noise_map : (H, W) per-pixel noise std (see :func:`per_pixel_noise_map`)
+    ridge_frac : float
+        Ridge ``λ`` as a fraction of ``mean(diag(FᵀWF))`` (scale-invariant safety margin).
+
+    Returns
+    -------
+    (N, T) ndarray
+
+    Notes
+    -----
+    Same C-order pixel flattening as :func:`pinv_traces`. Uses the true single-``W`` GLS operator
+    (not "divide the footprint by variance then pinv", which would apply ``W`` twice). The movie
+    contraction is done as ``movie_flat @ FtW.T`` to avoid materializing the large ``[H*W, T]``
+    transpose.
+    """
+    T, H, W = movie.shape
+    N = footprint.shape[2]
+    flat_fp = footprint.reshape(H * W, N)                             # [H*W, N]
+    w = 1.0 / (noise_map.reshape(H * W) ** 2)                         # [H*W] inverse-variance
+    FtW = flat_fp.T * w[None, :]                                      # [N, H*W]
+    A = FtW @ flat_fp                                                 # [N, N]
+    A = A + ridge_frac * np.mean(np.diag(A)) * np.eye(N)              # ridge (relative)
+    movie_flat = movie.reshape(T, H * W)                             # view, C-order
+    B = -(movie_flat @ FtW.T).T                                      # [N, T] == FtW @ (-movie_flat.T)
+    return np.linalg.solve(A, B)                                     # [N, T]
+
+
+def extract_cell_traces(movie, footprint, p, noise_map=None, verbose=False):
+    """Dispatch trace extraction per ``p.whiten_traces``.
+
+    Default (``whiten_traces=False``): the MATLAB-faithful unweighted :func:`pinv_traces`.
+    When enabled: whitened GLS (:func:`whitened_gls_traces`); if ``p.whiten_isolated_only`` the
+    GLS rows are used only for cells whose footprints overlap no other, and overlapping cells keep
+    the faithful pinv row (guards against neighbor-crosstalk). Requires a precomputed
+    ``noise_map`` (see :func:`per_pixel_noise_map`) built from the baseline frames.
+    """
+    if not getattr(p, "whiten_traces", False):
+        return pinv_traces(movie, footprint)
+    if noise_map is None:
+        raise ValueError("whiten_traces=True requires a noise_map (per_pixel_noise_map)")
+    gls = whitened_gls_traces(movie, footprint, noise_map, p.whiten_ridge)
+    if not getattr(p, "whiten_isolated_only", True):
+        return gls
+    ols = pinv_traces(movie, footprint)                              # faithful rows for overlappers
+    isolated = footprint_isolated_mask(footprint)
+    if verbose:
+        print(f"[pyali]   whitened {int(isolated.sum())}/{len(isolated)} isolated cells; "
+              f"{int((~isolated).sum())} overlapping cells kept faithful pinv", flush=True)
+    out = ols.copy()
+    out[isolated] = gls[isolated]
+    return out

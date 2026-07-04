@@ -66,11 +66,19 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     APs, COMs, footprint, footprint_center = extract.extract_footprints(
         movie, filtered_movie, regions, spatial_footprints, dog, p.std_frames_index(), p, H, W,
         verbose=verbose)
+    # Build the per-pixel noise map (whitened GLS only) BEFORE freeing filtered_movie.
+    noise_map = None
+    if getattr(p, "whiten_traces", False):
+        log("building per-pixel noise map for whitened GLS ...")
+        noise_map = extract.per_pixel_noise_map(filtered_movie, p.std_frames_index(),
+                                                p.whiten_sigma_floor_pct)
     del filtered_movie
 
-    # ---- trace extraction (pinv) ----
-    log(f"trace extraction (pinv) for {footprint.shape[2]} footprints ...")
-    cell_traces = extract.pinv_traces(movie, footprint)
+    # ---- trace extraction ----
+    method = "whitened GLS" if getattr(p, "whiten_traces", False) else "pinv"
+    log(f"trace extraction ({method}) for {footprint.shape[2]} footprints ...")
+    cell_traces = extract.extract_cell_traces(movie, footprint, p, noise_map=noise_map,
+                                              verbose=verbose)
     log("done.")
 
     if save and out_dir:

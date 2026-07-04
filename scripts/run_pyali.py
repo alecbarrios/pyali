@@ -53,6 +53,12 @@ def main(argv=None):
     ap.add_argument("--out", default=None, help="output dir (default: <fov_dir>/analysis)")
     ap.add_argument("--nrow", type=int, default=None, help="force frame height (else auto-detect)")
     ap.add_argument("--ncol", type=int, default=None, help="force frame width (else auto-detect)")
+    ap.add_argument("--whiten-traces", action="store_true",
+                    help="use whitened GLS trace extraction (noise-weighted, opt-in) instead of "
+                         "the MATLAB-faithful unweighted pinv; see scripts/snr_compare.py to A/B it")
+    ap.add_argument("--whiten-all-cells", action="store_true",
+                    help="with --whiten-traces, whiten overlapping cells too (default: only "
+                         "isolated footprints are whitened; overlapping ones keep the faithful pinv)")
     a = ap.parse_args(argv)
 
     bin_path = os.path.join(a.fov_dir, "frames1.bin")
@@ -71,6 +77,11 @@ def main(argv=None):
         print(f"[pyali] auto-detected dimensions: nrow={nrow}, ncol={ncol}   [{how}]")
 
     p = Params(nrow=nrow, ncol=ncol)
+    if a.whiten_traces:
+        p.whiten_traces = True
+        p.whiten_isolated_only = not a.whiten_all_cells
+        print(f"[pyali] whitened GLS trace extraction ON "
+              f"(isolated_only={p.whiten_isolated_only})")
 
     # ---- clamp protocol frame-ranges to this video's length ----
     nframes = os.path.getsize(bin_path) // (nrow * ncol * 2)
