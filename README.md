@@ -66,3 +66,7 @@ is auto-detected from the sidecar `.txt`:
 ```bash
 python scripts/find_video_dims.py FRAMES.bin
 ```
+
+## References
+
+This algorithm is modeled after the voltage extraction pipelines in Zhang, J., Gong, D., Barrios, A., et al. 2026 (unpublished), and Chen, TW, et al. Nature Methods (2025). 
