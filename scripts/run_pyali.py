@@ -55,7 +55,7 @@ def main(argv=None):
     ap.add_argument("--ncol", type=int, default=None, help="force frame width (else auto-detect)")
     ap.add_argument("--whiten-traces", action="store_true",
                     help="use whitened GLS trace extraction (noise-weighted, opt-in) instead of "
-                         "the MATLAB-faithful unweighted pinv; see scripts/snr_compare.py to A/B it")
+                         "the baseline unweighted pinv; see snr_analysis/ to A/B it")
     ap.add_argument("--whiten-all-cells", action="store_true",
                     help="with --whiten-traces, whiten overlapping cells too (default: only "
                          "isolated footprints are whitened; overlapping ones keep the faithful pinv)")

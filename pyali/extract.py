@@ -536,7 +536,7 @@ def whitened_gls_traces(movie, footprint, noise_map, ridge_frac=1e-3):
 def extract_cell_traces(movie, footprint, p, noise_map=None, verbose=False):
     """Dispatch trace extraction per ``p.whiten_traces``.
 
-    Default (``whiten_traces=False``): the MATLAB-faithful unweighted :func:`pinv_traces`.
+    Default (``whiten_traces=False``): the baseline unweighted :func:`pinv_traces`.
     When enabled: whitened GLS (:func:`whitened_gls_traces`); if ``p.whiten_isolated_only`` the
     GLS rows are used only for cells whose footprints overlap no other, and overlapping cells keep
     the faithful pinv row (guards against neighbor-crosstalk). Requires a precomputed

@@ -8,8 +8,8 @@ can be applied to the final ``cell_traces`` array alone, and — crucially — c
 raises SNR WITHOUT distorting spike amplitude (an adversarial guard against "SNR cheating").
 
 Currently demonstrated:
-  * mains-hum removal   — narrow IIR notch at 60/120/180 Hz (the line noise visible in the PSD,
-                          present identically in both pyali and MATLAB output).
+  * mains-hum removal   — narrow IIR notch at 60/120/180 Hz (the line noise visible in the PSD
+                          of the extracted traces).
   * slow-drift removal  — per-cell high-pass detrend (removes residual bleaching/network drift).
 
 For each cell it reports the robust HF noise floor and spike SNR before/after, plus the change

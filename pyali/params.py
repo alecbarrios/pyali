@@ -45,9 +45,9 @@ class Params:
     dbscan_eps: float = 1.5
     dbscan_min_pts: int = 3
 
-    # trace extraction: whitened GLS (opt-in; default OFF preserves the MATLAB-faithful pinv)
-    # See scripts/snr_compare.py for the py-vs-py A/B validation recipe. When False, cell_traces
-    # are byte-for-byte the original unweighted pseudoinverse (all golden tests stay green).
+    # trace extraction: whitened GLS (opt-in; default OFF = the baseline unweighted pinv)
+    # See snr_analysis/ for the A/B benchmarking recipe. When False, cell_traces are byte-for-byte
+    # the baseline unweighted pseudoinverse, so results are unchanged from the previous iteration.
     whiten_traces: bool = False              # True => noise-weighted GLS instead of unweighted pinv
     whiten_ridge: float = 1e-3               # ridge lambda as a fraction of mean(diag(F^T W F))
     whiten_sigma_floor_pct: float = 5.0      # floor per-pixel noise at this percentile (guards 1/sigma^2)

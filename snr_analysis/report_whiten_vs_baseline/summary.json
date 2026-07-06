@@ -1,0 +1,174 @@
+{
+  "files": {
+    "a": "../snr_ab_runs/whitened/ALI_Result.mat",
+    "b": "../snr_ab_runs/baseline/ALI_Result.mat"
+  },
+  "labels": {
+    "a": "whitened",
+    "b": "baseline"
+  },
+  "params": {
+    "a": "../snr_ab_runs/whitened",
+    "b": "../snr_ab_runs/baseline",
+    "out": "snr_analysis/report_whiten_vs_baseline",
+    "fps": 800.0,
+    "hp": 20.0,
+    "k": 4.0,
+    "max_dist": 6.0,
+    "label_a": "whitened",
+    "label_b": "baseline"
+  },
+  "counts": {
+    "a_cells": 351,
+    "b_cells": 351,
+    "matched": 351
+  },
+  "aggregate": {
+    "noise_sigma": {
+      "whitened": {
+        "n": 351,
+        "median": 0.05004456588885718,
+        "mean": 0.0749887757279825,
+        "iqr": 0.10134569602251942
+      },
+      "baseline": {
+        "n": 351,
+        "median": 0.05122771609067497,
+        "mean": 0.07933146464553358,
+        "iqr": 0.10878589115476572
+      }
+    },
+    "snr_median": {
+      "whitened": {
+        "n": 326,
+        "median": 4.686600536335895,
+        "mean": 5.422632766367022,
+        "iqr": 0.7071104313240442
+      },
+      "baseline": {
+        "n": 329,
+        "median": 4.735880462027877,
+        "mean": 5.516146527284251,
+        "iqr": 0.7142640708783601
+      }
+    },
+    "snr_p90": {
+      "whitened": {
+        "n": 326,
+        "median": 5.6415679389959905,
+        "mean": 6.652063299820335,
+        "iqr": 2.583724874540657
+      },
+      "baseline": {
+        "n": 329,
+        "median": 5.83332567520478,
+        "mean": 6.749912060393424,
+        "iqr": 2.3129223135388024
+      }
+    },
+    "snr_max": {
+      "whitened": {
+        "n": 326,
+        "median": 6.408552048018024,
+        "mean": 7.474831272204348,
+        "iqr": 3.5320735360323683
+      },
+      "baseline": {
+        "n": 329,
+        "median": 6.6965382410280565,
+        "mean": 7.619632400818167,
+        "iqr": 3.254849330171253
+      }
+    },
+    "spectral_hf_snr": {
+      "whitened": {
+        "n": 351,
+        "median": 1.1630889170837195,
+        "mean": 1.3788543776770203,
+        "iqr": 1.0839793620294282
+      },
+      "baseline": {
+        "n": 351,
+        "median": 1.2543799695499167,
+        "mean": 1.4761112378022407,
+        "iqr": 1.140961108940846
+      }
+    },
+    "n_spikes": {
+      "whitened": {
+        "n": 351,
+        "median": 10.0,
+        "mean": 16.17663817663818,
+        "iqr": 20.0
+      },
+      "baseline": {
+        "n": 351,
+        "median": 14.0,
+        "mean": 17.985754985754987,
+        "iqr": 21.0
+      }
+    }
+  },
+  "paired": {
+    "noise_sigma": {
+      "n": 351,
+      "whitened_median": 0.05004456588885718,
+      "baseline_median": 0.05122771609067497,
+      "a_gt_b_frac": 0.005698005698005698,
+      "wilcoxon_p": 2.5969053125629873e-42
+    },
+    "snr_median": {
+      "n": 323,
+      "whitened_median": 4.699353934137547,
+      "baseline_median": 4.7512612857726335,
+      "a_gt_b_frac": 0.24458204334365324,
+      "wilcoxon_p": 7.68557015487716e-07
+    },
+    "snr_p90": {
+      "n": 323,
+      "whitened_median": 5.651773087606012,
+      "baseline_median": 5.860009935810118,
+      "a_gt_b_frac": 0.29102167182662536,
+      "wilcoxon_p": 0.0003967730442228632
+    },
+    "snr_max": {
+      "n": 323,
+      "whitened_median": 6.431931763974032,
+      "baseline_median": 6.761203474633494,
+      "a_gt_b_frac": 0.23529411764705882,
+      "wilcoxon_p": 4.4779405863925176e-10
+    },
+    "spectral_hf_snr": {
+      "n": 351,
+      "whitened_median": 1.1630889170837195,
+      "baseline_median": 1.2543799695499167,
+      "a_gt_b_frac": 0.13105413105413105,
+      "wilcoxon_p": 1.1056343799554297e-27
+    },
+    "n_spikes": {
+      "n": 351,
+      "whitened_median": 10.0,
+      "baseline_median": 14.0,
+      "a_gt_b_frac": 0.06837606837606838,
+      "wilcoxon_p": 1.8109445887561812e-24
+    },
+    "corr_raw": {
+      "n": 351,
+      "median": 0.9980414542381002,
+      "mean": 0.9963502811427282,
+      "iqr": 0.0038949533760699317
+    },
+    "corr_hp": {
+      "n": 351,
+      "median": 0.9742881786478614,
+      "mean": 0.9745541845451314,
+      "iqr": 0.03987507284120362
+    },
+    "coh_hi": {
+      "n": 351,
+      "median": 0.9434639258687852,
+      "mean": 0.9456684932585133,
+      "iqr": 0.08336969391973059
+    }
+  }
+}

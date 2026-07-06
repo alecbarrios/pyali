@@ -1,0 +1,28 @@
+HIGH-FREQUENCY SNR COMPARISON  (run A vs run B)
+============================================================
+  whitened (A): ../snr_ab_runs/whitened/ALI_Result.mat
+  baseline (B): ../snr_ab_runs/baseline/ALI_Result.mat
+cells: A=351  B=351  matched=351
+params: fps=800.0 high-pass=20.0Hz spike_k=4.0sigma match<= 6.0px
+
+PAIRED SIMILARITY (matched cells; how alike are the two runs)
+  corr_raw : median=0.9980  mean=0.9964  n=351
+  corr_hp  : median=0.9743  mean=0.9746  n=351
+  coh_hi   : median=0.9435  mean=0.9457  n=351
+
+HIGH-FREQUENCY SNR METRICS (paired medians; 'A>B frac' = fraction of matched cells where A wins)
+  metric           whitened med baseline med   A>B frac  wilcoxon p   note
+  noise_sigma           0.05004      0.05123      0.006    2.60e-42   lower=better (less HF noise)
+  snr_median              4.699        4.751      0.245    7.69e-07   higher=better
+  snr_p90                 5.652         5.86      0.291    3.97e-04   higher=better
+  snr_max                 6.432        6.761      0.235    4.48e-10   higher=better
+  spectral_hf_snr         1.163        1.254      0.131    1.11e-27   higher=better (excess HF power over noise floor)
+  n_spikes                   10           14      0.068    1.81e-24   detected events
+
+INTERPRETATION GUIDE
+  * corr_hp ~ 1 and coh_hi ~ 1  => the two runs extract the SAME high-freq
+    waveform; any SNR gap is then a real algorithmic difference, not noise.
+  * A change IMPROVES SNR if: noise_sigma drops AND snr_* rise, while corr_hp stays
+    ~1 on cells the change should not touch (no distortion / no fabricated spikes).
+  * If A>B frac ~ 0.5 with large wilcoxon p, the two runs are equivalent (no change).
+  * Inspect per_cell_metrics.csv rows with lowest corr_hp for cells that changed most.

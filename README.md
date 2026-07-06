@@ -57,6 +57,34 @@ footprint, traces = out["footprint"], out["cell_traces"]
 AP threshold, clustering, etc.). The background and baseline frame ranges are acquisition-
 specific — set `Params.bkg_ranges` / `Params.std_ranges` for your protocol.
 
+## Benchmarking a pipeline change (SNR)
+
+`snr_analysis/` is a harness for testing whether a change to the pipeline actually improves the
+signal-to-noise ratio of the extracted waveforms, by comparing two runs on the same movie
+(see [`snr_analysis/README.md`](snr_analysis/README.md)). Run the pipeline two ways, then:
+
+```bash
+python snr_analysis/snr/snr_compare.py RUN_A_DIR RUN_B_DIR --label-a new --label-b baseline --out report
+```
+
+It reports per-cell high-frequency noise floor, spike SNR, spectral HF-SNR, and cross-run
+correlation/coherence, so an improvement is a measurable drop in noise floor and rise in spike
+SNR — not just a changed output.
+
+### Optional: whitened GLS trace extraction
+
+`--whiten-traces` swaps the default unweighted pseudoinverse for a noise-weighted
+(generalized-least-squares) trace extractor (`Params.whiten_traces`, off by default):
+
+```bash
+python scripts/run_pyali.py "/path/to/video_dir" --whiten-traces
+```
+
+This is an opt-in experiment — on shot-noise-limited data the benchmark above shows it does not
+improve SNR (the bright signal pixels are also the noisiest, so inverse-variance weighting
+discards signal); it is left in as a worked example of the benchmarking workflow. Default off
+reproduces the standard pseudoinverse exactly.
+
 ## Helper: recover a movie's frame dimensions
 
 `scripts/find_video_dims.py` recovers `(nrow, ncol)` from a headerless `.bin` by choosing the
