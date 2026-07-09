@@ -128,8 +128,51 @@ def _footprint_crops(footprint, pad=2):
     return out
 
 
+def _region_panels(footprint, spatial_footprints, pad=2):
+    """Per-cell parent-region detection mask (crop) + equivalent diameters.
+
+    Each cell is mapped to its parent segmentation region (the binary blob that fed spike
+    detection / ``findpeaks``) by the majority region label under the footprint's nonzero pixels.
+    ``spatial_footprints[c]`` is that region's ``[col, row]`` (1-indexed) pixel list.
+
+    Returns ``(rm, fpdiam, rdiam)``:
+      * ``rm``     - per-cell ``{z, r0, c0, rid}`` binary region-mask crop (or None)
+      * ``fpdiam`` - per-cell footprint above-half-max equivalent diameter (px)
+      * ``rdiam``  - per-cell parent-region equivalent diameter (px), ``2*sqrt(area/pi)``
+    """
+    H, W, N = footprint.shape
+    label = np.full((H, W), -1, dtype=int)
+    areas = []
+    for c, pts in enumerate(spatial_footprints):
+        pts = np.asarray(pts)
+        cols = pts[:, 0].astype(int) - 1
+        rows = pts[:, 1].astype(int) - 1
+        m = (rows >= 0) & (rows < H) & (cols >= 0) & (cols < W)
+        label[rows[m], cols[m]] = c
+        areas.append(int(m.sum()))
+    rm, fpdiam, rdiam = [], [], []
+    for k in range(N):
+        fp = footprint[:, :, k]
+        if fp.max() <= 0:
+            rm.append(None); fpdiam.append(None); rdiam.append(None); continue
+        core = int((fp >= 0.5 * fp.max()).sum())
+        fpdiam.append(round(float(2.0 * np.sqrt(core / np.pi)), 2))
+        labs = label[fp > 0]; labs = labs[labs >= 0]
+        if labs.size == 0:
+            rm.append(None); rdiam.append(None); continue
+        rid = int(np.bincount(labs).argmax())
+        mask = (label == rid)
+        rr = np.where(mask.any(1))[0]; cc = np.where(mask.any(0))[0]
+        r0 = max(0, int(rr[0]) - pad); c0 = max(0, int(cc[0]) - pad)
+        r1 = min(H - 1, int(rr[-1]) + pad); c1 = min(W - 1, int(cc[-1]) + pad)
+        crop = mask[r0:r1 + 1, c0:c1 + 1].astype(int)
+        rm.append(dict(z=[[int(v) for v in row] for row in crop], r0=r0, c0=c0, rid=rid))
+        rdiam.append(round(float(2.0 * np.sqrt(areas[rid] / np.pi)), 2))
+    return rm, fpdiam, rdiam
+
+
 def fig_cell_explorer(cell_traces, path, fps=800.0, metrics=None, footprint=None,
-                      drop_last=100, max_points=3500):
+                      spatial_footprints=None, drop_last=100, max_points=3500):
     """Self-contained interactive cell explorer (HTML).
 
     Filter cells by SNR-metric cutoffs (max ``noise_sigma``, min ``snr_median``, min
@@ -163,7 +206,15 @@ def fig_cell_explorer(cell_traces, path, fps=800.0, metrics=None, footprint=None
     def _clean(a):
         return [None if not np.isfinite(v) else round(float(v), 6) for v in a]
 
-    fp_crops = _footprint_crops(np.asarray(footprint, float)) if footprint is not None else None
+    fp_arr = np.asarray(footprint, float) if footprint is not None else None
+    fp_crops = _footprint_crops(fp_arr) if fp_arr is not None else None
+    rm = fpdiam = rdiam = None
+    if fp_arr is not None and spatial_footprints is not None:
+        rm, fpdiam, rdiam = _region_panels(fp_arr, spatial_footprints)
+    elif fp_arr is not None:                                          # footprint diameter only
+        fpdiam = [round(float(2.0 * np.sqrt(int((fp_arr[:, :, k] >= 0.5 * fp_arr[:, :, k].max()).sum())
+                                            / np.pi)), 2) if fp_arr[:, :, k].max() > 0 else None
+                  for k in range(fp_arr.shape[2])]
 
     data = dict(
         t=[round(float(v), 4) for v in t],
@@ -172,7 +223,7 @@ def fig_cell_explorer(cell_traces, path, fps=800.0, metrics=None, footprint=None
         sm=_clean(metrics["snr_median"]),
         sh=_clean(metrics["spectral_hf_snr"]),
         nsp=[int(v) for v in metrics["n_spikes"]],
-        fp=fp_crops,
+        fp=fp_crops, rm=rm, fpdiam=fpdiam, rdiam=rdiam,
     )
     plotly_tag, src = _plotly_script_tag()
     html = (_EXPLORER_TEMPLATE
@@ -242,9 +293,12 @@ _EXPLORER_TEMPLATE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-
  button:hover{background:#eee} button.on{background:#2b6cb0;color:#fff;border-color:#2b6cb0}
  select{padding:4px 6px;border:1px solid #ccc;border-radius:6px;max-width:160px}
  .readout{font-size:13px;color:#333;margin:6px 0 10px} .readout b{color:#000}
- #plot{width:100%;height:52vh;min-height:360px}
- #fpwrap{margin-top:10px} .cap{font-size:12px;color:#555;margin:2px 0 4px}
- #fp{width:480px;height:400px;max-width:100%}
+ #plot{width:100%;height:50vh;min-height:340px}
+ .tracecap{font-size:12px;color:#8a8a8a;margin:5px 0 2px}
+ .pair{display:flex;flex-wrap:wrap;gap:18px;margin-top:6px}
+ .pcol{flex:1 1 340px;min-width:300px} #fp,#rm{width:100%;height:330px}
+ .cap{font-size:12px;color:#444;margin:2px 0 3px} .cap b{color:#000}
+ .fine{font-size:11px;color:#8a8a8a;margin:3px 0 0;line-height:1.35}
 </style>
 <!--__PLOTLY__-->
 </head><body>
@@ -261,7 +315,17 @@ _EXPLORER_TEMPLATE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-
 </div>
 <div class="readout" id="ro"></div>
 <div id="plot"></div>
-<div id="fpwrap"><div class="cap">cell footprint &mdash; the pixel-weight map the pseudoinverse uses to extract this trace (axes = pixel coordinates in the full frame; colorbar = weight intensity)</div><div id="fp"></div></div>
+<div class="tracecap" id="tracecap"></div>
+<div id="fpwrap" class="pair">
+ <div class="pcol" id="rmcol">
+  <div class="cap" id="rmcap"></div><div id="rm"></div>
+  <div class="fine">per region &middot; the segmentation blob feeding spike detection (findpeaks); several cells can share one blob, so it is not 1:1 with the trace above</div>
+ </div>
+ <div class="pcol" id="fpcol">
+  <div class="cap" id="fpcap"></div><div id="fp"></div>
+  <div class="fine">per cell &middot; the pixel-weight map the pseudoinverse multiplies to produce the trace above (colorbar = weight)</div>
+ </div>
+</div>
 <script>
 const D = /*__DATA__*/;
 let mode='single', pos=0, filt=[];
@@ -287,21 +351,30 @@ function pick(k){pos=k; render();}
 function detrend(y,win){const n=y.length,out=new Array(n);let acc=0;
  for(let i=0;i<n;i++){acc+=y[i]; if(i>=win)acc-=y[i-win]; out[i]=y[i]-acc/Math.min(i+1,win);} return out;}
 function f3(v){return v===null?'n/a':(+v).toFixed(3);}
-function renderFootprint(i){
- const w=document.getElementById('fpwrap');
- const fp=(D.fp && D.fp[i])?D.fp[i]:null;
- if(!fp){w.style.display='none'; Plotly.purge('fp'); return;}
- w.style.display='';
- const xs=fp.z[0].map((_,k)=>fp.c0+k), ys=fp.z.map((_,k)=>fp.r0+k);
- Plotly.react('fp',[{z:fp.z,x:xs,y:ys,type:'heatmap',colorscale:'Viridis',
-   colorbar:{title:{text:'intensity',side:'right'}}}],
+function heat(div,obj,scale,showbar){
+ const xs=obj.z[0].map((_,k)=>obj.c0+k), ys=obj.z.map((_,k)=>obj.r0+k);
+ Plotly.react(div,[{z:obj.z,x:xs,y:ys,type:'heatmap',colorscale:scale,showscale:showbar,
+   colorbar:showbar?{title:{text:'intensity',side:'right'}}:undefined}],
    {margin:{t:6,r:10,l:54,b:44},xaxis:{title:'column (px)',constrain:'domain'},
-    yaxis:{title:'row (px)',autorange:'reversed',scaleanchor:'x'}},
-   {responsive:true});
+    yaxis:{title:'row (px)',autorange:'reversed',scaleanchor:'x'}},{responsive:true});
+}
+function renderFootprint(i){
+ const col=document.getElementById('fpcol'); const fp=(D.fp && D.fp[i])?D.fp[i]:null;
+ if(!fp){col.style.display='none'; return;} col.style.display='';
+ const d=(D.fpdiam && D.fpdiam[i]!=null)?D.fpdiam[i]+' px':'n/a';
+ document.getElementById('fpcap').innerHTML='per-cell footprint &nbsp; <b>core \\u00f8 \\u2248 '+d+'</b>';
+ heat('fp',fp,'Viridis',true);
+}
+function renderRegion(i){
+ const col=document.getElementById('rmcol'); const rm=(D.rm && D.rm[i])?D.rm[i]:null;
+ if(!rm){col.style.display='none'; return;} col.style.display='';
+ const d=(D.rdiam && D.rdiam[i]!=null)?D.rdiam[i]+' px':'n/a';
+ document.getElementById('rmcap').innerHTML='per-region detection mask &nbsp; <b>region \\u00f8 \\u2248 '+d+'</b>';
+ heat('rm',rm,[[0,'#eeeeee'],[1,'#4a5568']],false);
 }
 function render(){
- const ro=document.getElementById('ro');
- if(!filt.length){ro.innerHTML='no cells match the current filters'; Plotly.purge('plot'); document.getElementById('fpwrap').style.display='none'; return;}
+ const ro=document.getElementById('ro'), tc=document.getElementById('tracecap'), w=document.getElementById('fpwrap');
+ if(!filt.length){ro.innerHTML='no cells match the current filters'; Plotly.purge('plot'); w.style.display='none'; tc.textContent=''; return;}
  const dt=document.getElementById('detr').checked;
  if(mode==='single'){
   const i=filt[pos]; let y=D.Y[i]; if(dt)y=detrend(y,60);
@@ -309,9 +382,11 @@ function render(){
    {margin:{t:8,r:12},xaxis:{title:'time (s)'},yaxis:{title:dt?'detrended (a.u.)':'trace (a.u.)'}},
    {responsive:true,scrollZoom:true});
   ro.innerHTML='showing <b>cell '+(i+1)+'</b> ('+(pos+1)+' of '+filt.length+' matching) &nbsp;&nbsp; noise_sigma=<b>'+f3(D.ns[i])+'</b> &nbsp; snr_median=<b>'+f3(D.sm[i])+'</b> &nbsp; spectral_hf_snr=<b>'+f3(D.sh[i])+'</b> &nbsp; spikes=<b>'+D.nsp[i]+'</b>';
-  renderFootprint(i);
+  tc.textContent='trace above = per-cell pseudoinverse trace (cell_traces) \\u2014 the final extracted waveform for this cell';
+  w.style.display='';
+  renderFootprint(i); renderRegion(i);
  }else{
-  document.getElementById('fpwrap').style.display='none';
+  w.style.display='none'; tc.textContent='';
   const traces=[];
   filt.forEach((i,k)=>{let y=D.Y[i]; let lo=Infinity,hi=-Infinity;
    for(const v of y){if(v<lo)lo=v; if(v>hi)hi=v;}
