@@ -90,7 +90,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         log("saving result figures ...")
         from .figures import save_result_figures
         save_result_figures(out_dir, reference_image, regions, binary_map, COMs,
-                            footprint_center, cell_traces, fps=p.fps)
+                            footprint_center, cell_traces, fps=p.fps, footprint=footprint)
 
     return dict(reference_image=reference_image, corr_image=corr_image, sharpened=sharpened,
                 regions=regions, binary_map=binary_map, footprint=footprint,
