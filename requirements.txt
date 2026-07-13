@@ -1,10 +1,21 @@
-# pyali runtime + test dependencies
-numpy>=1.24
-scipy>=1.10
-scikit-image>=0.21
-scikit-learn>=1.3
-h5py>=3.8           # reading/writing .mat (HDF5) files; a pure-python fallback exists
-matplotlib>=3.9     # static result figures
-plotly==5.24.1      # interactive cell-explorer HTML (pinned; embeds plotly.js for offline use).
-                    #   optional: without it the explorer falls back to loading plotly.js from CDN.
-pytest>=7.0         # tests only
+# Dedicated environment for the pyali VOLTAGE-extraction + REGISTRATION modules.
+# Python 3.9.7. Fully pinned so the complete env is reproducible from scratch:
+#   python3.9 -m venv .venv && . .venv/bin/activate
+#   pip install -U pip && pip install -r requirements.txt
+#
+# --- shared / voltage extraction (pyali core) ---
+numpy==2.0.2
+scipy==1.13.1
+scikit-image==0.24.0
+scikit-learn==1.6.1
+h5py==3.14.0            # read/write .mat (HDF5 v7.3): output_data.mat stage/device, ALI results
+matplotlib==3.9.4       # static result figures
+plotly==5.24.1          # interactive cell-explorer HTML (embeds plotly.js offline)
+#
+# --- registration module (adds these) ---
+tifffile==2024.8.30     # SBS JF608 anchor tiles + reconciled cell masks
+pandas==2.3.3           # sbs_info / cells / metadata parquets; matched-cell tables
+pyarrow==21.0.0         # parquet engine for pandas
+#
+# --- tests ---
+pytest==8.4.2
