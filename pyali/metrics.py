@@ -23,7 +23,7 @@ def robust_sigma(x):
     return float(1.4826 * np.median(np.abs(x - np.median(x))))
 
 
-def per_cell_snr(traces, fps, hp=20.0, k=4.0, sig_hi=150.0, floor_lo=300.0):
+def per_cell_snr(traces, fps, hp=20.0, k=3.0, sig_hi=150.0, floor_lo=300.0):
     """Return dict of per-cell arrays: noise_sigma, snr_median, spectral_hf_snr, n_spikes.
 
     ``traces`` is ``[N, T]``. NaN where a metric is undefined (e.g. no spikes / silent floor).

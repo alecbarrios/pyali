@@ -5,8 +5,11 @@ Movie convention: ``[T, H, W]`` float64, row-major C-order.
 import numpy as np
 
 
-def read_bin_mov(path, nrow, ncol):
-    """Read a raw ``frames1.bin`` movie (uint16, little-endian) into ``[T, H, W]`` float64.
+_RAW_DTYPE = {"uint8": "<u1", "u1": "<u1", "uint16": "<u2", "u2": "<u2"}
+
+
+def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64"):
+    """Read a raw ``frames1.bin`` movie into ``[T, H, W]``.
 
     Parameters
     ----------
@@ -14,28 +17,35 @@ def read_bin_mov(path, nrow, ncol):
         Path to the binary movie file.
     nrow, ncol : int
         Frame height and width in pixels.
+    read_dtype : str
+        On-disk sample dtype: ``"uint16"`` (default; 6GP002 16-bit) or ``"uint8"``
+        (443screen2 8-bit). Little-endian.
+    out_dtype : str
+        In-RAM movie dtype. ``"float64"`` (default) reproduces the historical result;
+        ``"float32"`` halves peak RAM (~21.5 GB vs ~43 GB for an 800x800x8399 movie),
+        which is required to fit a large 8-bit movie in a 62 GB box.
 
     Notes
     -----
     The raw stream is frame-major and row-major within each frame, so a plain C-order
     reshape ``(T, nrow, ncol)`` recovers the frames directly. Returns the full movie;
-    the caller decides how many trailing frames to drop. The array is large
-    (~18 GB float64 for a 6389-frame 312x1200 movie); on limited RAM use
+    the caller decides how many trailing frames to drop. On limited RAM use
     :func:`open_bin_memmap` instead.
     """
-    raw = np.fromfile(path, dtype="<u2")                 # uint16, little-endian
+    raw = np.fromfile(path, dtype=_RAW_DTYPE.get(str(read_dtype), read_dtype))
     T = raw.size // (nrow * ncol)
     mov = raw[:T * nrow * ncol].reshape(T, nrow, ncol)   # frame, row, col
-    return mov.astype(np.float64)
+    return mov.astype(out_dtype)
 
 
-def open_bin_memmap(path, nrow, ncol):
-    """Memory-map ``frames1.bin`` as a read-only ``[T, H, W]`` uint16 view (no RAM cost).
+def open_bin_memmap(path, nrow, ncol, read_dtype="uint16"):
+    """Memory-map ``frames1.bin`` as a read-only ``[T, H, W]`` integer view (no RAM cost).
 
-    Same layout as :func:`read_bin_mov` but without materializing a float64 array — useful
-    for streaming over a movie too large to hold in memory.
+    Same layout as :func:`read_bin_mov` but without materializing a float array — useful
+    for streaming over a movie too large to hold in memory. ``read_dtype`` is the on-disk
+    sample dtype (``"uint16"`` default, or ``"uint8"`` for 8-bit acquisitions).
     """
-    raw = np.memmap(path, dtype="<u2", mode="r")
+    raw = np.memmap(path, dtype=_RAW_DTYPE.get(str(read_dtype), read_dtype), mode="r")
     T = raw.size // (nrow * ncol)
     return raw[:T * nrow * ncol].reshape(T, nrow, ncol)
 

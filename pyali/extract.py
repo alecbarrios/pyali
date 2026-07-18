@@ -429,8 +429,9 @@ def pinv_traces(movie, footprint):
     flat_fp = footprint.reshape(H * W, N)                       # pixel = row*W + col
     rcond = max(flat_fp.shape) * np.finfo(np.float64).eps       # pseudoinverse tolerance
     pinv_fp = np.linalg.pinv(flat_fp, rcond=rcond)             # [N, H*W]
-    flat_mov = (-movie).reshape(T, H * W).T                     # [H*W, T]
-    return pinv_fp @ flat_mov                                   # [N, T]
+    flat_mov = movie.reshape(T, H * W).T                        # [H*W, T] view (no copy)
+    return -(pinv_fp @ flat_mov)                                # [N, T]; negate small result,
+    #                                                             not the full movie (saves a copy)
 
 
 # --------------------------------------------------------------------------- #

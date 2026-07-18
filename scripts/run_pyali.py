@@ -59,7 +59,15 @@ def main(argv=None):
     ap.add_argument("--whiten-all-cells", action="store_true",
                     help="with --whiten-traces, whiten overlapping cells too (default: only "
                          "isolated footprints are whitened; overlapping ones keep the faithful pinv)")
+    ap.add_argument("--read-dtype", choices=["uint16", "uint8"], default="uint16",
+                    help="on-disk sample dtype (uint8 for 443screen2 8-bit; default uint16)")
+    ap.add_argument("--compute-dtype", choices=["float64", "float32"], default="float64",
+                    help="in-RAM movie dtype (float32 ~halves peak RAM for large movies; "
+                         "default float64 = faithful)")
     a = ap.parse_args(argv)
+
+    itemsize = 1 if a.read_dtype == "uint8" else 2
+    raw_code = "u1" if a.read_dtype == "uint8" else "u2"
 
     bin_path = os.path.join(a.fov_dir, "frames1.bin")
     if not os.path.isfile(bin_path):
@@ -70,13 +78,13 @@ def main(argv=None):
         nrow, ncol = a.nrow, a.ncol
         print(f"[pyali] using given dimensions: nrow={nrow}, ncol={ncol}")
     else:
-        ppf, how = fvd.detect_pixels_per_frame(bin_path, itemsize=2, dim_lo=100, dim_hi=2100)
+        ppf, how = fvd.detect_pixels_per_frame(bin_path, itemsize=itemsize, dim_lo=100, dim_hi=2100)
         if ppf is None:
             ap.error("could not auto-detect frame size; pass --nrow/--ncol")
-        _score, nrow, ncol = fvd.recover_dims(bin_path, ppf, dtype="u2")[0]
+        _score, nrow, ncol = fvd.recover_dims(bin_path, ppf, dtype=raw_code)[0]
         print(f"[pyali] auto-detected dimensions: nrow={nrow}, ncol={ncol}   [{how}]")
 
-    p = Params(nrow=nrow, ncol=ncol)
+    p = Params(nrow=nrow, ncol=ncol, read_dtype=a.read_dtype, compute_dtype=a.compute_dtype)
     if a.whiten_traces:
         p.whiten_traces = True
         p.whiten_isolated_only = not a.whiten_all_cells
@@ -84,7 +92,7 @@ def main(argv=None):
               f"(isolated_only={p.whiten_isolated_only})")
 
     # ---- clamp protocol frame-ranges to this video's length ----
-    nframes = os.path.getsize(bin_path) // (nrow * ncol * 2)
+    nframes = os.path.getsize(bin_path) // (nrow * ncol * itemsize)
     T = nframes - p.truncate_last
     p.bkg_ranges, c1 = _clamp_ranges(p.bkg_ranges, T)
     p.std_ranges, c2 = _clamp_ranges(p.std_ranges, T)
