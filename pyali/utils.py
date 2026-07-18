@@ -112,7 +112,9 @@ def movmedian_time(a, window=8, axis=0):
     -----
     Clear O(n)-medians reference implementation; slow for very large arrays.
     """
-    a = np.asarray(a, dtype=np.float64)
+    a = np.asarray(a)
+    if not np.issubdtype(a.dtype, np.floating):          # preserve float32/float64; upcast ints
+        a = a.astype(np.float64)
     a = np.moveaxis(a, axis, 0)
     n = a.shape[0]
     kb = window // 2

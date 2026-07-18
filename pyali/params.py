@@ -1,5 +1,11 @@
-"""Pipeline parameters (defaults tuned for the reference acquisition)."""
+"""Pipeline parameters.
+
+The dataclass field defaults are tuned for the reference acquisition (312x1200, 16-bit);
+override them per movie. ``read_dtype`` / ``compute_dtype`` select the on-disk sample type
+and the in-RAM working precision.
+"""
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -11,6 +17,10 @@ class Params:
     fps: float = 800.0                       # frame rate (Hz)
     truncate_last: int = 10                  # trailing frames to drop
 
+    # movie dtype (memory): on-disk sample dtype and in-RAM working dtype
+    read_dtype: str = "uint16"               # "uint16" (default) | "uint8" for 8-bit acquisitions
+    compute_dtype: str = "float64"           # "float64" (faithful) | "float32" (~halves peak RAM)
+
     # sharpening
     disk_radius: int = 15
     gauss_sigma: float = 1.75
@@ -20,7 +30,7 @@ class Params:
     # background + baseline frame ranges (1-indexed inclusive; set to your acquisition protocol)
     bkg_ranges: list = field(default_factory=lambda: [(1, 750), (4100, 4200), (6100, 6350)])
     std_ranges: list = field(default_factory=lambda: [(1, 750), (4100, 4200), (6100, 6350)])
-    saturation_clip: float = 25000.0
+    saturation_clip: Optional[float] = 25000.0   # None => skip saturation clipping (8-bit has none)
 
     # filters
     filter_window: int = 8
@@ -59,3 +69,4 @@ class Params:
         """Baseline frames as a 0-indexed concatenated array (from ``std_ranges``)."""
         import numpy as np
         return np.concatenate([np.arange(a - 1, b) for a, b in self.std_ranges])
+

@@ -29,7 +29,9 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
 
     # ---- load + truncate (io) ----
     log("loading movie ...")
-    movie = io.read_bin_mov(os.path.join(fov_dir, "frames1.bin"), H, W)
+    movie = io.read_bin_mov(os.path.join(fov_dir, "frames1.bin"), H, W,
+                            read_dtype=getattr(p, "read_dtype", "uint16"),
+                            out_dtype=getattr(p, "compute_dtype", "float64"))
     movie = movie[:movie.shape[0] - p.truncate_last]                 # drop last 10 frames
     T = movie.shape[0]
 
@@ -45,7 +47,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     movie, _samples, _anchors = preprocess.adaptive_background(movie, p.bkg_ranges, p.disk_radius)
     log("rigid motion correction ...")
     movie, _shift, _A, _f0 = preprocess.motion_correct(movie, p.truncate_last)
-    preprocess.clip_saturation(movie, p.saturation_clip)
+    if getattr(p, "saturation_clip", None) is not None:                  # 8-bit acquisitions: None => skip
+        preprocess.clip_saturation(movie, p.saturation_clip)
 
     # ---- segmentation ----
     log("segmentation ...")
