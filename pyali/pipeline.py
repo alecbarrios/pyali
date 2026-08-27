@@ -70,8 +70,16 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                         h_lap=h_lap, LoG_image=LoG, LoG_normalized=LoG_n, sharpened=sharpened)
 
     # ---- filters + per-region extraction ----
-    log("temporal median filter ...")
-    filtered_movie = extract.temporal_filter(movie, p.filter_window)
+    # extract_footprints only ever reads ~27x27 patches of the filtered movie, so the global
+    # array is a full extra copy of the movie for mostly wasted work. Build it only when
+    # something actually needs all of it: the whitened-GLS noise map.
+    need_global_filter = getattr(p, "whiten_traces", False) or not getattr(
+        p, "patch_local_filter", True)
+    if need_global_filter:
+        log("temporal median filter (global) ...")
+        filtered_movie = extract.temporal_filter(movie, p.filter_window)
+    else:
+        filtered_movie = None
     dog = dog_kernel(p.dog_sigma1, p.dog_sigma2, p.dog_width)
     log(f"extracting footprints from {len(regions)} regions ...")
     APs, COMs, footprint, footprint_center = extract.extract_footprints(

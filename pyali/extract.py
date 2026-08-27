@@ -24,10 +24,40 @@ def temporal_filter(movie, window=8):
     Returns
     -------
     (T, H, W) ndarray
+
+    Notes
+    -----
+    Materializes a second full-movie array. ``extract_footprints`` only ever reads ~27x27
+    patches of the result, so prefer :func:`temporal_filter_patch` there — see the
+    ``filtered_movie=None`` path.
     """
     # -(movie - movmedian) == movmedian - movie; computed in place to avoid an extra copy.
     filtered = movmedian_time(movie, window, axis=0)
     filtered -= movie
+    return filtered
+
+
+def temporal_filter_patch(movie, r0, r1, c0, c1, window=8):
+    """:func:`temporal_filter` restricted to one spatial patch.
+
+    The filter runs purely along time and is independent per pixel, so filtering a spatial
+    sub-block is **bit-identical** to filtering the whole movie and then slicing it — while
+    touching only the pixels a region actually needs.
+
+    Parameters
+    ----------
+    movie : (T, H, W) float array
+    r0, r1, c0, c1 : int
+        0-indexed half-open patch bounds.
+    window : int
+
+    Returns
+    -------
+    (T, r1-r0, c1-c0) ndarray
+    """
+    sub = movie[:, r0:r1, c0:c1]
+    filtered = movmedian_time(sub, window, axis=0)
+    filtered -= sub
     return filtered
 
 
@@ -333,7 +363,12 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
 
     Parameters
     ----------
-    movie, filtered_movie : (T, H, W) float arrays
+    movie : (T, H, W) float array
+    filtered_movie : (T, H, W) float array or None
+        Pre-filtered movie. Pass ``None`` (preferred) to filter each region's patch on demand
+        via :func:`temporal_filter_patch`: only region patches are ever read from it, so the
+        global array is both a full extra copy of the movie and mostly wasted work. The two
+        paths are bit-identical — the filter is per-pixel along time.
     regions, spatial_footprints : from :func:`pyali.segmentation.cell_segmentation`
     dog : (K,) DOG kernel
     std_frames : array of int (0-indexed baseline frames)
@@ -365,7 +400,12 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
                                                         p.patch_size, height, width)
         sel_full = build_selection_map(spatial_footprints[c], height, width)
         sel_patch = sel_full[np.ix_(patch_rows - 1, patch_cols - 1)]
-        pm = filtered_movie[:, patch_rows[0] - 1:patch_rows[-1], patch_cols[0] - 1:patch_cols[-1]].copy()
+        r0, r1 = patch_rows[0] - 1, patch_rows[-1]
+        c0, c1 = patch_cols[0] - 1, patch_cols[-1]
+        if filtered_movie is None:                        # filter just this patch, on demand
+            pm = temporal_filter_patch(movie, r0, r1, c0, c1, fw)
+        else:
+            pm = filtered_movie[:, r0:r1, c0:c1].copy()
         pm[:half] = 0.0
         pm[T - half:] = 0.0
         pm_max = pm.max(axis=0)

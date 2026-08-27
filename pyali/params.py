@@ -35,6 +35,12 @@ class Params:
 
     # filters
     filter_window: int = 8
+    patch_local_filter: bool = True          # filter each region's patch on demand instead of
+                                             #   materializing a whole second movie. Bit-identical
+                                             #   (the filter is per-pixel along time) and avoids
+                                             #   filtering the ~98% of pixels no region reads.
+                                             #   Forced off when whiten_traces needs the global
+                                             #   array. False = the old global-filter path.
     dog_sigma1: float = 1.0
     dog_sigma2: float = 3.0
     dog_width: int = 19
