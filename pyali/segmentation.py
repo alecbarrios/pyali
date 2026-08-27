@@ -83,6 +83,50 @@ def cell_segmentation(image, threshold=0.90, gauss_size=0.1, region_size=10):
     return regions, BW, spatial_footprints
 
 
+def drop_oversized_regions(regions, binary_map, max_bbox_frac):
+    """Drop regions whose **bounding box** covers more than ``max_bbox_frac`` of the frame.
+
+    The earliest and latest bursts of a well image partially outside it, leaving a band of
+    un-illuminated inter-well area. Those dark pixels share the same absence of signal, so they
+    correlate with one another and segmentation merges them into one enormous object — up to 84%
+    of the frame. Such an object is never a cell, and because :func:`pyali.extract.compute_patch`
+    sizes each region's patch from its bounding box, one of them alone can hold ~24 GB in
+    :func:`pyali.extract.detect_region_aps`.
+
+    The cut is on bounding-box area, not pixel area: these artifacts are only ~1-2% of the frame
+    by pixel count but span most of it, so an area-based threshold misses them entirely. It is
+    also not ``area/bbox_area`` (extent), which describes shape and cannot bound the allocation.
+
+    Parameters
+    ----------
+    regions : list of dict
+        From :func:`cell_segmentation`; ``BoundingBox`` is ``[x_ul, y_ul, w, h]``.
+    binary_map : (H, W) bool ndarray
+    max_bbox_frac : float or None
+        Fraction of the frame above which a region is rejected. ``None``/0 disables the guard.
+
+    Returns
+    -------
+    (kept, binary_map, dropped)
+        ``binary_map`` has the dropped regions' pixels cleared, so the mask matches what was
+        actually analyzed. It is copied only when something is dropped.
+    """
+    if not max_bbox_frac:
+        return regions, binary_map, []
+    height, width = binary_map.shape
+    limit = float(max_bbox_frac) * height * width
+    kept, dropped = [], []
+    for r in regions:
+        _x_ul, _y_ul, w, h = (float(v) for v in r["BoundingBox"])
+        (dropped if w * h > limit else kept).append(r)
+    if dropped:
+        binary_map = binary_map.copy()
+        for r in dropped:
+            px = r["PixelList"].astype(int)                 # [col, row], 1-indexed
+            binary_map[px[:, 1] - 1, px[:, 0] - 1] = False
+    return kept, binary_map, dropped
+
+
 def _regionprops(BW):
     """Connected-component region properties with column-major pixel ordering.
 

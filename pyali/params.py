@@ -47,6 +47,12 @@ class Params:
     seg_threshold: float = 0.90
     seg_gauss: float = 0.1
     seg_region_size: int = 10
+    max_region_bbox_frac: Optional[float] = 0.01   # reject regions whose BOUNDING BOX exceeds this
+                                                   #   fraction of the frame -- the un-illuminated
+                                                   #   inter-well band on a well's first/last
+                                                   #   bursts merges into one object spanning up
+                                                   #   to 84% of the frame. None disables.
+                                                   #   See segmentation.drop_oversized_regions.
 
     # COM + clustering + footprints
     patch_size: tuple = (27, 27)
@@ -79,6 +85,38 @@ class Params:
         """Legacy **6GP002** batch: 312x1200, 16-bit, ~6389 frames. These are the dataclass
         field defaults; provided as a named factory for symmetry/documentation."""
         return cls(**overrides)
+
+    @classmethod
+    def profile_6GP002_8bit(cls, **overrides):
+        """**6GP002** 8-bit variant (the 20260401 ``*_8bit_*`` runs): 1080x1080, 6399 frames.
+
+        Same stimulus protocol — and therefore the same background/baseline ranges — as
+        :meth:`profile_6GP002`, but an 8-bit acquisition: ``saturation_clip=None`` (no ceiling to
+        clip) and ``compute_dtype='float32'`` (the 8-bit source is represented losslessly).
+        """
+        base = dict(nrow=1080, ncol=1080, read_dtype="uint8", compute_dtype="float32",
+                    saturation_clip=None)
+        base.update(overrides)
+        return cls(**base)
+
+    @classmethod
+    def profile_443screen1(cls, **overrides):
+        """**443screen1** batch (20260611/12; the directories name it ``443GP`` — same batch):
+        1000x1000, 8-bit, fps=800, 6399 frames (~8.0 s).
+
+        Background/baseline (stimulus-OFF) ranges are 1-indexed inclusive and fit inside the
+        6399-frame movies. ``saturation_clip=None`` -- 8-bit acquisitions have no saturation
+        ceiling to clip, as for :meth:`profile_443screen2`.
+        """
+        ranges = [(1, 750), (3750, 4000), (6000, 6250)]
+        base = dict(
+            nrow=1000, ncol=1000, n_ref=600, fps=800.0, truncate_last=10,
+            read_dtype="uint8", compute_dtype="float32",
+            bkg_ranges=list(ranges), std_ranges=list(ranges),
+            saturation_clip=None,
+        )
+        base.update(overrides)
+        return cls(**base)
 
     @classmethod
     def profile_443screen2(cls, **overrides):
