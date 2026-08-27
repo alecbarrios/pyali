@@ -406,6 +406,44 @@ def region_center_rowcol(region):
 # --------------------------------------------------------------------------- #
 # Trace extraction
 # --------------------------------------------------------------------------- #
+_PROJECT_CHUNK_BYTES = 2 << 30       # cap on the promoted per-chunk temporary (~2 GB)
+
+
+def project_movie(op, movie, chunk_bytes=_PROJECT_CHUNK_BYTES):
+    """Apply a ``[N, H*W]`` spatial operator to a ``[T, H, W]`` movie -> ``[N, T]``.
+
+    Evaluated in chunks along time. Footprint planes are built with ``np.zeros(...)`` and so are
+    always float64, which makes ``op`` float64; a ``float32`` movie (``compute_dtype='float32'``)
+    would then be promoted to float64 by the matmul **in one piece** — a full second copy of the
+    movie, 43 GB for an 800x800x8389 acquisition, silently undoing the point of float32. Chunking
+    bounds that temporary to roughly ``chunk_bytes``.
+
+    Time is an *output* axis, not the contracted one: every output element is still the full
+    ``H*W`` dot product, so the result is arithmetically identical to the unchunked form.
+
+    Parameters
+    ----------
+    op : (N, H*W) float array
+    movie : (T, H, W) float array
+    chunk_bytes : int
+        Approximate ceiling on the temporary materialized per chunk.
+
+    Returns
+    -------
+    (N, T) ndarray of ``op.dtype``
+    """
+    T, H, W = movie.shape
+    N = op.shape[0]
+    flat = movie.reshape(T, H * W)                              # view, C-order
+    out = np.empty((N, T), dtype=op.dtype)
+    per_frame = H * W * np.dtype(op.dtype).itemsize
+    step = max(1, min(T, int(chunk_bytes // max(per_frame, 1))))
+    for t0 in range(0, T, step):
+        t1 = min(T, t0 + step)
+        out[:, t0:t1] = op @ flat[t0:t1].T                      # [N, H*W] @ [H*W, chunk]
+    return out
+
+
 def pinv_traces(movie, footprint):
     """Extract per-footprint temporal traces via the spatial pseudoinverse.
 
@@ -422,16 +460,15 @@ def pinv_traces(movie, footprint):
 
     Notes
     -----
-    Footprint and movie are flattened with a consistent C-order pixel ordering.
+    Footprint and movie are flattened with a consistent C-order pixel ordering. The contraction
+    runs through :func:`project_movie`, which chunks over time so a float32 movie is never
+    promoted to float64 all at once.
     """
-    T, H, W = movie.shape
-    N = footprint.shape[2]
-    flat_fp = footprint.reshape(H * W, N)                       # pixel = row*W + col
+    H, W = movie.shape[1], movie.shape[2]
+    flat_fp = footprint.reshape(H * W, footprint.shape[2])      # pixel = row*W + col
     rcond = max(flat_fp.shape) * np.finfo(np.float64).eps       # pseudoinverse tolerance
     pinv_fp = np.linalg.pinv(flat_fp, rcond=rcond)             # [N, H*W]
-    flat_mov = movie.reshape(T, H * W).T                        # [H*W, T] view (no copy)
-    return -(pinv_fp @ flat_mov)                                # [N, T]; negate small result,
-    #                                                             not the full movie (saves a copy)
+    return -project_movie(pinv_fp, movie)                       # negate the small result
 
 
 # --------------------------------------------------------------------------- #
@@ -519,18 +556,17 @@ def whitened_gls_traces(movie, footprint, noise_map, ridge_frac=1e-3):
     -----
     Same C-order pixel flattening as :func:`pinv_traces`. Uses the true single-``W`` GLS operator
     (not "divide the footprint by variance then pinv", which would apply ``W`` twice). The movie
-    contraction is done as ``movie_flat @ FtW.T`` to avoid materializing the large ``[H*W, T]``
-    transpose.
+    contraction goes through :func:`project_movie`, which chunks over time so a float32 movie is
+    never promoted to float64 all at once.
     """
-    T, H, W = movie.shape
+    H, W = movie.shape[1], movie.shape[2]
     N = footprint.shape[2]
     flat_fp = footprint.reshape(H * W, N)                             # [H*W, N]
     w = 1.0 / (noise_map.reshape(H * W) ** 2)                         # [H*W] inverse-variance
     FtW = flat_fp.T * w[None, :]                                      # [N, H*W]
     A = FtW @ flat_fp                                                 # [N, N]
     A = A + ridge_frac * np.mean(np.diag(A)) * np.eye(N)              # ridge (relative)
-    movie_flat = movie.reshape(T, H * W)                             # view, C-order
-    B = -(movie_flat @ FtW.T).T                                      # [N, T] == FtW @ (-movie_flat.T)
+    B = -project_movie(FtW, movie)                                    # [N, T]
     return np.linalg.solve(A, B)                                     # [N, T]
 
 
