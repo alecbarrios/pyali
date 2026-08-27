@@ -46,6 +46,13 @@ class Params:
     seg_threshold: float = 0.90
     seg_gauss: float = 0.1
     seg_region_size: int = 10
+    max_region_bbox_frac: Optional[float] = None   # reject regions whose BOUNDING BOX exceeds this
+                                                   #   fraction of the frame: an un-illuminated band
+                                                   #   at a frame edge (e.g. a field that images
+                                                   #   partly outside its well) segments as one
+                                                   #   object spanning most of the frame. None (the
+                                                   #   default) disables; 0.01 is a sensible guard.
+                                                   #   See segmentation.drop_oversized_regions.
 
     # COM + clustering + footprints
     patch_size: tuple = (27, 27)
@@ -69,4 +76,3 @@ class Params:
         """Baseline frames as a 0-indexed concatenated array (from ``std_ranges``)."""
         import numpy as np
         return np.concatenate([np.arange(a - 1, b) for a, b in self.std_ranges])
-

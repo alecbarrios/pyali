@@ -31,6 +31,42 @@ from pyali.params import Params                        # noqa: E402
 from pyali.pipeline import process_fov                 # noqa: E402
 
 
+def detect_bit_depth(bin_path, n_bytes=1 << 22):
+    """Return ``"uint8"`` or ``"uint16"`` from a byte-plane adjacency test.
+
+    Under a uint16 little-endian hypothesis the even bytes are the sample *low* halves — close to
+    uniform noise carrying no image structure — while the odd bytes are the high halves and hold a
+    /256 copy of the image. In genuine uint8 data both planes are just alternating pixels of the
+    same image, so both stay spatially smooth. The discriminator is each plane's lag-1
+    correlation: uint16 gives ~0.02 (even) vs ~0.48 (odd); uint8 gives ~0.99 for both.
+
+    Reads from the middle of the file to avoid any header/leading blank frames.
+    """
+    import numpy as np
+    size = os.path.getsize(bin_path)
+    off = (size // 2) & ~1                                   # even offset keeps plane parity
+    with open(bin_path, "rb") as f:
+        f.seek(off)
+        buf = np.frombuffer(f.read(min(n_bytes, size - off)), dtype=np.uint8)
+    buf = buf[:(buf.size // 2) * 2]
+    if buf.size < 1024:
+        return "uint16"                                      # too small to judge; keep the default
+    even = buf[0::2].astype(np.float64)
+    odd = buf[1::2].astype(np.float64)
+
+    def lag1(x):
+        a, b = x[:-1], x[1:]
+        sa, sb = a.std(), b.std()
+        if sa == 0 or sb == 0:
+            return 0.0
+        return float(((a - a.mean()) * (b - b.mean())).mean() / (sa * sb))
+
+    ce, co = lag1(even), lag1(odd)
+    depth = "uint8" if ce > 0.5 else "uint16"
+    print(f"[pyali] bit depth: {depth}  (byte-plane lag-1 corr: even={ce:.3f}, odd={co:.3f})")
+    return depth
+
+
 def _clamp_ranges(ranges, T):
     """Clamp 1-indexed inclusive frame ranges to [1, T]; drop empties. Returns (ranges, changed)."""
     out, changed = [], False
@@ -59,21 +95,26 @@ def main(argv=None):
     ap.add_argument("--whiten-all-cells", action="store_true",
                     help="with --whiten-traces, whiten overlapping cells too (default: only "
                          "isolated footprints are whitened; overlapping ones keep the faithful pinv)")
-    ap.add_argument("--read-dtype", choices=["uint16", "uint8"], default="uint16",
-                    help="on-disk sample dtype (uint8 for 8-bit acquisitions; default uint16)")
-    ap.add_argument("--compute-dtype", choices=["float64", "float32"], default="float64",
-                    help="in-RAM movie dtype (float32 ~halves peak RAM for large movies; "
-                         "default float64 = faithful)")
+    ap.add_argument("--read-dtype", choices=["uint16", "uint8"], default=None,
+                    help="on-disk sample dtype (default: auto-detect by byte-plane test)")
+    ap.add_argument("--compute-dtype", choices=["float64", "float32"], default=None,
+                    help="in-RAM movie dtype (default: Params default, float64; float32 "
+                         "~halves peak RAM)")
+    ap.add_argument("--max-region-bbox-frac", type=float, default=None,
+                    help="reject segmentation regions whose bounding box exceeds this fraction "
+                         "of the frame (default: off; 0.01 is a sensible guard)")
     a = ap.parse_args(argv)
-
-    itemsize = 1 if a.read_dtype == "uint8" else 2
-    raw_code = "u1" if a.read_dtype == "uint8" else "u2"
 
     bin_path = os.path.join(a.fov_dir, "frames1.bin")
     if not os.path.isfile(bin_path):
         ap.error(f"no frames1.bin found in {a.fov_dir}")
 
-    # ---- frame dimensions: auto-detect unless given ----
+    # ---- bit depth: given, or auto-detected ----
+    read_dtype = a.read_dtype or detect_bit_depth(bin_path)
+    itemsize = 1 if read_dtype == "uint8" else 2
+    raw_code = "u1" if read_dtype == "uint8" else "u2"
+
+    # ---- frame dimensions: given, or auto-detected ----
     if a.nrow and a.ncol:
         nrow, ncol = a.nrow, a.ncol
         print(f"[pyali] using given dimensions: nrow={nrow}, ncol={ncol}")
@@ -84,7 +125,16 @@ def main(argv=None):
         _score, nrow, ncol = fvd.recover_dims(bin_path, ppf, dtype=raw_code)[0]
         print(f"[pyali] auto-detected dimensions: nrow={nrow}, ncol={ncol}   [{how}]")
 
-    p = Params(nrow=nrow, ncol=ncol, read_dtype=a.read_dtype, compute_dtype=a.compute_dtype)
+    overrides = dict(nrow=nrow, ncol=ncol, read_dtype=read_dtype)
+    if a.compute_dtype:
+        overrides["compute_dtype"] = a.compute_dtype
+    p = Params(**overrides)
+    if a.max_region_bbox_frac is not None:
+        p.max_region_bbox_frac = a.max_region_bbox_frac or None
+    print(f"[pyali] {p.nrow}x{p.ncol} {p.read_dtype} -> {p.compute_dtype}, "
+          f"bkg/std ranges {p.bkg_ranges}, region bbox guard "
+          f"{'off' if not p.max_region_bbox_frac else f'{100*p.max_region_bbox_frac:g}%'}")
+
     if a.whiten_traces:
         p.whiten_traces = True
         p.whiten_isolated_only = not a.whiten_all_cells

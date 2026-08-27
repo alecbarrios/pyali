@@ -54,6 +54,14 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     log("segmentation ...")
     regions, binary_map, spatial_footprints = segmentation.cell_segmentation(
         sharpened, p.seg_threshold, p.seg_gauss, p.seg_region_size)
+    regions, binary_map, dropped = segmentation.drop_oversized_regions(
+        regions, binary_map, getattr(p, "max_region_bbox_frac", None))
+    if dropped:                                    # rebuild: extract_footprints indexes these by
+        spatial_footprints = [r["PixelList"] for r in regions]   # region, so they must stay aligned
+        frame_px = H * W
+        worst = max((float(r["BoundingBox"][2]) * float(r["BoundingBox"][3]) for r in dropped))
+        log(f"dropped {len(dropped)} oversized region(s) (bbox > "
+            f"{100 * p.max_region_bbox_frac:g}% of frame; worst {100 * worst / frame_px:.1f}%)")
     log(f"segmented {len(regions)} regions")
 
     if save and out_dir:
