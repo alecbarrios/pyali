@@ -14,7 +14,8 @@ from . import io, preprocess, segmentation, extract
 from .utils import dog_kernel
 
 
-def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make_figures=False):
+def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make_figures=False,
+                keep_row=None, profile=None, day=None):
     """Run the full extraction on one FOV; returns a dict of the key outputs.
 
     ``verbose`` prints per-stage progress (the full-movie steps take minutes each, so the run
@@ -26,6 +27,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             print(f"[pyali] {msg}", flush=True)
 
     H, W = p.nrow, p.ncol
+    if save and out_dir:
+        os.makedirs(out_dir, exist_ok=True)          # this function writes here; don't assume it exists
 
     # ---- load + truncate (io) ----
     log("loading movie ...")
@@ -105,6 +108,14 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         io.save_mat_v73(os.path.join(out_dir, "ALI_Result.mat"),
                         footprint=footprint, footprint_center=footprint_center,
                         cell_traces=cell_traces)
+        # Metadata lands in out_dir alongside the .mat files, at identical depth, so a
+        # downstream aggregation over the corpus is a single glob.
+        from .metadata import fov_metadata, write_metadata
+        write_metadata(out_dir, fov_metadata(
+            fov_dir, day=day, keep_row=keep_row, params=p, profile=profile,
+            extras=dict(n_regions_kept=len(regions), n_regions_dropped=len(dropped),
+                        n_cells=int(cell_traces.shape[0]),
+                        n_frames_analyzed=int(T))))
 
     if make_figures and out_dir:
         log("saving result figures ...")

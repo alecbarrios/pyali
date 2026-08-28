@@ -120,6 +120,10 @@ def main(argv=None):
                     help="acquisition profile: sets frame size, dtypes, and the background/"
                          "baseline frame ranges for that batch. 'auto' picks it from the "
                          "detected (nrow, ncol, bit depth)")
+    ap.add_argument("--keep-csv", default=None,
+                    help="keep.csv to join per-FOV metadata against (authoritative plate/well)")
+    ap.add_argument("--day", default=None,
+                    help="acquisition day for the metadata sidecar (default: parent dir name)")
     ap.add_argument("--max-region-bbox-frac", type=float, default=None,
                     help="reject segmentation regions whose bounding box exceeds this fraction "
                          "of the frame (default 0.01; pass 0 to disable the guard)")
@@ -191,7 +195,22 @@ def main(argv=None):
     os.makedirs(out_dir, exist_ok=True)
     print(f"[pyali] frames={T}  ->  outputs in {out_dir}\n")
 
-    process_fov(a.fov_dir, out_dir=out_dir, p=p, save=True, verbose=True, make_figures=a.figures)
+    keep_row = None
+    if a.keep_csv:
+        from pyali.metadata import load_keep_index
+        dir_name = os.path.basename(os.path.normpath(a.fov_dir))
+        idx = load_keep_index(a.keep_csv)
+        day = a.day or os.path.basename(os.path.dirname(os.path.normpath(a.fov_dir)))
+        keep_row = idx.get((day, dir_name))
+        if keep_row is None:                       # nested trees e.g. 20260401/Data_B1/<fov>
+            hits = [v for (d, dn), v in idx.items() if dn == dir_name]
+            keep_row = hits[0] if len(hits) == 1 else None
+        if keep_row is None:
+            print(f"[pyali] WARNING: no keep.csv row for {dir_name}; metadata will come from "
+                  f"the directory name alone")
+
+    process_fov(a.fov_dir, out_dir=out_dir, p=p, save=True, verbose=True, make_figures=a.figures,
+                keep_row=keep_row, profile=name, day=a.day)
 
     print(f"\n[pyali] wrote ALI_Int_Result.mat, ALI_Result.mat" +
           (" + result figures (detected_regions/coms/cell_traces/center_of_cell_regions .png "
