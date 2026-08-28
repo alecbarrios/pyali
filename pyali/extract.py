@@ -254,28 +254,38 @@ def region_grow_brightest(current, radius=8.5, n_pixels=50):
     Notes
     -----
     Each step adds a pixel's 4-neighbors to a queue and picks the brightest queued pixel
-    (first occurrence in column-major order).
+    (first occurrence in column-major order — note this is the first such value *anywhere in
+    the patch*, not necessarily the queued pixel that supplied it; preserved as-is).
+
+    The queue is held as a boolean mask rather than a coordinate array. The previous version
+    re-scanned it with a Python list comprehension every step to drop already-picked entries —
+    O(len(queue)) NumPy calls per step, ~35M calls per FOV and 13% of total runtime. Membership
+    is now O(1) and the result is unchanged.
     """
     Hp, Wp = current.shape
+    flat_f = current.ravel(order="F")                   # hoisted: was rebuilt every iteration
     picked = np.zeros((n_pixels, 2), int)
-    mx = current.max()
-    fi = int(np.argmax(current.ravel(order="F") == mx))
+    fi = int(np.argmax(flat_f == current.max()))
     picked[0] = np.unravel_index(fi, current.shape, order="F")
-    queue = np.zeros((0, 2), int)
-    pc = 1
-    while pc < n_pixels:
-        pix = picked[pc - 1]
-        sc = pix + np.array([[1, 0], [-1, 0], [0, 1], [0, -1]])     # 4-neighbors (row, col)
-        d = sc - picked[0]
-        sc = sc[d[:, 0] ** 2 + d[:, 1] ** 2 <= radius ** 2]          # within search radius
-        sc = sc[(sc[:, 0] >= 0) & (sc[:, 0] < Hp) & (sc[:, 1] >= 0) & (sc[:, 1] < Wp)]
-        queue = np.vstack([queue, sc])
-        queue = queue[[i for i in range(len(queue))
-                       if not (queue[i] == picked[:pc]).all(1).any()]]     # drop already-picked
-        mval = current[queue[:, 0], queue[:, 1]].max()             # brightest queued pixel
-        fi = int(np.argmax(current.ravel(order="F") == mval))
+
+    rr, cc = np.ogrid[:Hp, :Wp]
+    in_radius = ((rr - picked[0, 0]) ** 2 + (cc - picked[0, 1]) ** 2) <= radius ** 2
+    queued = np.zeros((Hp, Wp), bool)
+    is_picked = np.zeros((Hp, Wp), bool)
+    is_picked[picked[0, 0], picked[0, 1]] = True
+
+    for pc in range(1, n_pixels):
+        pr, pcol = picked[pc - 1]
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):           # 4-neighbors
+            r, c = pr + dr, pcol + dc
+            if 0 <= r < Hp and 0 <= c < Wp and in_radius[r, c]:
+                queued[r, c] = True
+        queued &= ~is_picked                                        # drop already-picked
+        idx = np.flatnonzero(queued)
+        mval = current.ravel()[idx].max()                           # brightest queued pixel
+        fi = int(np.argmax(flat_f == mval))
         picked[pc] = np.unravel_index(fi, current.shape, order="F")
-        pc += 1
+        is_picked[picked[pc, 0], picked[pc, 1]] = True
     return picked
 
 
