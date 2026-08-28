@@ -12,19 +12,23 @@ import numpy as np
 from .preprocess import gaussian_kernel
 
 
-def adaptive_threshold_mean(image, sensitivity, neighborhood=None):
+def adaptive_threshold_mean(image, sensitivity, neighborhood=None, multiplier=None):
     """Locally adaptive threshold surface based on the neighborhood mean.
 
     Computes the local mean over a ``2*floor(size/16)+1`` neighborhood (replicate padding),
-    then scales it: ``T = local_mean * scale(sensitivity)``. For the sensitivity used by the
-    pipeline (0.10) the scale is 1.5.
+    then scales it: ``T = local_mean * scale(sensitivity)``.
 
     Parameters
     ----------
     image : (H, W) float array
-    sensitivity : float in [0, 1]
+    sensitivity : float in [0, 1)
+        MATLAB-style sensitivity; see :func:`_threshold_scale`.
     neighborhood : (int, int), optional
-        Local-mean window; defaults to ``2*floor(size/16)+1`` per axis.
+        Local-mean window; defaults to ``2*floor(size/16)+1`` per axis. This sets the spatial
+        scale of "local": a window much larger than a cell makes the threshold nearly global,
+        which merges neighbouring cells.
+    multiplier : float, optional
+        Use this multiplier directly and ignore ``sensitivity``.
 
     Returns
     -------
@@ -36,17 +40,26 @@ def adaptive_threshold_mean(image, sensitivity, neighborhood=None):
     if neighborhood is None:
         neighborhood = tuple(int(2 * (s // 16) + 1) for s in I.shape)  # 2*floor(size/16)+1
     local_mean = ndimage.uniform_filter(I, size=neighborhood, mode="nearest")  # replicate padding
-    return local_mean * _threshold_scale(sensitivity)
+    m = _threshold_scale(sensitivity) if multiplier is None else float(multiplier)
+    return local_mean * m
 
 
 def _threshold_scale(sensitivity):
-    # Multiplier applied to the local mean; 1.5 corresponds to the pipeline's sensitivity (0.10).
-    if abs(sensitivity - 0.10) < 1e-9:
-        return 1.5
-    return 1.5
+    """Multiplier applied to the local mean, from a sensitivity in [0, 1).
+
+    Higher sensitivity => lower threshold => more foreground, matching MATLAB ``adaptthresh``.
+    Calibrated so the pipeline's historical sensitivity of 0.10 returns **exactly 1.5** — the
+    value the previous implementation returned for every input, so defaults are unchanged.
+
+    Raising the multiplier is the knob that separates touching cells: a higher bar shrinks each
+    blob and pulls clumps apart at the necks. Lowering it fuses them.
+    """
+    s = float(np.clip(sensitivity, 0.0, 0.99))
+    return 1.5 * (1.0 - s) / 0.9
 
 
-def cell_segmentation(image, threshold=0.90, gauss_size=0.1, region_size=10):
+def cell_segmentation(image, threshold=0.90, gauss_size=0.1, region_size=10,
+                      threshold_mult=None, neighborhood=None):
     """Segment cells from a grayscale image.
 
     Parameters
@@ -55,11 +68,17 @@ def cell_segmentation(image, threshold=0.90, gauss_size=0.1, region_size=10):
         Sharpened reference image.
     threshold : float
         Brightness percentile (higher keeps fewer/brighter pixels); the adaptive-threshold
-        sensitivity is ``1 - threshold``.
+        sensitivity is ``1 - threshold``. The default 0.90 gives a multiplier of 1.5.
     gauss_size : float
-        Gaussian smoothing width.
+        Gaussian smoothing width. NB: at the default 0.1 the 3x3 kernel is a delta function
+        (centre 1.0, off-centre ~1e-22), i.e. no smoothing. *Increasing* it blurs cells
+        together, so it is not a knob for splitting clumps.
     region_size : int
         Minimum connected-component size (pixels) to keep.
+    threshold_mult : float, optional
+        Local-mean multiplier, bypassing ``threshold``. Higher separates touching cells.
+    neighborhood : (int, int), optional
+        Local-mean window for the adaptive threshold.
 
     Returns
     -------
@@ -74,7 +93,8 @@ def cell_segmentation(image, threshold=0.90, gauss_size=0.1, region_size=10):
     I = np.asarray(image, dtype=np.float64)
     I_adj = (I - I.min()) / (I.max() - I.min())                    # normalize to [0, 1]
     I_filt = ndimage.correlate(I_adj, gaussian_kernel(gauss_size), mode="nearest")  # smoothing
-    T = adaptive_threshold_mean(I_filt, 1.0 - threshold)           # adaptive mean threshold
+    T = adaptive_threshold_mean(I_filt, 1.0 - threshold, neighborhood,   # adaptive mean threshold
+                                multiplier=threshold_mult)
     BW = I_adj > T                                                 # binarize
     BW = remove_small_objects(BW, region_size, connectivity=2)     # drop small objects (8-conn)
 

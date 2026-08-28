@@ -52,6 +52,15 @@ class Params:
     seg_threshold: float = 0.90
     seg_gauss: float = 0.1
     seg_region_size: int = 10
+    seg_threshold_mult: Optional[float] = None   # local-mean multiplier; None => from seg_threshold
+                                                 #   (0.90 -> 1.5). Raise it to split touching
+                                                 #   cells, lower it to fuse them.
+    seg_neighborhood: Optional[tuple] = None     # adaptive-threshold window (rows, cols). None =>
+                                                 #   the shape-derived default 2*floor(size/16)+1
+                                                 #   per axis, which is far wider than a cell
+                                                 #   (~6 px), so touching cells can share one
+                                                 #   local-mean plateau and fuse. A window of a
+                                                 #   few cell diameters (e.g. 51x51) splits them.
     max_region_bbox_frac: Optional[float] = None   # reject regions whose BOUNDING BOX exceeds this
                                                    #   fraction of the frame: an un-illuminated band
                                                    #   at a frame edge (e.g. a field that images
