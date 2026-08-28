@@ -53,7 +53,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     # ---- segmentation ----
     log("segmentation ...")
     regions, binary_map, spatial_footprints = segmentation.cell_segmentation(
-        sharpened, p.seg_threshold, p.seg_gauss, p.seg_region_size)
+        sharpened, p.seg_threshold, p.seg_gauss, p.seg_region_size,
+        getattr(p, "seg_threshold_mult", None), getattr(p, "seg_neighborhood", None))
     regions, binary_map, dropped = segmentation.drop_oversized_regions(
         regions, binary_map, getattr(p, "max_region_bbox_frac", None))
     if dropped:                                    # rebuild: extract_footprints indexes these by

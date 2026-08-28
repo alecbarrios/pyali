@@ -26,7 +26,7 @@ class Params:
     disk_radius: int = 15
     gauss_sigma: float = 1.75
     lap_alpha: float = 0.2
-    sharpen_k: float = 2.25
+    sharpen_k: float = 3.0                   # was 2.25; raised with the seg sweep below
 
     # background + baseline frame ranges (1-indexed inclusive; set to your acquisition protocol)
     bkg_ranges: list = field(default_factory=lambda: [(1, 750), (4100, 4200), (6100, 6350)])
@@ -53,6 +53,16 @@ class Params:
     seg_threshold: float = 0.90
     seg_gauss: float = 0.1
     seg_region_size: int = 10
+    seg_threshold_mult: Optional[float] = None   # local-mean multiplier; None => from seg_threshold
+                                                 #   (0.90 -> 1.5). Raise it to split touching
+                                                 #   cells, lower it to fuse them.
+    seg_neighborhood: Optional[tuple] = (51, 51)  # adaptive-threshold window. The old
+                                                 #   shape-derived default (101x101 at
+                                                 #   800x800, 39x151 at 312x1200) is far
+                                                 #   wider than a cell (~6 px), so touching
+                                                 #   cells share one local-mean plateau and
+                                                 #   fuse. 51x51 splits them: +4% regions at
+                                                 #   97% of median area. None => shape default.
     max_region_bbox_frac: Optional[float] = 0.01   # reject regions whose BOUNDING BOX exceeds this
                                                    #   fraction of the frame -- the un-illuminated
                                                    #   inter-well band on a well's first/last
