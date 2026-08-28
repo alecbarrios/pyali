@@ -26,6 +26,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             print(f"[pyali] {msg}", flush=True)
 
     H, W = p.nrow, p.ncol
+    if save and out_dir:
+        os.makedirs(out_dir, exist_ok=True)          # this function writes here; don't assume it exists
 
     # ---- load + truncate (io) ----
     log("loading movie ...")
@@ -105,6 +107,14 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         io.save_mat_v73(os.path.join(out_dir, "ALI_Result.mat"),
                         footprint=footprint, footprint_center=footprint_center,
                         cell_traces=cell_traces)
+        # Provenance sidecar beside the .mat files: the settings this result was produced
+        # with travel with it, and an aggregation over many FOVs is a single glob.
+        from .metadata import fov_metadata, write_metadata
+        write_metadata(out_dir, fov_metadata(
+            fov_dir, params=p,
+            extras=dict(n_regions_kept=len(regions), n_regions_dropped=len(dropped),
+                        n_cells=int(cell_traces.shape[0]),
+                        n_frames_analyzed=int(T))))
 
     if make_figures and out_dir:
         log("saving result figures ...")
