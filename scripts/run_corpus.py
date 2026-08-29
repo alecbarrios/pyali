@@ -27,6 +27,7 @@ import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
@@ -141,6 +142,9 @@ def main():
     ap.add_argument("--no-resume", action="store_true", help="reprocess FOVs already in S3")
     ap.add_argument("--min-free-gb", type=float, default=60.0,
                     help="abort if local scratch free space drops below this")
+    ap.add_argument("--max-restarts", type=int, default=3,
+                    help="rebuild the worker pool this many times after an OOM kill before "
+                         "giving up on the remaining FOVs")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
@@ -190,30 +194,55 @@ def main():
     t0 = time.perf_counter()
     ok = fail = 0
     total_bytes = 0
+    done_total = 0
     mf = open(a.manifest, "a")
-    with ProcessPoolExecutor(max_workers=a.workers) as ex:
-        futs = {ex.submit(_run_one, j): j for j in jobs}
-        for i, fut in enumerate(as_completed(futs), start=1):
-            rec = fut.result()
-            rec["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-            mf.write(json.dumps(rec) + "\n"); mf.flush()
-            if rec.get("ok"):
-                ok += 1
-                total_bytes += rec.get("bytes", 0)
-            else:
-                fail += 1
-                print(f"[corpus] FAIL {rec['day']}/{rec['dir_name']}\n"
-                      f"{rec.get('error', '')}", flush=True)
-            if i % 10 == 0 or i == len(jobs):
-                el = time.perf_counter() - t0
-                rate = i / el * 3600
-                free = shutil.disk_usage(a.scratch).free / 1e9
-                print(f"[corpus] {i}/{len(jobs)}  ok={ok} fail={fail}  "
-                      f"{rate:.0f} FOV/h  eta {(len(jobs)-i)/max(rate,1e-9):.1f} h  "
-                      f"uploaded {total_bytes/1e9:.1f} GB  free {free:.0f} GB", flush=True)
-                if free < a.min_free_gb:
-                    print("[corpus] ABORT: local scratch running out", flush=True)
-                    break
+    remaining = list(jobs)
+    stop = False
+    # A worker killed by the OOM reaper breaks the whole pool, and `fut.result()` re-raises it,
+    # which would otherwise abandon the entire day. Catch it and rebuild the pool over whatever
+    # is still outstanding; completed FOVs are already uploaded, so no work is redone.
+    for attempt in range(1, a.max_restarts + 2):
+        if not remaining or stop:
+            break
+        if attempt > 1:
+            print(f"[corpus] restarting pool (attempt {attempt}) for {len(remaining)} "
+                  f"remaining FOVs", flush=True)
+        finished = set()
+        try:
+            with ProcessPoolExecutor(max_workers=a.workers) as ex:
+                futs = {ex.submit(_run_one, j): j for j in remaining}
+                for fut in as_completed(futs):
+                    rec = fut.result()
+                    rec["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                    mf.write(json.dumps(rec) + "\n"); mf.flush()
+                    finished.add((rec["day"], rec["dir_name"]))
+                    done_total += 1
+                    if rec.get("ok"):
+                        ok += 1
+                        total_bytes += rec.get("bytes", 0)
+                    else:
+                        fail += 1
+                        print(f"[corpus] FAIL {rec['day']}/{rec['dir_name']}\n"
+                              f"{rec.get('error', '')}", flush=True)
+                    if done_total % 10 == 0 or done_total == len(jobs):
+                        el = time.perf_counter() - t0
+                        rate = done_total / el * 3600
+                        free = shutil.disk_usage(a.scratch).free / 1e9
+                        print(f"[corpus] {done_total}/{len(jobs)}  ok={ok} fail={fail}  "
+                              f"{rate:.0f} FOV/h  eta {(len(jobs)-done_total)/max(rate,1e-9):.1f} h"
+                              f"  uploaded {total_bytes/1e9:.1f} GB  free {free:.0f} GB", flush=True)
+                        if free < a.min_free_gb:
+                            print("[corpus] ABORT: local scratch running out", flush=True)
+                            stop = True
+                            break
+        except BrokenProcessPool:
+            print(f"[corpus] WORKER DIED (pool broken — almost certainly an OOM kill). "
+                  f"{len(finished)} FOVs completed this round.", flush=True)
+        remaining = [j for j in remaining if (j[0], j[3]) not in finished]
+    if remaining and not stop:
+        print(f"[corpus] GAVE UP with {len(remaining)} FOVs unprocessed after "
+              f"{a.max_restarts + 1} attempts — lower --workers and re-run (resume will skip "
+              f"what is already in S3)", flush=True)
     mf.close()
     el = time.perf_counter() - t0
     print(f"\n[corpus] done in {el/3600:.2f} h: {ok} ok, {fail} failed, "
