@@ -37,6 +37,20 @@ import matplotlib.pyplot as plt                                          # noqa:
 import numpy as np                                                       # noqa: E402
 import pandas as pd                                                      # noqa: E402
 
+# Arial first, Calibri second, then metric-compatible substitutes. matplotlib walks this list and
+# takes the first family actually installed, so a machine with Arial renders Arial while this one
+# falls through to Liberation Sans -- which is metrically identical to Arial (same advance widths),
+# so layout and line breaks are unchanged either way. DejaVu Sans is the last-resort backstop.
+FONT_STACK = ["Arial", "Calibri", "Liberation Sans", "Nimbus Sans", "DejaVu Sans"]
+matplotlib.rcParams["font.family"] = "sans-serif"
+matplotlib.rcParams["font.sans-serif"] = FONT_STACK
+# Vector text stays text (not outlines) if these are ever re-saved as PDF/SVG for a slide deck.
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["svg.fonttype"] = "none"
+
+# 450 dpi: these are projected at full-wall size in talks, where 150 dpi visibly softens.
+DPI_DEFAULT = 450
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
@@ -128,7 +142,8 @@ def legend(fig, th, days, labels, color_of):
         t.set_color(th["secondary"])           # text wears ink, never the series colour
 
 
-def metric_figure(fovs, by, level_name, fname, out_dir, mode, labels, days, scales=None):
+def metric_figure(fovs, by, level_name, fname, out_dir, mode, labels, days, scales=None,
+                  dpi=DPI_DEFAULT):
     """Three stacked panels -- one per metric -- of per-FOV medians grouped by ``by``."""
     th = THEME[mode]
     scales = scales or {}
@@ -150,11 +165,11 @@ def metric_figure(fovs, by, level_name, fname, out_dir, mode, labels, days, scal
                  x=0.012, ha="left", y=0.995)
     legend(fig, th, days, labels, color_of)
     fig.tight_layout(rect=(0, 0.045, 1, 0.975), h_pad=2.4)
-    fig.savefig(os.path.join(out_dir, fname), dpi=150, facecolor=th["surface"])
+    fig.savefig(os.path.join(out_dir, fname), dpi=dpi, facecolor=th["surface"])
     plt.close(fig)
 
 
-def cells_figure(fovs, out_dir, mode, labels, days):
+def cells_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
     """Cells per FOV, grouped at well / plate / day level."""
     th = THEME[mode]
     color_of = _color_of(days, th)
@@ -171,7 +186,7 @@ def cells_figure(fovs, out_dir, mode, labels, days):
     fig.suptitle("Cell counts", color=th["primary"], fontsize=12.5, x=0.012, ha="left", y=0.995)
     legend(fig, th, days, labels, color_of)
     fig.tight_layout(rect=(0, 0.045, 1, 0.975), h_pad=2.4)
-    fig.savefig(os.path.join(out_dir, f"cells_per_fov__{mode}.png"), dpi=150,
+    fig.savefig(os.path.join(out_dir, f"cells_per_fov__{mode}.png"), dpi=dpi,
                 facecolor=th["surface"])
     plt.close(fig)
 
@@ -240,6 +255,8 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--summary-dir", default=OUT_DEFAULT)
     ap.add_argument("--out-dir", default=None, help="defaults to <summary-dir>/figures")
+    ap.add_argument("--dpi", type=int, default=DPI_DEFAULT,
+                    help="raster resolution; the default suits projection at full-wall size")
     a = ap.parse_args()
     out_dir = a.out_dir or os.path.join(a.summary_dir, "figures")
     os.makedirs(out_dir, exist_ok=True)
@@ -261,9 +278,9 @@ def main():
     for mode in ("light", "dark"):
         for by, level, stem in figs:
             fname = f"snr_{stem}__{mode}.png"
-            metric_figure(fovs, by, level, fname, out_dir, mode, labels, days, scales)
+            metric_figure(fovs, by, level, fname, out_dir, mode, labels, days, scales, a.dpi)
             made.append(fname)
-        cells_figure(fovs, out_dir, mode, labels, days)
+        cells_figure(fovs, out_dir, mode, labels, days, a.dpi)
         made.append(f"cells_per_fov__{mode}.png")
 
     sections = []
