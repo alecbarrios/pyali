@@ -88,7 +88,7 @@ def read_fov(args):
         # reprs, and pandas' default parser drifts up to 50 ULP on small noise_sigma values.
         df = pd.read_csv(os.path.join(d, METRICS), float_precision="round_trip")
     except Exception as e:                                   # noqa: BLE001 - reported, not raised
-        return dir_name, None, f"{type(e).__name__}: {e}"
+        return dir_name, None, None, f"{type(e).__name__}: {e}"
     ana = meta.get("analysis", {})
     for k in FOV_FIELDS:
         df[k] = meta.get(k)
@@ -97,7 +97,9 @@ def read_fov(args):
     df["n_frames_analyzed"] = meta.get("n_frames_analyzed")
     df["n_regions_kept"] = meta.get("n_regions_kept")
     df["n_regions_dropped"] = meta.get("n_regions_dropped")
-    return dir_name, df, None
+    # `meta` is returned alongside the frame because a zero-cell FOV yields an EMPTY frame, and
+    # an empty frame carries no metadata rows -- the FOV would then disappear from every summary.
+    return dir_name, df, meta, None
 
 
 def _q(v, p):
@@ -115,15 +117,29 @@ def _stats(values, prefix, out):
     return out
 
 
-def fov_summary(cells):
-    """One row per FOV: median + IQR over that FOV's cells, plus n_cells / n_nan per metric."""
+def fov_summary(cells, metas):
+    """One row per FOV: median + IQR over that FOV's cells, plus n_cells / n_nan per metric.
+
+    Driven by ``metas`` -- one entry per FOV read -- rather than by grouping ``cells``. A FOV whose
+    segmentation yielded **zero cells** contributes no cell rows, so a groupby over ``cells`` would
+    drop it silently; section 5 predicts exactly such FOVs (their only region was the oversized
+    artifact). Zero cells is a *result*, so the FOV appears with ``n_cells=0`` and NaN metrics.
+    """
     rows = []
-    keys = [k for k in FOV_FIELDS if k != "dir_name"] + list(ANALYSIS_FIELDS) + \
-           ["n_frames_analyzed", "n_regions_kept", "n_regions_dropped"]
-    for dir_name, g in cells.groupby("dir_name", sort=False):
+    groups = dict(list(cells.groupby("dir_name", sort=False))) if len(cells) else {}
+    empty = cells.iloc[0:0]
+    for meta in metas:
+        dir_name = meta.get("dir_name")
+        g = groups.get(dir_name, empty)
+        ana = meta.get("analysis", {})
         r = {"dir_name": dir_name}
-        for k in keys:
-            r[k] = g[k].iloc[0]
+        for k in FOV_FIELDS:
+            if k != "dir_name":
+                r[k] = meta.get(k)
+        for k in ANALYSIS_FIELDS:
+            r[k] = ana.get(k)
+        for k in ("n_frames_analyzed", "n_regions_kept", "n_regions_dropped"):
+            r[k] = meta.get(k)
         r["n_cells"] = int(len(g))
         for m in METRIC_COLS:
             _stats(g[m].values, m, r)
@@ -203,33 +219,48 @@ def main():
     missing = sorted(k for k, v in fovs_s3.items() if set(REQUIRED).issubset(v)
                      and METRICS not in v)
     if a.days:
+        # --days is a scope, so it must filter `missing` too. Otherwise a day deliberately left
+        # out -- e.g. another extraction run in flight on a day this summary does not cover --
+        # is reported as an unmeasured gap in this summary's own coverage, which it is not.
         keys = [k for k in keys if k[0] in a.days]
+        missing = [k for k in missing if k[0] in a.days]
     print(f"[agg] {len(keys)} FOVs with {METRICS}; {len(missing)} extracted but not yet measured "
           f"(run snr_corpus.py)", flush=True)
+    if a.days:
+        print(f"[agg] scope pinned to days: {' '.join(sorted(a.days))}", flush=True)
     if not keys:
         return 1
 
-    frames, errors = [], []
+    frames, metas, errors = [], [], []
     with ThreadPoolExecutor(a.threads) as ex:
-        for i, (dir_name, df, err) in enumerate(
+        for i, (dir_name, df, meta, err) in enumerate(
                 ex.map(read_fov, [(d, n, a.read_root) for d, n in keys]), start=1):
             if err:
                 errors.append((dir_name, err))
             else:
                 frames.append(df)
+                metas.append(meta)
             if i % 250 == 0:
                 print(f"[agg] read {i}/{len(keys)}", flush=True)
     for dir_name, err in errors:
         print(f"[agg] READ FAIL {dir_name}: {err}", flush=True)
 
-    cells = pd.concat(frames, ignore_index=True)
+    # Concatenate only non-empty frames: an all-empty entry contributes no rows anyway and makes
+    # pandas warn about dtype inference. Zero-cell FOVs are carried by `metas` instead.
+    nonempty = [f for f in frames if len(f)]
+    cells = pd.concat(nonempty, ignore_index=True) if nonempty else frames[0]
+    n_zero = len(frames) - len(nonempty)
     print(f"[agg] {len(cells)} cell rows from {len(frames)} FOVs "
-          f"({time.perf_counter() - t0:.0f}s)", flush=True)
+          f"({n_zero} with zero cells) ({time.perf_counter() - t0:.0f}s)", flush=True)
 
     # Label well completeness. Wells are keyed (day, plate_num, well) -- 20260331_dir1/P01/A1 and
-    # 20260715/P-1/A1 are different wells and must never merge.
+    # 20260715/P-1/A1 are different wells and must never merge. Observed counts come from `metas`,
+    # not from `cells`, so a zero-cell FOV still counts toward its well's n_fovs.
     exp = expected_per_well(a.keep_csv)
-    obs = cells.groupby(["day", "plate_num", "well"])["dir_name"].nunique().to_dict()
+    obs = {}
+    for m in metas:
+        k = (m.get("day"), m.get("plate_num"), m.get("well"))
+        obs[k] = obs.get(k, 0) + 1
     idx = list(zip(cells["day"], cells["plate_num"], cells["well"]))
     cells["n_fovs_in_well"] = [obs.get(k, 0) for k in idx]
     cells["n_fovs_expected_in_well"] = [exp.get(k) for k in idx]
@@ -239,11 +270,14 @@ def main():
     os.makedirs(a.out_dir, exist_ok=True)
     cells.to_parquet(os.path.join(a.out_dir, "cells_all.parquet"), index=False)
 
-    well_cols = ["day", "plate_num", "well", "n_fovs_in_well", "n_fovs_expected_in_well",
-                 "well_complete"]
-    per_well = cells[well_cols].drop_duplicates(["day", "plate_num", "well"])
+    # Built from `metas` so a well whose only FOVs are zero-cell still appears.
+    per_well = pd.DataFrame([
+        {"day": k[0], "plate_num": k[1], "well": k[2], "n_fovs_in_well": v,
+         "n_fovs_expected_in_well": exp.get(k),
+         "well_complete": None if exp.get(k) is None else v >= exp[k]}
+        for k, v in obs.items()])
 
-    fovs = fov_summary(cells).merge(per_well, on=["day", "plate_num", "well"], how="left")
+    fovs = fov_summary(cells, metas).merge(per_well, on=["day", "plate_num", "well"], how="left")
     fovs = fovs.sort_values(["day", "plate_num", "well", "burst"]).reset_index(drop=True)
     fovs.to_csv(os.path.join(a.out_dir, "fov_summary.csv"), index=False)
 
@@ -267,10 +301,12 @@ def main():
         "script": os.path.basename(__file__),
         "s3_prefix": a.s3_prefix,
         "keep_csv": a.keep_csv,
+        "days_requested": sorted(a.days) if a.days else None,
         "pyali": git_state(os.path.dirname(_HERE)),
         "per_cell_snr_params": snr_defaults(),
         "totals": {"n_fovs": int(len(fovs)), "n_cells": int(len(cells)),
-                   "n_wells": int(len(wells)), "n_days": int(cells["day"].nunique()),
+                   "n_wells": int(len(wells)), "n_days": int(fovs["day"].nunique()),
+                   "n_fovs_zero_cell": int((fovs["n_cells"] == 0).sum()),
                    "n_fovs_extracted_not_measured": len(missing),
                    "n_read_errors": len(errors)},
         "nan": {m: {"n_nan": int(cells[m].isna().sum()),
@@ -279,12 +315,14 @@ def main():
                                 "plate_summary.csv", "day_summary.csv", "overall_summary.csv",
                                 "manifest.json"],
     }
-    for day, g in cells.groupby("day", sort=True):
+    # Iterate `fovs`, not `cells`: a zero-cell FOV has no cell rows but is still a measured FOV.
+    for day, fg in fovs.groupby("day", sort=True):
         wd = wells[wells["day"] == day]
         manifest["days"].append({
-            "day": day, "n_fovs": int(g["dir_name"].nunique()), "n_cells": int(len(g)),
-            "bit": g["bit"].iloc[0], "dims": g["dims"].iloc[0], "profile": g["profile"].iloc[0],
-            "fps": float(g["fps"].iloc[0]),
+            "day": day, "n_fovs": int(len(fg)), "n_cells": int(fg["n_cells"].sum()),
+            "n_fovs_zero_cell": int((fg["n_cells"] == 0).sum()),
+            "bit": fg["bit"].iloc[0], "dims": fg["dims"].iloc[0],
+            "profile": fg["profile"].iloc[0], "fps": float(fg["fps"].iloc[0]),
             "wells": [{"plate": r["plate"], "well": r["well"], "n_fovs": int(r["n_fovs"]),
                        "n_fovs_expected": (None if pd.isna(r["n_fovs_expected_in_well"])
                                            else int(r["n_fovs_expected_in_well"])),

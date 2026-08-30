@@ -60,9 +60,9 @@ from snr_aggregate import METRIC_COLS, OUT_DEFAULT                       # noqa:
 METRIC_TITLE = {"noise_sigma": "Noise floor",
                 "snr_median": "Spike SNR",
                 "spectral_hf_snr": "Spectral HF SNR"}
-METRIC_UNIT = {"noise_sigma": "1.4826 x MAD of the 20 Hz high-pass trace",
+METRIC_UNIT = {"noise_sigma": "1.4826 x MAD of the 20 Hz high-pass trace  (log scale)",
                "snr_median": "median spike amplitude / noise floor",
-               "spectral_hf_snr": "excess 20-150 Hz PSD power over the white floor"}
+               "spectral_hf_snr": "excess 20-150 Hz PSD power over the white floor  (asinh scale)"}
 
 # Slots 1-3 of the validated categorical theme, in fixed order. Assigned to days by sort order,
 # so a day keeps its hue no matter which subset is plotted -- colour follows the entity.
@@ -93,15 +93,43 @@ def style(ax, th, ylabel=None):
         ax.set_ylabel(ylabel, color=th["secondary"], fontsize=8)
 
 
+# A violin's KDE is estimated in the coordinates it is handed. Handing it raw values and then
+# log-scaling the axis distorts the density -- one July FOV at spectral_hf_snr 300 (p99 is 2.1)
+# flattened every other violin into a featureless trapezoid. So the values are transformed FIRST,
+# the density is estimated in that space, and the ticks are relabelled with the original units.
+# asinh rather than log for spectral_hf_snr: it is an excess ratio and may be negative.
+TRANSFORM = {"log": (np.log10, lambda x: np.power(10.0, x)),
+             "asinh": (np.arcsinh, np.sinh)}
+
+
+def _nice_ticks(scale, vmin, vmax):
+    """Round original-unit tick values spanning [vmin, vmax], placed at transformed positions."""
+    cand = []
+    if scale == "log":
+        for k in range(int(np.floor(np.log10(vmin))), int(np.ceil(np.log10(vmax))) + 1):
+            cand += [m * 10.0 ** k for m in (1, 2, 5)]
+    else:
+        cand = [0.0]
+        for k in range(-3, 4):
+            for m in (1, 3):
+                cand += [m * 10.0 ** k, -m * 10.0 ** k]
+    return sorted({c for c in cand if vmin <= c <= vmax})
+
+
 def draw_violins(ax, groups, th, color_of, scale=None):
     """One violin per group. ``groups`` is a list of ``(label, values, day, note)``."""
     kept = [(lab, np.asarray(v, float)[np.isfinite(v)], day, note)
             for lab, v, day, note in groups]
+    if scale == "log":                       # log is undefined at and below zero
+        kept = [(lab, v[v > 0], day, note) for lab, v, day, note in kept]
     kept = [(lab, v, day, note) for lab, v, day, note in kept if v.size]
     if not kept:
         return
+    tf, _inv = TRANSFORM.get(scale, (None, None))
+    allv = np.concatenate([v for _l, v, _d, _n in kept])
     pos = np.arange(len(kept))
-    parts = ax.violinplot([v for _l, v, _d, _n in kept], positions=pos, widths=0.72,
+    parts = ax.violinplot([(tf(v) if tf else v) for _l, v, _d, _n in kept],
+                          positions=pos, widths=0.72,
                           showextrema=False, showmedians=False)
     for body, (_lab, _v, day, _n) in zip(parts["bodies"], kept):
         body.set_facecolor(color_of(day))
@@ -109,7 +137,11 @@ def draw_violins(ax, groups, th, color_of, scale=None):
         body.set_edgecolor(color_of(day))
         body.set_linewidth(1.0)
     for i, (_lab, v, day, _n) in enumerate(kept):
+        # Percentiles commute with a monotone transform, so these are the true quartiles of the
+        # data, simply drawn at their transformed positions.
         q25, med, q75 = np.percentile(v, [25, 50, 75])
+        if tf:
+            q25, med, q75 = tf(q25), tf(med), tf(q75)
         ax.vlines(i, q25, q75, color=th["primary"], linewidth=2.0, zorder=3)  # IQR
         # Median marker carries a surface ring so it stays legible over the body.
         ax.plot(i, med, "o", markersize=4.5, color=th["primary"],
@@ -117,12 +149,11 @@ def draw_violins(ax, groups, th, color_of, scale=None):
     ax.set_xticks(pos)
     ax.set_xticklabels([lab for lab, _v, _d, _n in kept], rotation=45, ha="right",
                        fontsize=7.5, color=th["secondary"])
-    if scale == "log":
-        ax.set_yscale("log")
-    elif scale == "symlog":
-        # spectral_hf_snr is an excess ratio and can be negative, so a plain log is out; symlog
-        # keeps the bulk readable without clipping the long upper tail off the figure.
-        ax.set_yscale("symlog", linthresh=1.0)
+    if tf:
+        ticks = _nice_ticks(scale, float(allv.min()), float(allv.max()))
+        if ticks:
+            ax.set_yticks([tf(t) for t in ticks])
+            ax.set_yticklabels([f"{t:g}" for t in ticks])
     # Visible n labels: the relief rule for the low-contrast slot, and useful regardless.
     # Drawn in axes coordinates above the frame, clear of the panel title (see title pad).
     for i, (_lab, _v, _d, note) in enumerate(kept):
@@ -268,7 +299,7 @@ def main():
     # noise_sigma spans an order of magnitude across days (16-bit vs 8-bit), and
     # spectral_hf_snr has a long upper tail; both would otherwise flatten most violins into
     # lines. spectral_hf_snr is an excess ratio and can be negative, hence symlog not log.
-    scales = {"noise_sigma": "log", "spectral_hf_snr": "symlog"}
+    scales = {"noise_sigma": "log", "spectral_hf_snr": "asinh"}
 
     figs = [(["day", "plate", "well"], "well", "by_well"),
             (["day", "plate"], "plate", "by_plate"),
