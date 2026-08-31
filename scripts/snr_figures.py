@@ -22,8 +22,8 @@ Design notes, so the choices are not re-litigated later:
   normal-vision dE 24.0; dark passes with 9.4 / 20.9. Aqua sits at 2.74:1 on the light surface,
   below the 3:1 bar, so the **relief rule** applies -- every violin carries a visible ``n`` label
   and the summary CSVs are the table view, so identity is never colour-alone.
-* Dark mode is a **selected** second render against the dark surface, not an automatic inversion;
-  ``index.html`` swaps on ``prefers-color-scheme``.
+* **Light only.** A dark render was dropped by decision -- these are for projection and print, where
+  the light surface is what gets used. ``THEME["dark"]`` is kept (validated) in case it returns.
 * Titles are nouns -- "Noise floor", "Spike SNR" -- never a sentence.
 """
 import argparse
@@ -34,6 +34,7 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt                                          # noqa: E402
+from matplotlib.ticker import MaxNLocator                                # noqa: E402
 import numpy as np                                                       # noqa: E402
 import pandas as pd                                                      # noqa: E402
 
@@ -102,8 +103,14 @@ TRANSFORM = {"log": (np.log10, lambda x: np.power(10.0, x)),
              "asinh": (np.arcsinh, np.sinh)}
 
 
-def _nice_ticks(scale, vmin, vmax):
-    """Round original-unit tick values spanning [vmin, vmax], placed at transformed positions."""
+def _nice_ticks(scale, vmin, vmax, min_gap_frac=0.055):
+    """Round original-unit tick values spanning [vmin, vmax], placed at transformed positions.
+
+    Candidates are thinned by their spacing in **transformed** space, not in data space. asinh
+    compresses everything near zero into a sliver of the axis, so 0.003/0.01/0.03/0.1/0.3 would
+    otherwise all land on top of each other and their labels collide -- which is exactly what
+    happened on the `spectral_hf_snr` panels (three overlapping pairs per figure).
+    """
     cand = []
     if scale == "log":
         for k in range(int(np.floor(np.log10(vmin))), int(np.ceil(np.log10(vmax))) + 1):
@@ -113,7 +120,14 @@ def _nice_ticks(scale, vmin, vmax):
         for k in range(-3, 4):
             for m in (1, 3):
                 cand += [m * 10.0 ** k, -m * 10.0 ** k]
-    return sorted({c for c in cand if vmin <= c <= vmax})
+    cand = sorted({c for c in cand if vmin <= c <= vmax})
+    tf, _inv = TRANSFORM[scale]
+    span = float(tf(vmax) - tf(vmin)) or 1.0
+    kept = []
+    for c in cand:
+        if not kept or abs(float(tf(c)) - float(tf(kept[-1]))) >= min_gap_frac * span:
+            kept.append(c)
+    return kept
 
 
 def draw_violins(ax, groups, th, color_of, scale=None):
@@ -296,6 +310,7 @@ def trend_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
         ax.annotate(f"n={len(sub)}", xy=(1.0, 1.0), xycoords="axes fraction",
                     xytext=(0, 4), textcoords="offset points", ha="right", va="bottom",
                     fontsize=6.5, color=th["secondary"], annotation_clip=False)
+        ax.set_ylim(bottom=0.0)                  # a firing rate cannot be negative
         style(ax, th, "firing rate (Hz)")
     np.atleast_1d(axes)[-1].set_xlabel(xlabel, color=th["secondary"], fontsize=8)
     fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.012, ha="left", y=0.995)
@@ -352,9 +367,19 @@ def trend_grid_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, tit
             ax = grid[used[-1], c]
             ax.set_xlabel(xlabel, color=th["secondary"], fontsize=7.5)
             ax.tick_params(labelbottom=True)
+    # Shared axes across 5 narrow columns: the default tick density puts the last label of one
+    # panel against the first label of its neighbour. Cap it, and clamp the limits to ranges the
+    # data can actually occupy -- autoscale padding was inventing a negative firing rate (-2) and a
+    # negative burst position (-40), whose labels then collided across panel boundaries.
+    axf[0].xaxis.set_major_locator(MaxNLocator(nbins=4))
+    axf[0].yaxis.set_major_locator(MaxNLocator(nbins=4))
+    x0, x1 = f[xcol].min(), f[xcol].max()
+    pad = 0.03 * (x1 - x0 or 1.0)
+    axf[0].set_xlim(x0 - pad, x1 + pad)
+    axf[0].set_ylim(bottom=0.0)                  # a firing rate cannot be negative
     fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
     legend(fig, th, days, labels, color_of)
-    fig.tight_layout(rect=(0, 0.035, 1, 0.977), h_pad=1.4, w_pad=1.0)
+    fig.tight_layout(rect=(0, 0.035, 1, 0.977), h_pad=1.9, w_pad=1.4)
     fig.savefig(os.path.join(out_dir, f"{stem}__{mode}.png"), dpi=dpi, facecolor=th["surface"])
     plt.close(fig)
 
@@ -382,18 +407,14 @@ def _group(fovs, by, level_name):
 
 INDEX = """<!doctype html><meta charset="utf-8"><title>SNR summary</title>
 <style>
-:root{{color-scheme:light dark}}
+:root{{color-scheme:light}}
 body{{background:#fcfcfb;color:#0b0b0b;font:14px/1.55 -apple-system,BlinkMacSystemFont,
 "Segoe UI",Roboto,sans-serif;margin:0;padding:32px 28px 64px;max-width:1180px}}
 h1{{font-size:20px;margin:0 0 4px}} h2{{font-size:15px;margin:34px 0 10px;font-weight:600}}
 p,li{{color:#52514e;max-width:74ch}} code{{font-size:12px}}
 img{{max-width:100%;border:1px solid #dededa;border-radius:6px;background:#fcfcfb}}
-.dk{{display:none}} table{{border-collapse:collapse;font-size:12.5px;margin:8px 0 4px}}
+table{{border-collapse:collapse;font-size:12.5px;margin:8px 0 4px}}
 th,td{{text-align:left;padding:3px 14px 3px 0;color:#52514e}} th{{color:#0b0b0b}}
-@media (prefers-color-scheme:dark){{
- body{{background:#1a1a19;color:#fff}} p,li,th,td{{color:#c3c2b7}} th{{color:#fff}}
- img{{border-color:#3a3a38;background:#1a1a19}}
- .lt{{display:none}} .dk{{display:block}}}}
 </style>
 <h1>SNR summary statistics</h1>
 <p>Per-cell SNR metrics over the pyali extraction corpus, post hoc &mdash; the extraction
@@ -452,7 +473,7 @@ def main():
             (["day"], "day", "by_day"),
             ([], "whole set", "overall")]
     made = []
-    for mode in ("light", "dark"):
+    for mode in ("light",):
         for by, level, stem in figs:
             fname = f"snr_{stem}__{mode}.png"
             metric_figure(fovs, by, level, fname, out_dir, mode, labels, days, scales, a.dpi)
@@ -477,27 +498,21 @@ def main():
                  f"rate_vs_burst_by_well__{mode}.png",
                  f"rate_vs_timeofday_by_well__{mode}.png"]
 
+    def imgs(*stems):
+        return "\n".join(f'<img src="figures/{s_}__light.png" alt="{s_}">' for s_ in stems)
+
     sections = []
     for stem, heading in [("by_well", "By well"), ("by_plate", "By plate"),
                           ("by_day", "By day"), ("overall", "Whole set")]:
-        sections.append(
-            f'<h2>{heading}</h2>\n'
-            f'<img class="lt" src="figures/snr_{stem}__light.png" alt="{heading}">\n'
-            f'<img class="dk" src="figures/snr_{stem}__dark.png" alt="{heading}">')
-    sections.append(
-        '<h2>Cell counts</h2>\n'
-        '<img class="lt" src="figures/cells_per_fov__light.png" alt="Cells per FOV">\n'
-        '<img class="dk" src="figures/cells_per_fov__dark.png" alt="Cells per FOV">')
+        sections.append(f'<h2>{heading}</h2>\n' + imgs(f"snr_{stem}"))
+    sections.append('<h2>Cell counts</h2>\n' + imgs("cells_per_fov"))
     sections.append(
         '<h2>Spiking activity</h2>\n<p>Two panels per level. <b>Spikes per cell</b> is the raw '
         'count; <b>firing rate</b> divides by recording duration, which differs by day '
         '(10.49 s for 20260715 vs 7.99 s for 20260331_dir1 and 20260612, both at 800 Hz). '
         'Raw counts are therefore ~31% higher for July before any biology &mdash; <b>quote the '
         'rate when comparing days.</b></p>\n' +
-        "\n".join(f'<img class="lt" src="figures/spikes_by_{n}__light.png" alt="Spikes by {n}">\n'
-                   f'<img class="dk" src="figures/spikes_by_{n}__dark.png" alt="Spikes by {n}">'
-                   for n in ("well", "plate", "day", "whole_set")))
-
+        imgs(*(f"spikes_by_{n}" for n in ("well", "plate", "day", "whole_set"))))
     sections.append(
         '<h2>Firing rate vs acquisition order</h2>\n<p>Per-FOV firing rate against position in '
         'the acquisition sequence and against clock time. The heavy line is the binned median &mdash; '
@@ -505,10 +520,8 @@ def main():
         '<code>burst</code> is within-well for 20260612 and 20260715 but global for '
         '20260331_dir1 (bursts 1&ndash;393 span three wells there). A downward trend would '
         'indicate photobleaching or declining health across the session.</p>\n' +
-        "\n".join(f'<img class="lt" src="figures/{s_}__light.png" alt="{s_}">\n'
-                   f'<img class="dk" src="figures/{s_}__dark.png" alt="{s_}">'
-                   for s_ in ("rate_vs_burst", "rate_vs_timeofday",
-                              "rate_vs_burst_by_well", "rate_vs_timeofday_by_well")))
+        imgs("rate_vs_burst", "rate_vs_timeofday",
+             "rate_vs_burst_by_well", "rate_vs_timeofday_by_well"))
 
     mpath = os.path.join(a.summary_dir, "manifest.json")
     cov = ""
