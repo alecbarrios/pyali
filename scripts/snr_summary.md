@@ -160,6 +160,22 @@ not high-passed, trace) but it would not measure subthreshold depolarization: ac
 ratio is 6.76× at 1–20 Hz against 6.73× at 20–50 Hz, because the spike-train envelope and the AP
 afterpotential both land there. Requires §10a first.
 
+**Free metrics not yet visualized (§10e).** Already columns in `fov_summary.csv` — visualization
+only, ~15 min each: silent fraction (`snr_median_nan_frac`, the most direct activity readout),
+cells per region (`n_cells / n_regions_kept`, a segmentation-quality readout), regions dropped
+(`n_regions_dropped`, the 1% guard's per-FOV footprint), and per-well/per-plate acquisition-order
+trends.
+
+**Spike-triggered average (§10f) — scoped, not implemented.** Two figures: **per FOV** with the
+band showing **spread across cells within that FOV** (cell-to-cell waveform heterogeneity), and
+**per well** aggregating the per-FOV STAs. Per-plate/day/whole-set deferred. **Units: σ** — divide
+each cell's snippet by that cell's own `noise_sigma` before averaging, for line and band alike,
+since absolute trace units are not comparable across days. Cost: `APs`/`COMs` are computed but
+never saved, so spike times must be re-detected — a full 32.7 GB trace re-read (~22 min), or ~1%
+of that on a stratified sample. Build in a ±10–15 ms window (the undershoot is −0.96σ at +10 ms)
+and sub-sample peak alignment (the AP is 2 samples wide at 800 Hz, so nearest-sample alignment
+broadens the average).
+
 **Decided: band edges stay fixed corpus-wide (§10d).** Per-cell floor *value* with fixed edges is
 correct and already implemented. Per-FOV adaptive *edges* are rejected — each FOV would integrate a
 different frequency range, so a well-to-well difference could be a band difference rather than a

@@ -260,6 +260,105 @@ def spikes_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
         plt.close(fig)
 
 
+def trend_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
+                 dpi=DPI_DEFAULT, nbins=14):
+    """Firing rate against an acquisition-order axis: one overall panel, then one per day.
+
+    Points are per-FOV firing rates; the heavy line is the binned median, which is the mark to
+    read -- the scatter is context. Reveals within-session trends (photobleaching, health
+    decline) that a violin over the whole day averages away.
+    """
+    th = THEME[mode]
+    color_of = _color_of(days, th)
+    f = fovs.dropna(subset=[xcol, "rate_hz"])
+    panels = [("all days", f)] + [(d, f[f["day"] == d]) for d in days]
+    fig, axes = plt.subplots(len(panels), 1, figsize=(8.2, 2.5 * len(panels) + 1.4),
+                             facecolor=th["surface"], sharex=True)
+    for ax, (name, sub) in zip(np.atleast_1d(axes), panels):
+        for d in days:
+            g = sub[sub["day"] == d]
+            if not len(g):
+                continue
+            ax.plot(g[xcol], g["rate_hz"], ".", markersize=3.0, alpha=0.30,
+                    color=color_of(d), markeredgewidth=0, zorder=2)
+            # Binned median: the readable mark. Bins are per-day so each keeps its own x range.
+            edges = np.linspace(g[xcol].min(), g[xcol].max(), nbins + 1)
+            idx = np.clip(np.digitize(g[xcol], edges) - 1, 0, nbins - 1)
+            xs, ys = [], []
+            for b in range(nbins):
+                m = idx == b
+                if m.sum() >= 3:
+                    xs.append(g[xcol][m].median()); ys.append(g["rate_hz"][m].median())
+            if xs:
+                ax.plot(xs, ys, "-", linewidth=2.0, color=color_of(d), zorder=4)
+                ax.plot(xs, ys, "-", linewidth=4.0, color=th["surface"], alpha=0.55, zorder=3)
+        ax.set_title(name, color=th["primary"], fontsize=10.5, loc="left", pad=6)
+        ax.annotate(f"n={len(sub)}", xy=(1.0, 1.0), xycoords="axes fraction",
+                    xytext=(0, 4), textcoords="offset points", ha="right", va="bottom",
+                    fontsize=6.5, color=th["secondary"], annotation_clip=False)
+        style(ax, th, "firing rate (Hz)")
+    np.atleast_1d(axes)[-1].set_xlabel(xlabel, color=th["secondary"], fontsize=8)
+    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.012, ha="left", y=0.995)
+    legend(fig, th, days, labels, color_of)
+    fig.tight_layout(rect=(0, 0.05, 1, 0.972), h_pad=1.6)
+    fig.savefig(os.path.join(out_dir, f"{stem}__{mode}.png"), dpi=dpi, facecolor=th["surface"])
+    plt.close(fig)
+
+
+def trend_grid_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
+                      dpi=DPI_DEFAULT, ncols=5, nbins=8):
+    """Same trend, one small-multiple panel per well. 27 wells needs a grid, not more rows.
+
+    Axes are shared so wells are directly comparable; fewer FOVs per well than per day, so the
+    median uses coarser bins.
+    """
+    th = THEME[mode]
+    color_of = _color_of(days, th)
+    f = fovs.dropna(subset=[xcol, "rate_hz"])
+    keys = sorted(f.groupby(["day", "plate", "well"]).groups)
+    nrows = int(np.ceil(len(keys) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(2.9 * ncols + 1.0, 2.15 * nrows + 1.5),
+                             facecolor=th["surface"], sharex=True, sharey=True)
+    axf = np.atleast_1d(axes).ravel()
+    for ax, key in zip(axf, keys):
+        day, plate, well = key
+        g = f[(f["day"] == day) & (f["plate"] == plate) & (f["well"] == well)]
+        c = color_of(day)
+        ax.plot(g[xcol], g["rate_hz"], ".", markersize=3.0, alpha=0.40, color=c,
+                markeredgewidth=0, zorder=2)
+        edges = np.linspace(g[xcol].min(), g[xcol].max(), nbins + 1)
+        idx = np.clip(np.digitize(g[xcol], edges) - 1, 0, nbins - 1)
+        xs, ys = [], []
+        for b in range(nbins):
+            m = idx == b
+            if m.sum() >= 3:
+                xs.append(g[xcol][m].median()); ys.append(g["rate_hz"][m].median())
+        if xs:
+            ax.plot(xs, ys, "-", linewidth=3.4, color=th["surface"], alpha=0.6, zorder=3)
+            ax.plot(xs, ys, "-", linewidth=1.8, color=c, zorder=4)
+        ax.set_title(f"{plate}/{well}  (n={len(g)})", color=th["primary"], fontsize=8.5,
+                     loc="left", pad=4)
+        style(ax, th)
+    for ax in axf[len(keys):]:
+        ax.set_visible(False)
+    grid = np.atleast_1d(axes).reshape(nrows, ncols)
+    for ax in grid[:, 0]:
+        ax.set_ylabel("firing rate (Hz)", color=th["secondary"], fontsize=8)
+    # Label the bottom-most *visible* panel of each column. A ragged last row means that is not
+    # the same row for every column, and sharex would otherwise hide the tick labels there too.
+    for c in range(ncols):
+        used = [r for r in range(nrows) if r * ncols + c < len(keys)]
+        if used:
+            ax = grid[used[-1], c]
+            ax.set_xlabel(xlabel, color=th["secondary"], fontsize=7.5)
+            ax.tick_params(labelbottom=True)
+    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
+    legend(fig, th, days, labels, color_of)
+    fig.tight_layout(rect=(0, 0.035, 1, 0.977), h_pad=1.4, w_pad=1.0)
+    fig.savefig(os.path.join(out_dir, f"{stem}__{mode}.png"), dpi=dpi, facecolor=th["surface"])
+    plt.close(fig)
+
+
 def _color_of(days, th):
     order = {d: i for i, d in enumerate(days)}
     return lambda d: th["series"][order[d] % len(th["series"])]
@@ -333,6 +432,15 @@ def main():
     fovs = pd.read_csv(os.path.join(a.summary_dir, "fov_summary.csv"),
                        float_precision="round_trip")
     days = sorted(fovs["day"].unique())
+    # Derived axes for the trend figures.
+    fovs["rate_hz"] = fovs["n_spikes_median"] / (fovs["n_frames_analyzed"] / fovs["fps"])
+    # `burst` is within-well for 20260612/20260715 but GLOBAL for 20260331_dir1 (bursts 1-393
+    # span three wells, since dir1 assigns wells by burst index). Re-basing per well puts every
+    # day on a common "position within the well's acquisition sequence" axis.
+    fovs["burst_in_well"] = fovs["burst"] - fovs.groupby(
+        ["day", "plate_num", "well"])["burst"].transform("min") + 1
+    tod = pd.to_datetime(fovs["time_of_day"], format="%H:%M:%S", errors="coerce")
+    fovs["hour"] = tod.dt.hour + tod.dt.minute / 60 + tod.dt.second / 3600
     labels = {d: day_label(d, g) for d, g in fovs.groupby("day")}
     # noise_sigma spans an order of magnitude across days (16-bit vs 8-bit), and
     # spectral_hf_snr has a long upper tail; both would otherwise flatten most violins into
@@ -353,6 +461,21 @@ def main():
         made.append(f"cells_per_fov__{mode}.png")
         spikes_figure(fovs, out_dir, mode, labels, days, a.dpi)
         made += [f"spikes_by_{n}__{mode}.png" for n in ("well", "plate", "day", "whole_set")]
+        trend_figure(fovs, out_dir, mode, labels, days, "burst_in_well",
+                     "burst position within the well's acquisition sequence",
+                     "rate_vs_burst", "Firing rate vs acquisition order", a.dpi)
+        trend_figure(fovs, out_dir, mode, labels, days, "hour",
+                     "time of day (hours, clock time of acquisition)",
+                     "rate_vs_timeofday", "Firing rate vs time of day", a.dpi)
+        trend_grid_figure(fovs, out_dir, mode, labels, days, "burst_in_well",
+                          "burst position within well", "rate_vs_burst_by_well",
+                          "Firing rate vs acquisition order, by well", a.dpi)
+        trend_grid_figure(fovs, out_dir, mode, labels, days, "hour",
+                          "time of day (h)", "rate_vs_timeofday_by_well",
+                          "Firing rate vs time of day, by well", a.dpi)
+        made += [f"rate_vs_burst__{mode}.png", f"rate_vs_timeofday__{mode}.png",
+                 f"rate_vs_burst_by_well__{mode}.png",
+                 f"rate_vs_timeofday_by_well__{mode}.png"]
 
     sections = []
     for stem, heading in [("by_well", "By well"), ("by_plate", "By plate"),
@@ -374,6 +497,18 @@ def main():
         "\n".join(f'<img class="lt" src="figures/spikes_by_{n}__light.png" alt="Spikes by {n}">\n'
                    f'<img class="dk" src="figures/spikes_by_{n}__dark.png" alt="Spikes by {n}">'
                    for n in ("well", "plate", "day", "whole_set")))
+
+    sections.append(
+        '<h2>Firing rate vs acquisition order</h2>\n<p>Per-FOV firing rate against position in '
+        'the acquisition sequence and against clock time. The heavy line is the binned median &mdash; '
+        'the mark to read; the scatter is context. Burst index is re-based per well, because '
+        '<code>burst</code> is within-well for 20260612 and 20260715 but global for '
+        '20260331_dir1 (bursts 1&ndash;393 span three wells there). A downward trend would '
+        'indicate photobleaching or declining health across the session.</p>\n' +
+        "\n".join(f'<img class="lt" src="figures/{s_}__light.png" alt="{s_}">\n'
+                   f'<img class="dk" src="figures/{s_}__dark.png" alt="{s_}">'
+                   for s_ in ("rate_vs_burst", "rate_vs_timeofday",
+                              "rate_vs_burst_by_well", "rate_vs_timeofday_by_well")))
 
     mpath = os.path.join(a.summary_dir, "manifest.json")
     cov = ""
