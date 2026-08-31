@@ -135,6 +135,9 @@ def main():
     ap.add_argument("--manifest", default="/home/jovyan/corpus_manifest.jsonl")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--days", nargs="+", default=None, help="restrict to these days")
+    ap.add_argument("--bit", choices=["16-bit", "8-bit"], default=None,
+                    help="restrict to one bit depth. 20260401 holds BOTH a 312x1200 16-bit set "
+                         "and a 1080x1080 8-bit set, so --days alone cannot separate them")
     ap.add_argument("--limit", type=int, default=None, help="cap the number of FOVs")
     ap.add_argument("--stride", type=int, default=1, help="take every Nth FOV (spreads a sample)")
     ap.add_argument("--figures", action="store_true", help="also write the QC figures per FOV")
@@ -157,6 +160,8 @@ def main():
         rows = [r for r in csv.DictReader(f)]
     if a.days:
         rows = [r for r in rows if r["day"] in a.days]
+    if a.bit:
+        rows = [r for r in rows if r["bit"] == a.bit]
     rows.sort(key=lambda r: (r["day"], r["fov_path"]))
     if a.stride > 1:
         rows = rows[::a.stride]
