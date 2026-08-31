@@ -222,6 +222,44 @@ def cells_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
     plt.close(fig)
 
 
+def spikes_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
+    """Spikes per cell, as a raw count and as a duration-normalised rate.
+
+    Both panels are shown because **raw counts are not comparable across days**: recording length
+    differs (8389 frames = 10.49 s for July vs 6389 = 7.99 s for March/June at 800 Hz), so July's
+    count is inflated ~31% before any biology enters. The rate panel divides that out and is the
+    one to quote when comparing days; the count panel maps directly onto ``n_spikes`` in the tables.
+    """
+    th = THEME[mode]
+    color_of = _color_of(days, th)
+    f = fovs.copy()
+    f["duration_s"] = f["n_frames_analyzed"] / f["fps"]
+    f["rate_hz"] = f["n_spikes_median"] / f["duration_s"]
+    levels = [(["day", "plate", "well"], "well"), (["day", "plate"], "plate"),
+              (["day"], "day"), ([], "whole set")]
+    panels = [("n_spikes_median", "Spikes per cell", "median spikes per cell in the FOV"),
+              ("rate_hz", "Firing rate", "median spikes per cell per second (Hz)")]
+    for by, name in levels:
+        groups_meta = _group(f, by, name)
+        n = max(1, len(groups_meta))
+        fig, axes = plt.subplots(2, 1, figsize=(max(6.5, 0.62 * n + 3.2), 7.4),
+                                 facecolor=th["surface"])
+        for ax, (col, title, ylab) in zip(np.atleast_1d(axes), panels):
+            groups = [(lab, g[col].values, day, f"n={len(g)}") for lab, g, day in groups_meta]
+            draw_violins(ax, groups, th, color_of)
+            ax.set_title(f"{title}, by {name}" if by else title, color=th["primary"],
+                         fontsize=11, loc="left", pad=30)
+            style(ax, th, ylab)
+        fig.suptitle("Spiking activity", color=th["primary"], fontsize=12.5, x=0.012,
+                     ha="left", y=0.995)
+        legend(fig, th, days, labels, color_of)
+        fig.tight_layout(rect=(0, 0.06, 1, 0.972), h_pad=2.4)
+        stem = name.replace(" ", "_")
+        fig.savefig(os.path.join(out_dir, f"spikes_by_{stem}__{mode}.png"), dpi=dpi,
+                    facecolor=th["surface"])
+        plt.close(fig)
+
+
 def _color_of(days, th):
     order = {d: i for i, d in enumerate(days)}
     return lambda d: th["series"][order[d] % len(th["series"])]
@@ -313,6 +351,8 @@ def main():
             made.append(fname)
         cells_figure(fovs, out_dir, mode, labels, days, a.dpi)
         made.append(f"cells_per_fov__{mode}.png")
+        spikes_figure(fovs, out_dir, mode, labels, days, a.dpi)
+        made += [f"spikes_by_{n}__{mode}.png" for n in ("well", "plate", "day", "whole_set")]
 
     sections = []
     for stem, heading in [("by_well", "By well"), ("by_plate", "By plate"),
@@ -325,6 +365,15 @@ def main():
         '<h2>Cell counts</h2>\n'
         '<img class="lt" src="figures/cells_per_fov__light.png" alt="Cells per FOV">\n'
         '<img class="dk" src="figures/cells_per_fov__dark.png" alt="Cells per FOV">')
+    sections.append(
+        '<h2>Spiking activity</h2>\n<p>Two panels per level. <b>Spikes per cell</b> is the raw '
+        'count; <b>firing rate</b> divides by recording duration, which differs by day '
+        '(10.49 s for 20260715 vs 7.99 s for 20260331_dir1 and 20260612, both at 800 Hz). '
+        'Raw counts are therefore ~31% higher for July before any biology &mdash; <b>quote the '
+        'rate when comparing days.</b></p>\n' +
+        "\n".join(f'<img class="lt" src="figures/spikes_by_{n}__light.png" alt="Spikes by {n}">\n'
+                   f'<img class="dk" src="figures/spikes_by_{n}__dark.png" alt="Spikes by {n}">'
+                   for n in ("well", "plate", "day", "whole_set")))
 
     mpath = os.path.join(a.summary_dir, "manifest.json")
     cov = ""
