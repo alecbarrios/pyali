@@ -116,6 +116,55 @@ the exception, since there the per-FOV count *is* the quantity.
 - Partial wells label inline as `(have/expected)`; NaN % is annotated wherever non-zero. Titles
   are nouns — "Noise floor", "Spike SNR", "Cells per FOV".
 
+## Future work — not implemented
+
+Recorded here so the design decisions are not re-derived. Full rationale in §10 of the outputs
+README.
+
+**Per-cell noise reference by spike-window excision (§10a).** The floor is currently the mean PSD
+over 300–400 Hz, which assumes the noise is white from 20 Hz up and that no spike power reaches
+300 Hz. The second assumption is doubtful: the spike-triggered average has FWHM ≈ 2.5 ms — only 2
+samples at 800 Hz — so AP content extends to roughly Nyquist, and anything above 400 Hz aliases
+back into the upper band where the floor is measured. Replace it by excising each spike *and its
+afterpotential* (the STA undershoot is still −0.96σ at +10 ms) from that cell's own trace and
+estimating the noise from the residual. Same cell, so brightness, expression and shot-noise scale
+match by construction — which a silent-cell population cannot offer, since silent cells are dim or
+poorly expressing and shot noise scales with brightness.
+
+**Post-hoc single-cell filter (§10b) — a segmentation-quality tool, NOT a noise reference.**
+Separates true single-cell segmentations from merged clumps, debris and fragments. Two criteria on
+`cells_all.parquet` plus per-cell footprint geometry; no movie is re-read:
+
+| criterion | rule |
+|---|---|
+| activity | `n_spikes == 0` — *nominates* candidates only |
+| morphology | footprint `extent` (`area / bbox_area`) and `area_frac`, against **sweepable** thresholds — suggested `min_extent` 0.2–0.5, `max_area_frac` 0.1–0.5% |
+
+§5 measured the separation these exploit: compact real regions have median extent 0.483 vs 0.139
+for sprawling artifacts, and real regions sit below ~0.3% of frame area while artifacts run 1–84%.
+Sweep as `seg_neighborhood` and `sharpen_k` were swept, reporting cell yield and the three SNR
+medians per setting; the operating point is where yield still falls slowly but the medians stop
+improving.
+
+**Morphology must carry the decision, never power.** Selecting on a power statistic and then
+computing power statistics on the survivors is circular, and it selects the wrong objects: merged
+clumps mix several sources and so have inflated variance, so a "high band-limited power, no spikes"
+rule would preferentially *admit* clumps. Footprint geometry comes from the segmentation,
+independent of the trace, so it cannot feed back into the metric it cleans. Note the two error
+modes are asymmetric — a genuinely silent *real* cell (no activity, compact footprint) is a
+biological result worth counting, whereas a clump is an artifact; a filter tuned only to raise
+median SNR deletes both.
+
+**Deferred: a 5–20 Hz subthreshold band (§10c).** Cheap (the PSD is already computed on the raw,
+not high-passed, trace) but it would not measure subthreshold depolarization: active-vs-quiet power
+ratio is 6.76× at 1–20 Hz against 6.73× at 20–50 Hz, because the spike-train envelope and the AP
+afterpotential both land there. Requires §10a first.
+
+**Decided: band edges stay fixed corpus-wide (§10d).** Per-cell floor *value* with fixed edges is
+correct and already implemented. Per-FOV adaptive *edges* are rejected — each FOV would integrate a
+different frequency range, so a well-to-well difference could be a band difference rather than a
+biological one.
+
 ## Known issue — stale CSVs after a `--no-resume` re-run
 
 `run_corpus.py --no-resume` re-processes a FOV and re-uploads with `aws s3 cp`, which **does not
