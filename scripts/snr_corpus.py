@@ -108,19 +108,23 @@ def build_csv(metrics, n_cells):
     return "\n".join(lines) + "\n"
 
 
-def _write(text, dest_dir, s3_dest, mode):
-    """Write ``snr_metrics.csv`` either through the s3fs mount or via the aws CLI.
+def _write(text, dest_dir, s3_dest, mode, name=METRICS):
+    """Write a small per-FOV text file, either through the s3fs mount or via the aws CLI.
 
     s3fs is the default: these are ~30 KB files and one per FOV, so ~1200 ``aws`` invocations
     would cost more in process startup than the whole computation. The file is built in memory
     and written in a single open/write/close, which s3fs turns into one PUT.
+
+    ``name`` must match the basename of ``s3_dest``. It used to be hardcoded to ``METRICS``, which
+    silently overwrote ``snr_metrics.csv`` when another stage reused this helper for a different
+    filename -- so callers writing anything else must pass it.
     """
     if mode == "s3fs":
-        with open(os.path.join(dest_dir, METRICS), "w") as f:
+        with open(os.path.join(dest_dir, name), "w") as f:
             f.write(text)
         return
     with tempfile.TemporaryDirectory() as td:
-        tmp = os.path.join(td, METRICS)
+        tmp = os.path.join(td, name)
         with open(tmp, "w") as f:
             f.write(text)
         cp = subprocess.run(["aws", "s3", "cp", tmp, s3_dest, "--only-show-errors"],
