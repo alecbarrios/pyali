@@ -176,6 +176,16 @@ of that on a stratified sample. Build in a ±10–15 ms window (the undershoot i
 and sub-sample peak alignment (the AP is 2 samples wide at 800 Hz, so nearest-sample alignment
 broadens the average).
 
+**Fold STA aggregation into `snr_aggregate.py` (§10f-ii) — deferred.** It currently lives in
+`snr_sta_figures.py` because its output is *curves* rather than scalars, and keeping it separate
+avoided touching validated code mid-run. Later, produce `sta_by_fov.parquet` and `sta_by_well.csv`
+alongside `cells_all.parquet` and the roll-up tables, recorded in the same `manifest.json`, leaving
+`snr_sta_figures.py` as rendering only.
+
+**Second per-FOV STA set from the seg_nbhd FOVs (§10f-i) — planned, ~30 min.** 7 of the 25 FOVs in
+`seg_nbhd/seg_nbhd.json` fall in this run's three days and already have `sta.csv`, so no trace
+re-reads. New stems `sta_nbhd_grid` / `sta_nbhd_grid_sem`; must not clobber `sta_fov_grid*`.
+
 **Decided: band edges stay fixed corpus-wide (§10d).** Per-cell floor *value* with fixed edges is
 correct and already implemented. Per-FOV adaptive *edges* are rejected — each FOV would integrate a
 different frequency range, so a well-to-well difference could be a band difference rather than a
