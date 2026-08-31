@@ -71,10 +71,22 @@ def draw_band(ax, t, lo, mid, hi, color, th, label=None):
     ax.plot(t, mid, "-", color=color, linewidth=2.0, zorder=3, label=label)
 
 
-def grid_figure(panels, out_dir, stem, title, band_note, labels, days, dpi, ncols=5):
+def grid_dpi(n_panels, base=DPI_DEFAULT, floor=600, cap=900):
+    """Resolution for a small-multiples grid, rising with panel count.
+
+    Panel size on the page is fixed, so a 27-panel grid shows each panel small when the figure is
+    fitted to a screen -- the only way to zoom into one during a talk is to have real pixels there.
+    Scaling as sqrt(n_panels) keeps per-panel resolution climbing without the total pixel count
+    running away: at 27 panels this yields ~2600 x 1935 px per panel.
+    """
+    return int(min(cap, max(floor, base * (n_panels / 6.0) ** 0.5)))
+
+
+def grid_figure(panels, out_dir, stem, title, band_note, labels, days, dpi=None, ncols=5):
     """One small-multiple panel per entry in ``panels`` = [(label, day, t, lo, mid, hi, n)]."""
     th = THEME["light"]
     color_of = _color_of(days, th)
+    dpi = dpi or grid_dpi(len(panels))
     nrows = int(np.ceil(len(panels) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(2.9 * ncols + 1.0, 2.15 * nrows + 1.8),
                              facecolor=th["surface"], sharex=True, sharey=True)
@@ -94,14 +106,29 @@ def grid_figure(panels, out_dir, stem, title, band_note, labels, days, dpi, ncol
             ax = grid[used[-1], c]
             ax.set_xlabel("time from spike peak (ms)", color=th["secondary"], fontsize=7.5)
             ax.tick_params(labelbottom=True)
-    axf[0].xaxis.set_major_locator(MaxNLocator(nbins=4))
-    axf[0].yaxis.set_major_locator(MaxNLocator(nbins=4))
+    # Clamp x to the real window and place ticks inside it. Autoscale padded out to +/-30 ms on a
+    # +/-25 ms window, putting labels hard against the panel edge where the neighbouring column's
+    # first label sits -- they collided.
+    t0 = min(float(p[2].min()) for p in panels)
+    t1 = max(float(p[2].max()) for p in panels)
+    axf[0].set_xlim(t0, t1)
+    step = 10.0 if (t1 - t0) <= 80 else 20.0
+    cand = np.arange(np.ceil(t0 / step) * step, t1 + 1e-9, step)
+    margin = 0.06 * (t1 - t0)
+    axf[0].set_xticks(cand[(cand - t0 > margin) & (t1 - cand > margin)])
+    # prune="both" drops the outermost y labels. Rows stack vertically on a shared axis, so the
+    # bottom label of one panel otherwise lands on the top label of the panel beneath it -- which
+    # it did, 8 times. Amplitude genuinely goes negative (the undershoot), so unlike firing rate
+    # this cannot be fixed by clamping the limit to zero.
+    axf[0].yaxis.set_major_locator(MaxNLocator(nbins=4, prune="both"))
     fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
     fig.text(0.008, 0.962, band_note, color=th["secondary"], fontsize=8.5, ha="left")
     legend(fig, th, days, labels, color_of)
     fig.tight_layout(rect=(0, 0.035, 1, 0.952), h_pad=1.9, w_pad=1.4)
+    w, h = fig.get_size_inches()
     fig.savefig(os.path.join(out_dir, f"{stem}__light.png"), dpi=dpi, facecolor=th["surface"])
     plt.close(fig)
+    return dpi, int(w * dpi), int(h * dpi)
 
 
 def main():
@@ -112,7 +139,8 @@ def main():
     ap.add_argument("--summary-dir", default=OUT_DEFAULT)
     ap.add_argument("--out-dir", default=None, help="defaults to <summary-dir>/figures")
     ap.add_argument("--days", nargs="+", default=None)
-    ap.add_argument("--dpi", type=int, default=DPI_DEFAULT)
+    ap.add_argument("--dpi", type=int, default=None,
+                    help="override the automatic per-grid resolution")
     ap.add_argument("--threads", type=int, default=32)
     a = ap.parse_args()
     out_dir = a.out_dir or os.path.join(a.summary_dir, "figures")
@@ -149,21 +177,21 @@ def main():
 
     # ---- per well, aggregated over FOV curves (band = across FOVs) ----
     rows = []
-    for (day, plate, pn, well), g in sta.groupby(["day", "plate", "plate_num", "well"]):
+    for (day, plate, pn, wl), g in sta.groupby(["day", "plate", "plate_num", "well"]):
         p = g.pivot_table(index="t_ms", columns="dir_name", values="median").sort_index()
         pm = g.pivot_table(index="t_ms", columns="dir_name", values="mean").sort_index()
         A, B = p.values, pm.values
         n = A.shape[1]
         rows.append(pd.DataFrame({
-            "day": day, "plate": plate, "plate_num": pn, "well": well, "n_fovs": n,
+            "day": day, "plate": plate, "plate_num": pn, "well": wl, "n_fovs": n,
             "t_ms": p.index.values,
             "median": np.median(A, axis=1),
             "q25": np.percentile(A, 25, axis=1), "q75": np.percentile(A, 75, axis=1),
             "mean": B.mean(axis=1),
             "sem": B.std(axis=1, ddof=1) / np.sqrt(n) if n > 1 else np.zeros(B.shape[0]),
         }))
-    well = pd.concat(rows, ignore_index=True)
-    well.to_csv(os.path.join(a.summary_dir, "sta_by_well.csv"), index=False)
+    wells = pd.concat(rows, ignore_index=True)
+    wells.to_csv(os.path.join(a.summary_dir, "sta_by_well.csv"), index=False)
 
     # ---- one representative interior FOV per well ----
     m = meta.copy()
@@ -172,7 +200,7 @@ def main():
     m["frac"] = m["bw"] / span
     have = set(zip(sta["day"], sta["dir_name"]))
     reps = []
-    for (day, plate, pn, well), g in m.groupby(["day", "plate", "plate_num", "well"]):
+    for (day, plate, pn, wl), g in m.groupby(["day", "plate", "plate_num", "well"]):
         g = g[[(d, n) in have for d, n in zip(g["day"], g["dir_name"])]]
         inner = g[(g["frac"] >= INTERIOR[0]) & (g["frac"] <= INTERIOR[1])]
         pick_from = inner if len(inner) else g
@@ -180,7 +208,7 @@ def main():
             continue
         target = pick_from["n_cells"].median()
         r = pick_from.iloc[(pick_from["n_cells"] - target).abs().argsort().iloc[0]]
-        reps.append((day, plate, well, r["dir_name"], int(r["n_cells"])))
+        reps.append((day, plate, wl, r["dir_name"], int(r["n_cells"])))
 
     def panel_rows(kind):
         out = []
@@ -198,7 +226,7 @@ def main():
 
     def well_rows(kind):
         out = []
-        for (day, plate, _pn, wl), g in well.groupby(["day", "plate", "plate_num", "well"]):
+        for (day, plate, _pn, wl), g in wells.groupby(["day", "plate", "plate_num", "well"]):
             g = g.sort_values("t_ms"); t = g["t_ms"].values; n = int(g["n_fovs"].iloc[0])
             if kind == "iqr":
                 out.append((f"{plate}/{wl}", day, t, g["q25"].values, g["median"].values,
@@ -222,8 +250,10 @@ def main():
          "line = mean of per-FOV curves, band = +/- SEM across FOVs; n = FOVs.", "fovs"),
     ]
     for panels, stem, title, note, _unit in jobs:
-        grid_figure(panels, out_dir, stem, title, note, labels, days, a.dpi)
-        print(f"[sta-fig] {stem}__light.png  ({len(panels)} panels)", flush=True)
+        d, px, py = grid_figure(panels, out_dir, stem, title, note, labels, days, a.dpi)
+        mb = os.path.getsize(os.path.join(out_dir, f"{stem}__light.png")) / 1e6
+        print(f"[sta-fig] {stem}__light.png  {len(panels)} panels  {d} dpi  "
+              f"{px}x{py} px  {mb:.1f} MB", flush=True)
 
     pk = sta.groupby("day")["median"].max()
     print(f"\n[sta-fig] {a.summary_dir}")
