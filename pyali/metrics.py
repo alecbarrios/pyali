@@ -47,7 +47,14 @@ def per_cell_snr(traces, fps, hp=20.0, k=3.0, sig_hi=150.0, floor_lo=300.0):
         f, P = welch(x - x.mean(), fs=fps, nperseg=int(min(4096, len(x))), window="hann")
         fl = f >= floor_lo
         sb = (f >= hp) & (f <= sig_hi)
-        floor = float(np.median(P[fl])) if np.any(fl) else np.nan
+        # Mean, not median: the signal band below uses np.mean, and Welch PSD bins are
+        # chi-squared, whose median sits below its mean. A median floor against a mean signal
+        # band therefore reads systematically low even when both measure identical white noise,
+        # biasing spectral_hf_snr high -- and by a trace-length-dependent amount, since shorter
+        # movies yield fewer Welch segments and so fewer dof. Measured on pure noise, the old
+        # pairing returned +0.127 (8399-frame) and +0.198 (6399-frame) where the truth is 0.
+        # Matching the estimators makes the null zero and removes the length dependence.
+        floor = float(np.mean(P[fl])) if np.any(fl) else np.nan
         sigb = float(np.mean(P[sb])) if np.any(sb) else np.nan
         if floor and np.isfinite(floor) and floor > 0:
             sh[i] = (sigb - floor) / floor
