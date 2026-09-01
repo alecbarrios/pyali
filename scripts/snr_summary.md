@@ -191,6 +191,26 @@ correct and already implemented. Per-FOV adaptive *edges* are rejected — each 
 different frequency range, so a well-to-well difference could be a band difference rather than a
 biological one.
 
+## Pitfalls worth knowing before touching this code
+
+Full catalogue in §12 of the outputs README. The ones that bite hardest here:
+
+- **Read `snr_metrics.csv` and `sta.csv` with `float_precision="round_trip"`** — pandas' default
+  parser drifts up to 50 ULP on small `noise_sigma`.
+- **Any shared write helper must take its filename from the caller.** `snr_corpus._write` once
+  hardcoded `snr_metrics.csv` and overwrote three FOVs' metrics with STA content.
+- **Drive per-FOV summaries off the FOV list, not a groupby of the cell table** — a zero-cell FOV
+  contributes no rows and silently vanishes.
+- **Re-base `burst` per well** before any acquisition-order analysis: it is within-well for
+  20260612/20260715 but global for 20260331_dir1.
+- **Detect on the 20 Hz high-passed trace, measure waveform shape on the raw one** — the filter is
+  zero-phase and stamps a symmetric −0.45σ pre-spike dip on anything measured from it.
+- **Resolve `dpi` explicitly in every figure function** — `savefig(dpi=None)` silently falls back to
+  100 dpi.
+- **Never poll with `pgrep -f <pattern>`** — it matches its own command line and the loop never exits.
+- **The repo is on shared s3fs.** While an extraction run is live, only add files and commit; never
+  `checkout`/`stash`/`reset`/`merge`, which rewrite the working tree another instance is importing.
+
 ## Known issue — stale CSVs after a `--no-resume` re-run
 
 `run_corpus.py --no-resume` re-processes a FOV and re-uploads with `aws s3 cp`, which **does not
