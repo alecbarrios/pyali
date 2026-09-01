@@ -9,6 +9,8 @@ modules agree on what a spike is.
   cell's own noise sigma, with sub-sample alignment. Sigma units are what make cells and
   acquisitions comparable: absolute trace units depend on bit depth, frame size and footprint
   weighting; sigma-normalised amplitude does not.
+* :func:`sta_variance_decomposition` -- how much of the across-cell spread of the STA is real
+  (between cells) versus the finite-snippet measurement variance.
 """
 import numpy as np
 from scipy.signal import find_peaks
@@ -133,3 +135,53 @@ def spike_triggered_average(traces, fps, hp=20.0, k=4.0, half=20, align=True, mi
     sta = np.asarray(curves, float).reshape(len(curves), 2 * half + 1)
     return dict(sta=sta, cell_index=np.asarray(idx, int), n_spikes_used=np.asarray(used, int),
                 n_spikes_total=n_total, t_ms=t_ms)
+
+
+def sta_variance_decomposition(A, n_used, t_ms, t_late_ms=2.5):
+    """Between-cell vs measurement variance of the per-cell STA at the peak and a late sample.
+
+    Cells in one field can be genuinely heterogeneous (for example a pooled perturbation library,
+    where every cell may carry a different perturbation), and the question is whether the spread
+    of their waveforms is real. Each snippet carries ~1 sigma of noise by construction, so a
+    cell's STA point has measurement variance ``1 / n_spikes_used``; averaged over cells that is
+    ``mean(1 / n_used)`` (``var_meas``, the one formula that is easy to get wrong -- it is not
+    ``1 / median(n)``). Subtracting it from the observed across-cell variance leaves the part that
+    is genuinely between cells. ``ratio = var_obs / var_meas`` near 1 is the signature of cells
+    whose "spikes" are threshold noise crossings.
+
+    Parameters
+    ----------
+    A : (M, L) float array
+        Per-cell STAs in sigma units, e.g. ``spike_triggered_average(...)["sta"]``.
+    n_used : (M,) array
+        Snippets averaged per cell.
+    t_ms : (L,) array
+        Time axis of ``A`` in milliseconds.
+    t_late_ms : float
+        The late sample, by default 2.5 ms after the peak.
+
+    Returns
+    -------
+    dict of floats, keyed ``pk_*`` (peak) and ``t25_*`` (late sample): ``median``, ``q25``,
+    ``q75``, ``p5``, ``p95``, ``var_obs``, ``var_meas``, ``var_bio``, ``sd_bio``, ``ratio``;
+    plus ``n_cells`` and ``n_spikes_used_median``.
+    """
+    A = np.asarray(A, float)
+    n_used = np.asarray(n_used, float)
+    out = {}
+    i0 = int(np.argmin(np.abs(t_ms)))
+    i25 = int(np.argmin(np.abs(t_ms - t_late_ms)))
+    vm = float(np.mean(1.0 / np.clip(n_used, 1, None))) if n_used.size else np.nan
+    for tag, i in (("pk", i0), ("t25", i25)):
+        v = A[:, i] if A.size else np.zeros(0)
+        vo = float(np.var(v, ddof=1)) if v.size > 1 else 0.0
+        q = np.percentile(v, [5, 25, 50, 75, 95]) if v.size else [np.nan] * 5
+        out.update({f"{tag}_median": float(q[2]), f"{tag}_q25": float(q[1]),
+                    f"{tag}_q75": float(q[3]), f"{tag}_p5": float(q[0]), f"{tag}_p95": float(q[4]),
+                    f"{tag}_var_obs": vo, f"{tag}_var_meas": vm,
+                    f"{tag}_var_bio": max(vo - vm, 0.0) if np.isfinite(vm) else np.nan,
+                    f"{tag}_sd_bio": float(np.sqrt(max(vo - vm, 0.0))) if np.isfinite(vm) else np.nan,
+                    f"{tag}_ratio": vo / vm if vm and vm > 0 else np.nan})
+    out["n_cells"] = int(A.shape[0])
+    out["n_spikes_used_median"] = float(np.median(n_used)) if n_used.size else np.nan
+    return out
