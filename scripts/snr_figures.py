@@ -52,6 +52,16 @@ matplotlib.rcParams["svg.fonttype"] = "none"
 # 450 dpi: these are projected at full-wall size in talks, where 150 dpi visibly softens.
 DPI_DEFAULT = 450
 
+
+def auto_dpi(n_units, base=DPI_DEFAULT, floor=600, cap=900):
+    """Resolution that rises with how many violins/panels share the figure.
+
+    Each unit occupies a fixed slice of the page, so a 27-well figure shows each one small
+    when fitted to a screen -- zooming into it during a talk needs real pixels there.
+    sqrt scaling keeps per-unit resolution climbing without the total running away.
+    """
+    return int(min(cap, max(floor, base * (max(n_units, 1) / 6.0) ** 0.5)))
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
@@ -188,12 +198,13 @@ def legend(fig, th, days, labels, color_of):
 
 
 def metric_figure(fovs, by, level_name, fname, out_dir, mode, labels, days, scales=None,
-                  dpi=DPI_DEFAULT):
+                  dpi=None):
     """Three stacked panels -- one per metric -- of per-FOV medians grouped by ``by``."""
     th = THEME[mode]
     scales = scales or {}
     groups_meta = _group(fovs, by, level_name)
     n = max(1, len(groups_meta))
+    dpi = dpi or auto_dpi(n)
     fig, axes = plt.subplots(3, 1, figsize=(max(6.5, 0.62 * n + 3.2), 10.6),
                              facecolor=th["surface"])
     color_of = _color_of(days, th)
@@ -214,29 +225,41 @@ def metric_figure(fovs, by, level_name, fname, out_dir, mode, labels, days, scal
     plt.close(fig)
 
 
-def cells_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
-    """Cells per FOV, grouped at well / plate / day level."""
+CELL_LEVELS = [(["day", "plate", "well"], "well"), (["day", "plate"], "plate"), (["day"], "day")]
+
+
+def cells_figure(fovs, out_dir, mode, labels, days, dpi=None):
+    """Cells per FOV -- **one PNG per level**, so each is sized for its own group count.
+
+    Previously all three levels shared one figure whose width was set by the 27-well panel, which
+    stretched the 4-plate and 3-day violins across the same span and squashed their aspect ratio.
+    Splitting lets each level pick its own width, and its own resolution.
+    """
     th = THEME[mode]
     color_of = _color_of(days, th)
-    levels = [(["day", "plate", "well"], "well"), (["day", "plate"], "plate"), (["day"], "day")]
-    fig, axes = plt.subplots(3, 1, figsize=(max(6.5, 0.62 * fovs.groupby(
-        ["day", "plate", "well"]).ngroups + 3.2), 9.6), facecolor=th["surface"])
-    for ax, (by, name) in zip(axes, levels):
-        groups = [(lab, g["n_cells"].values, day, f"n={len(g)}")
-                  for lab, g, day in _group(fovs, by, name)]
-        draw_violins(ax, groups, th, color_of)
-        ax.set_title(f"Cells per FOV, by {name}", color=th["primary"], fontsize=11,
+    made = []
+    for by, name in CELL_LEVELS:
+        groups = _group(fovs, by, name)
+        n = max(1, len(groups))
+        fig, ax = plt.subplots(1, 1, figsize=(max(6.0, 0.62 * n + 3.2), 5.6),
+                               facecolor=th["surface"])
+        draw_violins(ax, [(lab, g["n_cells"].values, day, f"n={len(g)}")
+                          for lab, g, day in groups], th, color_of)
+        ax.set_title(f"Cells per FOV, by {name}", color=th["primary"], fontsize=11.5,
                      loc="left", pad=30)
         style(ax, th, "cells per FOV")
-    fig.suptitle("Cell counts", color=th["primary"], fontsize=12.5, x=0.012, ha="left", y=0.995)
-    legend(fig, th, days, labels, color_of)
-    fig.tight_layout(rect=(0, 0.045, 1, 0.975), h_pad=2.4)
-    fig.savefig(os.path.join(out_dir, f"cells_per_fov__{mode}.png"), dpi=dpi,
-                facecolor=th["surface"])
-    plt.close(fig)
+        legend(fig, th, days, labels, color_of)
+        fig.tight_layout(rect=(0, 0.10, 1, 0.985))
+        d = dpi or auto_dpi(n)
+        stem = f"cells_per_fov_by_{name}"
+        fig.savefig(os.path.join(out_dir, f"{stem}__{mode}.png"), dpi=d,
+                    facecolor=th["surface"])
+        plt.close(fig)
+        made.append((stem, n, d))
+    return made
 
 
-def spikes_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
+def spikes_figure(fovs, out_dir, mode, labels, days, dpi=None):
     """Spikes per cell, as a raw count and as a duration-normalised rate.
 
     Both panels are shown because **raw counts are not comparable across days**: recording length
@@ -256,6 +279,7 @@ def spikes_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
     for by, name in levels:
         groups_meta = _group(f, by, name)
         n = max(1, len(groups_meta))
+        d = dpi or auto_dpi(n)
         fig, axes = plt.subplots(2, 1, figsize=(max(6.5, 0.62 * n + 3.2), 7.4),
                                  facecolor=th["surface"])
         for ax, (col, title, ylab) in zip(np.atleast_1d(axes), panels):
@@ -269,13 +293,13 @@ def spikes_figure(fovs, out_dir, mode, labels, days, dpi=DPI_DEFAULT):
         legend(fig, th, days, labels, color_of)
         fig.tight_layout(rect=(0, 0.06, 1, 0.972), h_pad=2.4)
         stem = name.replace(" ", "_")
-        fig.savefig(os.path.join(out_dir, f"spikes_by_{stem}__{mode}.png"), dpi=dpi,
+        fig.savefig(os.path.join(out_dir, f"spikes_by_{stem}__{mode}.png"), dpi=d,
                     facecolor=th["surface"])
         plt.close(fig)
 
 
 def trend_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
-                 dpi=DPI_DEFAULT, nbins=14):
+                 dpi=None, nbins=14):
     """Firing rate against an acquisition-order axis: one overall panel, then one per day.
 
     Points are per-FOV firing rates; the heavy line is the binned median, which is the mark to
@@ -286,6 +310,7 @@ def trend_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
     color_of = _color_of(days, th)
     f = fovs.dropna(subset=[xcol, "rate_hz"])
     panels = [("all days", f)] + [(d, f[f["day"] == d]) for d in days]
+    dpi = dpi or auto_dpi(len(panels))
     fig, axes = plt.subplots(len(panels), 1, figsize=(8.2, 2.5 * len(panels) + 1.4),
                              facecolor=th["surface"], sharex=True)
     for ax, (name, sub) in zip(np.atleast_1d(axes), panels):
@@ -321,7 +346,7 @@ def trend_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
 
 
 def trend_grid_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
-                      dpi=DPI_DEFAULT, ncols=5, nbins=8):
+                      dpi=None, ncols=5, nbins=8):
     """Same trend, one small-multiple panel per well. 27 wells needs a grid, not more rows.
 
     Axes are shared so wells are directly comparable; fewer FOVs per well than per day, so the
@@ -331,6 +356,7 @@ def trend_grid_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, tit
     color_of = _color_of(days, th)
     f = fovs.dropna(subset=[xcol, "rate_hz"])
     keys = sorted(f.groupby(["day", "plate", "well"]).groups)
+    dpi = dpi or auto_dpi(len(keys))
     nrows = int(np.ceil(len(keys) / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(2.9 * ncols + 1.0, 2.15 * nrows + 1.5),
                              facecolor=th["surface"], sharex=True, sharey=True)
@@ -444,8 +470,8 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--summary-dir", default=OUT_DEFAULT)
     ap.add_argument("--out-dir", default=None, help="defaults to <summary-dir>/figures")
-    ap.add_argument("--dpi", type=int, default=DPI_DEFAULT,
-                    help="raster resolution; the default suits projection at full-wall size")
+    ap.add_argument("--dpi", type=int, default=None,
+                    help="override the automatic per-figure resolution (scales with group count)")
     a = ap.parse_args()
     out_dir = a.out_dir or os.path.join(a.summary_dir, "figures")
     os.makedirs(out_dir, exist_ok=True)
@@ -478,8 +504,8 @@ def main():
             fname = f"snr_{stem}__{mode}.png"
             metric_figure(fovs, by, level, fname, out_dir, mode, labels, days, scales, a.dpi)
             made.append(fname)
-        cells_figure(fovs, out_dir, mode, labels, days, a.dpi)
-        made.append(f"cells_per_fov__{mode}.png")
+        for stem, _n, _d in cells_figure(fovs, out_dir, mode, labels, days, a.dpi):
+            made.append(f"{stem}__{mode}.png")
         spikes_figure(fovs, out_dir, mode, labels, days, a.dpi)
         made += [f"spikes_by_{n}__{mode}.png" for n in ("well", "plate", "day", "whole_set")]
         trend_figure(fovs, out_dir, mode, labels, days, "burst_in_well",
@@ -505,7 +531,10 @@ def main():
     for stem, heading in [("by_well", "By well"), ("by_plate", "By plate"),
                           ("by_day", "By day"), ("overall", "Whole set")]:
         sections.append(f'<h2>{heading}</h2>\n' + imgs(f"snr_{stem}"))
-    sections.append('<h2>Cell counts</h2>\n' + imgs("cells_per_fov"))
+    sections.append(
+        '<h2>Cell counts</h2>\n<p>One figure per level, each sized for its own group count so the '
+        'aspect ratio is not dictated by the 27-well panel.</p>\n' +
+        imgs(*(f"cells_per_fov_by_{n}" for n, in (("well",), ("plate",), ("day",)))))
     sections.append(
         '<h2>Spiking activity</h2>\n<p>Two panels per level. <b>Spikes per cell</b> is the raw '
         'count; <b>firing rate</b> divides by recording duration, which differs by day '
