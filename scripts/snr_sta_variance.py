@@ -103,7 +103,65 @@ def decompose(A, n_used, t_ms):
     return out
 
 
-# Panels are deliberately large. These are presented from a projector, and the earlier 2.9 x 2.15 in
+def cell_features(A, n_used, cell_index, t_ms):
+    """Per-cell shape features. One row per cell.
+
+    **decay ratio** = amplitude at +2.5 ms divided by the peak. A real action potential decays over
+    a few milliseconds, so a genuine AP lands at ~0.25-0.38. A threshold noise crossing is a single
+    -sample excursion with nothing after it, so it lands at ~0. It is a pure SHAPE measure --
+    independent of amplitude and of the sigma normalisation -- so filtering on it does not
+    manufacture the amplitude result being interpreted, and it is immune to the k=3 sigma censoring
+    that compresses the amplitude distribution against its floor.
+
+    **fwhm_ms** is quantised: at 800 Hz the sample interval is 1.25 ms and the AP is ~2 samples
+    wide, so it can only take the values 1.25, 2.50, 3.75 ... It is reported for completeness, not
+    as a continuous shape variable.
+    """
+    dt = float(t_ms[1] - t_ms[0])
+    i0 = int(np.argmin(np.abs(t_ms)))
+    i25 = int(np.argmin(np.abs(t_ms - 2.5)))
+    i50 = int(np.argmin(np.abs(t_ms - 5.0)))
+    pk = A[:, i0].astype(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        decay = np.where(pk > 0, A[:, i25] / pk, np.nan)
+        decay5 = np.where(pk > 0, A[:, i25:i50 + 1].mean(axis=1) / pk, np.nan)
+    fwhm = np.full(A.shape[0], np.nan)
+    for j in range(A.shape[0]):
+        if pk[j] <= 0:
+            continue
+        above = np.flatnonzero(A[j] >= pk[j] / 2.0)
+        if above.size:
+            # contiguous run containing the peak
+            lo = hi = i0
+            while lo - 1 in above:
+                lo -= 1
+            while hi + 1 in above:
+                hi += 1
+            fwhm[j] = (hi - lo + 1) * dt
+    return pd.DataFrame({"cell_index": cell_index.astype(np.int32),
+                         "peak_sigma": pk.astype(np.float32),
+                         "decay": decay.astype(np.float32),
+                         "decay_5ms": decay5.astype(np.float32),
+                         "fwhm_ms": fwhm.astype(np.float32),
+                         "n_spikes_used": n_used.astype(np.int32)})
+
+
+DECAY_CUTS = (0.00, 0.05, 0.10, 0.15, 0.20)
+DECAY_CUT_DEFAULT = 0.10
+
+
+def decay_noise_sd(peak_sigma, n_used):
+    """Expected decay-ratio spread for a cell whose "spike" is a threshold noise crossing.
+
+    The sample after a noise crossing is uncorrelated noise. Averaged over ``n`` snippets it has SD
+    ~ ``1/sqrt(n)`` in sigma units; dividing by the peak gives ``1/(peak*sqrt(n))``. This is why the
+    noise population is a broad shoulder centred on 0 rather than a spike at 0, and why it OVERLAPS
+    the AP population instead of separating from it.
+    """
+    return 1.0 / (np.clip(peak_sigma, 1e-6, None) * np.sqrt(np.clip(n_used, 1, None)))
+
+
+# Panels are deliberately large.# Panels are deliberately large. These are presented from a projector, and the earlier 2.9 x 2.15 in
 # panel on a y-axis shared across all 27 wells left a 3.4 sigma waveform occupying under half its
 # panel. Figures are split per day (each day gets its own y range) and capped at 4 columns.
 PANEL_W, PANEL_H = 4.4, 3.3
@@ -223,6 +281,51 @@ def draw_heatmap(ax, p, th, color_of):
     ax.set_yticks([])
 
 
+def hist_grid(panels, out_dir, stem, title, note, labels, days, cut_by_day, dpi=None,
+              ncols=None):
+    """One decay-ratio histogram per panel, with the AP-vs-noise cut marked."""
+    th = THEME["light"]
+    color_of = _color_of(days, th)
+    dpi = dpi or grid_dpi(len(panels))
+    ncols = ncols or min(MAX_COLS, max(1, len(panels)))
+    nrows = int(np.ceil(len(panels) / ncols))
+    fig, axes = plt.subplots(nrows, ncols,
+                             figsize=(PANEL_W * ncols + 1.2, PANEL_H * nrows + 1.9),
+                             facecolor=th["surface"], sharex=True, sharey=False)
+    axf = np.atleast_1d(axes).ravel()
+    bins = np.linspace(-0.3, 0.8, 90)
+    for ax, p in zip(axf, panels):
+        v = p["vals"][np.isfinite(p["vals"])]
+        ax.hist(v, bins=bins, color=color_of(p["day"]), alpha=0.75, linewidth=0)
+        cut = cut_by_day[p["day"]]
+        ax.axvline(cut, color=th["primary"], linewidth=1.6, linestyle="--", zorder=5)
+        frac = float(np.mean(v < cut)) * 100 if v.size else np.nan
+        ax.set_title(f"{p['label']}  (n={v.size}, {frac:.0f}% below cut)",
+                     color=th["primary"], fontsize=10.5, loc="left", pad=5)
+        style(ax, th)
+        ax.set_yticks([])
+    for ax in axf[len(panels):]:
+        ax.set_visible(False)
+    g = np.atleast_1d(axes).reshape(nrows, ncols)
+    for ax in g[:, 0]:
+        ax.set_ylabel("cells", color=th["secondary"], fontsize=9.5)
+    for c in range(ncols):
+        used = [r for r in range(nrows) if r * ncols + c < len(panels)]
+        if used:
+            ax = g[used[-1], c]
+            ax.set_xlabel("decay ratio  amp(+2.5 ms) / peak", color=th["secondary"], fontsize=9)
+            ax.tick_params(labelbottom=True)
+    axf[0].set_xlim(-0.3, 0.8)
+    axf[0].set_xticks([-0.2, 0.0, 0.2, 0.4, 0.6])
+    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
+    fig.text(0.008, 0.962, note, color=th["secondary"], fontsize=8.5, ha="left")
+    legend(fig, th, days, labels, color_of)
+    fig.tight_layout(rect=(0, 0.035, 1, 0.952), h_pad=1.9, w_pad=1.4)
+    fig.savefig(os.path.join(out_dir, f"{stem}__light.png"), dpi=dpi, facecolor=th["surface"])
+    plt.close(fig)
+    return dpi
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -262,7 +365,7 @@ def main():
         r = pick.iloc[(pick["n_cells"] - pick["n_cells"].median()).abs().argsort().iloc[0]]
         reps[(day, r["dir_name"])] = f"{plate}/{wl}"
 
-    rows, kept, errors = [], {}, []
+    rows, feats, kept, errors = [], [], {}, []
     with ThreadPoolExecutor(a.threads) as ex:
         for i, (key, A, nu, ci, t, err) in enumerate(
                 ex.map(read_cells, [(d, n, a.read_root) for d, n in keys]), start=1):
@@ -273,6 +376,9 @@ def main():
             rec = dict(day=key[0], dir_name=key[1])
             rec.update(decompose(A, nu, t))
             rows.append(rec)
+            cf = cell_features(A, nu, ci, t)
+            cf["day"] = key[0]; cf["dir_name"] = key[1]
+            feats.append(cf)
             if key in reps:
                 kept[key] = (A, ci, t)
             if i % 400 == 0:
@@ -287,6 +393,39 @@ def main():
 
     days = sorted(var["day"].unique())
     labels = {d: day_label(d, g) for d, g in meta.groupby("day")}
+
+    # ---- per-cell features (section 11.2) ----
+    cf = pd.concat(feats, ignore_index=True)
+    # noise_sigma / snr_median / n_spikes come from cells_all.parquet rather than re-reading 2184
+    # snr_metrics.csv files.
+    ca = pd.read_parquet(os.path.join(a.summary_dir, "cells_all.parquet"),
+                         columns=["day", "dir_name", "cell_index", "noise_sigma",
+                                  "snr_median", "n_spikes"])
+    cf = cf.merge(ca, on=["day", "dir_name", "cell_index"], how="left")
+    cf = cf.merge(meta[["day", "dir_name", "plate", "plate_num", "well", "burst"]],
+                  on=["day", "dir_name"], how="left")
+    cf["peak_abs"] = cf["peak_sigma"] * cf["noise_sigma"]
+    cf.to_parquet(os.path.join(a.summary_dir, "sta_cell_features.parquet"), index=False)
+    print(f"[var] sta_cell_features.parquet  {len(cf)} cells x {cf.shape[1]} cols", flush=True)
+
+    # ONE cut, stated rather than discovered. The pooled per-cell decay density is unimodal
+    # (mode ~ +0.29, long left shoulder through 0), so there is no trough to find: the noise
+    # population is centred on 0 but broad -- SD ~ 1/(peak*sqrt(n_spikes)) ~ 0.10-0.17 -- and
+    # therefore OVERLAPS the AP population near +0.30. A per-cell cut can only shift the mixture,
+    # never cleanly separate it. A per-DAY cut would additionally filter days differently and
+    # confound exactly the day comparison the summary is for, so the cut is global.
+    cut_by_day = {d: DECAY_CUT_DEFAULT for d in days}
+    for day in days:
+        sub = cf[cf.day == day]
+        panels = [dict(label=f"{pl}/{wl}", day=day, vals=g["decay"].values)
+                  for (pl, wl), g in sub.groupby(["plate", "well"])]
+        d = hist_grid(panels, out_dir, f"sta_decay_hist_{day}",
+                      f"Decay ratio per cell \u2014 {day}",
+                      "amp(+2.5 ms)/peak. A real AP decays (~0.25-0.38); a threshold noise crossing "
+                      f"does not (~0, broad). Dashed line = stated cut {DECAY_CUT_DEFAULT:.2f} -- the "
+                      "pooled density is unimodal, so this is a criterion, not a discovered trough.",
+                      labels, days, cut_by_day, a.dpi)
+        print(f"[var] sta_decay_hist_{day}__light.png  {len(panels)} panels  {d} dpi", flush=True)
 
     # noise_sigma only for the plotted FOVs, to restore absolute amplitude
     panels = []
@@ -341,6 +480,30 @@ def main():
             mb = os.path.getsize(os.path.join(out_dir, f"{fname}__light.png")) / 1e6
             print(f"[var] {fname}__light.png  {len(sub)} panels  {d} dpi  {px}x{py} px  "
                   f"{mb:.1f} MB", flush=True)
+
+    print("\n[var] decay ratio -- the pooled per-cell density is UNIMODAL (mode ~+0.29, long left",
+          flush=True)
+    print("[var] shoulder through 0), so no trough exists; the cut below is a stated criterion.",
+          flush=True)
+    print(f"\n[var] retention sweep (fraction of cells with decay >= cut):", flush=True)
+    hdr = "        " + f"{'day':<16}" + "".join(f"{c:>9.2f}" for c in DECAY_CUTS)
+    print(hdr, flush=True)
+    for day in days:
+        v = cf.loc[cf.day == day, "decay"].dropna()
+        print("        " + f"{day:<16}" + "".join(f"{float((v >= c).mean()) * 100:8.1f}%"
+                                                 for c in DECAY_CUTS), flush=True)
+    v = cf["decay"].dropna()
+    print("        " + f"{'ALL':<16}" + "".join(f"{float((v >= c).mean()) * 100:8.1f}%"
+                                               for c in DECAY_CUTS), flush=True)
+    print(f"\n[var] at the default cut {DECAY_CUT_DEFAULT:.2f}: "
+          f"{int((cf['decay'] >= DECAY_CUT_DEFAULT).sum())} of {len(cf)} cells retained "
+          f"({float((cf['decay'] >= DECAY_CUT_DEFAULT).mean()) * 100:.1f}%)", flush=True)
+    print("\n[var] WELL-level decay medians separate cleanly where per-cell values do not:",
+          flush=True)
+    wm = cf.groupby(["day", "plate", "well"])["decay"].median().sort_values()
+    for (day, pl, wl), val in wm.items():
+        flag = "  <-- threshold-noise well" if val < 0.10 else ""
+        print(f"        {day:<16}{pl}/{wl:<4} {val:+.3f}{flag}", flush=True)
 
     print("\n[var] between-cell variance at the STA peak, by day "
           "(Var_obs/Var_meas; >1 means real spread):", flush=True)
