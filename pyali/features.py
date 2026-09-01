@@ -11,6 +11,8 @@ modules agree on what a spike is.
   weighting; sigma-normalised amplitude does not.
 * :func:`sta_variance_decomposition` -- how much of the across-cell spread of the STA is real
   (between cells) versus the finite-snippet measurement variance.
+* :func:`cell_features` -- per-cell shape features (peak, decay ratio, FWHM) as arrays, and
+  :func:`decay_noise_sd`, the decay-ratio spread a pure noise crossing would show.
 """
 import numpy as np
 from scipy.signal import find_peaks
@@ -185,3 +187,77 @@ def sta_variance_decomposition(A, n_used, t_ms, t_late_ms=2.5):
     out["n_cells"] = int(A.shape[0])
     out["n_spikes_used_median"] = float(np.median(n_used)) if n_used.size else np.nan
     return out
+
+
+def cell_features(A, n_used, cell_index, t_ms, t_decay_ms=2.5, t_decay_end_ms=5.0):
+    """Per-cell waveform shape features from the STA matrix. One entry per cell, as arrays.
+
+    **decay** is the amplitude at ``t_decay_ms`` after the peak divided by the peak. A real action
+    potential decays over a few milliseconds, so a genuine AP lands well above zero, whereas a
+    threshold noise crossing is a single-sample excursion with nothing after it and lands near 0.
+    It is a pure SHAPE measure -- independent of amplitude and of the sigma normalisation -- so
+    filtering on it does not manufacture the amplitude result being interpreted, and it is immune
+    to the ``k * sigma`` detection floor that compresses the amplitude distribution.
+
+    **fwhm_ms** is quantised to the sample interval (an AP is only ~2 samples wide at 800 Hz), so
+    it is reported for completeness, not as a continuous shape variable.
+
+    Parameters
+    ----------
+    A : (M, L) float array
+        Per-cell STAs in sigma units.
+    n_used : (M,) array
+        Snippets averaged per cell.
+    cell_index : (M,) array
+        Row of each cell in the original ``cell_traces``.
+    t_ms : (L,) array
+        Time axis of ``A`` in milliseconds.
+    t_decay_ms, t_decay_end_ms : float
+        The decay sample, and the end of the window averaged for ``decay_5ms``.
+
+    Returns
+    -------
+    dict of equal-length arrays: ``cell_index`` (int32), ``peak_sigma``, ``decay``,
+    ``decay_5ms``, ``fwhm_ms`` (float32), ``n_spikes_used`` (int32).
+    """
+    A = np.asarray(A, float)
+    t_ms = np.asarray(t_ms, float)
+    dt = float(t_ms[1] - t_ms[0]) if t_ms.size > 1 else np.nan
+    i0 = int(np.argmin(np.abs(t_ms)))
+    i25 = int(np.argmin(np.abs(t_ms - t_decay_ms)))
+    i50 = int(np.argmin(np.abs(t_ms - t_decay_end_ms)))
+    pk = A[:, i0].astype(float) if A.size else np.zeros(0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        decay = np.where(pk > 0, A[:, i25] / pk, np.nan) if A.size else np.zeros(0)
+        decay5 = (np.where(pk > 0, A[:, i25:i50 + 1].mean(axis=1) / pk, np.nan)
+                  if A.size else np.zeros(0))
+    fwhm = np.full(A.shape[0], np.nan)
+    for j in range(A.shape[0]):
+        if pk[j] <= 0:
+            continue
+        above = np.flatnonzero(A[j] >= pk[j] / 2.0)
+        if above.size:
+            lo = hi = i0                                  # contiguous run containing the peak
+            while lo - 1 in above:
+                lo -= 1
+            while hi + 1 in above:
+                hi += 1
+            fwhm[j] = (hi - lo + 1) * dt
+    return dict(cell_index=np.asarray(cell_index, np.int32),
+                peak_sigma=pk.astype(np.float32),
+                decay=np.asarray(decay, np.float32),
+                decay_5ms=np.asarray(decay5, np.float32),
+                fwhm_ms=fwhm.astype(np.float32),
+                n_spikes_used=np.asarray(n_used, np.int32))
+
+
+def decay_noise_sd(peak_sigma, n_used):
+    """Expected decay-ratio spread for a cell whose "spike" is a threshold noise crossing.
+
+    The sample after a noise crossing is uncorrelated noise. Averaged over ``n`` snippets it has SD
+    ~ ``1/sqrt(n)`` in sigma units; dividing by the peak gives ``1/(peak*sqrt(n))``. This is why the
+    noise population is a broad shoulder centred on 0 rather than a spike at 0, and why it can
+    overlap the AP population instead of separating from it.
+    """
+    return 1.0 / (np.clip(np.asarray(peak_sigma, float), 1e-6, None)
+                  * np.sqrt(np.clip(np.asarray(n_used, float), 1, None)))
