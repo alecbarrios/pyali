@@ -53,6 +53,7 @@ METRICS = [
     ("firing_rate", "Firing Rate (Hz)", "firing_rate", "{:.2f}"),
 ]
 PCTS = (5, 50, 95)
+JOINT_PCT = 95        # the 'high on all three metrics at once' selection
 DECAY_MIN = 0.10          # well-level QC gate; see README section 11.2
 
 
@@ -152,6 +153,36 @@ def main():
                             n_spikes=int(row["n_spikes"]))
                 sel.append(item)
                 need[(day, row["dir_name"])].append(len(sel) - 1)
+    # One extra per day: the cell that clears the 95th percentile on ALL THREE metrics at once.
+    # Among those, take the LEAST extreme -- closest to (p95, p95, p95) in rank space -- so it
+    # represents that corner rather than being the single most extreme cell in the day.
+    for day in days:
+        g = elig[elig["day"] == day].dropna(subset=["snr_median", "spectral_hf_snr"])
+        if not len(g):
+            continue
+        cols = ["snr_median", "spectral_hf_snr", "firing_rate"]
+        r = pd.DataFrame({m: g[m].rank(pct=True) * 100 for m in cols}, index=g.index)
+        ok = r.min(axis=1) >= JOINT_PCT
+        if not ok.any():
+            print(f"[trace] {day}: no cell clears p{JOINT_PCT} on all three", flush=True)
+            continue
+        dist = ((r[ok] - JOINT_PCT) ** 2).sum(axis=1)
+        row = g.loc[dist.idxmin()]
+        rr = r.loc[dist.idxmin()]
+        item = dict(day=day, dir_name=row["dir_name"], cell_index=int(row["cell_index"]),
+                    plate=row["plate"], well=row["well"], burst=row["burst"],
+                    fps=float(row["fps"]), metric="All three metrics", stem="all_three",
+                    pct=JOINT_PCT, target=float(JOINT_PCT),
+                    noise_sigma=float(row["noise_sigma"]),
+                    snr_median=float(row["snr_median"]),
+                    spectral_hf_snr=float(row["spectral_hf_snr"]),
+                    firing_rate=float(row["firing_rate"]), n_spikes=int(row["n_spikes"]),
+                    ranks=f"ranks p{rr['snr_median']:.1f} / p{rr['spectral_hf_snr']:.1f} / "
+                           f"p{rr['firing_rate']:.1f}",
+                    n_qualifying=int(ok.sum()))
+        sel.append(item)
+        need[(day, row["dir_name"])].append(len(sel) - 1)
+
     print(f"[trace] {len(sel)} traces from {len(need)} distinct FOVs", flush=True)
 
     made = 0
@@ -171,10 +202,12 @@ def main():
             burst = "" if pd.isna(it["burst"]) else f" burst {int(it['burst'])}"
             it["title"] = (f"{it['metric']} — {it['pct']}th percentile   |   {day}  "
                            f"{it['plate']}/{it['well']}{burst}  cell {ci}")
+            tail = (f"{it['ranks']}   ·   {it['n_qualifying']} cells in this day clear "
+                    f"p{JOINT_PCT} on all three" if "ranks" in it
+                    else f"{it['metric']} {it['pct']}th pct target = {it['target']:.2f}")
             it["sub"] = (f"day {day} {it['plate']}/{it['well']}{burst}, cell {ci}   ·   "
                          f"spikes = {it['n_spikes']}   ·   noise_sigma = "
-                         f"{it['noise_sigma']:.4f}   ·   {it['metric']} "
-                         f"{it['pct']}th pct target = {it['target']:.2f}")
+                         f"{it['noise_sigma']:.4f}   ·   {tail}")
             fn = f"trace_{day}_{it['stem']}_p{it['pct']:02d}.png"
             plot_trace(np.asarray(ct[ci], float), it["fps"], it, os.path.join(a.out_dir, fn),
                        a.dpi)
