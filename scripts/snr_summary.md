@@ -191,6 +191,22 @@ correct and already implemented. Per-FOV adaptive *edges* are rejected — each 
 different frequency range, so a well-to-well difference could be a band difference rather than a
 biological one.
 
+## Var_meas — the one formula that is easy to get wrong
+
+`Var_meas = mean(1 / n_spikes_used)`, averaged over **every** cell. It is the spread you would still
+see if all cells had an identical true waveform, since each cell's STA averages a finite noisy
+sample of its own spikes.
+
+**Do not substitute `1/median(n)`.** `1/n` is convex, so the few very-low-spike cells dominate the
+average: on a 1398-cell FOV, `mean(1/n) = 0.0369` against `1/median(n) = 0.0286` — a **1.29×**
+difference, because the 3.4% of cells with n ≤ 10 contribute 11.5% of `Σ(1/n)`. Using the median
+understates the noise floor ~30% and inflates the variance ratio.
+
+**Units**: every snippet is divided by that cell's `noise_sigma`, so one normalised snippet has
+variance **1** by construction and the mean of `n` of them has variance `1/n`. `Var_obs` and
+`Var_meas` are therefore in the same (dimensionless) units — writing "σ²" is shorthand for
+"variance of an amplitude in units of the noise σ" — which is why their ratio is meaningful.
+
 ## Pitfalls worth knowing before touching this code
 
 Full catalogue in §12 of the outputs README. The ones that bite hardest here:
