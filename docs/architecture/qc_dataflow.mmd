@@ -1,0 +1,74 @@
+flowchart TD
+  scripts_snr_corpus["snr_corpus.py<br/><i>scripts/</i>"]
+  scripts_snr_aggregate["snr_aggregate.py<br/><i>scripts/</i>"]
+  scripts_snr_figures["snr_figures.py<br/><i>scripts/</i>"]
+  scripts_snr_sta["snr_sta.py<br/><i>scripts/</i>"]
+  scripts_snr_sta_figures["snr_sta_figures.py<br/><i>scripts/</i>"]
+  scripts_snr_sta_variance["snr_sta_variance.py<br/><i>scripts/</i>"]
+  scripts_representative_traces["representative_traces.py<br/><i>scripts/</i>"]
+  snr_analysis_snr_snr_compare["snr_compare.py<br/><i>snr_analysis/snr/</i>"]
+  mod_pyali_io(["pyali.io<br/><i>package module</i>"])
+  mod_pyali_metrics(["pyali.metrics<br/><i>package module</i>"])
+  file_ALI_Result_mat[/"ALI_Result.mat<br/><i>per FOV</i>"/]
+  file_cells_all_parquet[/"cells_all.parquet<br/><i>summary</i>"/]
+  file_fov_metadata_json[/"fov_metadata.json<br/><i>per FOV</i>"/]
+  file_fov_summary_csv[/"fov_summary.csv<br/><i>summary</i>"/]
+  file_index_html[/"index.html<br/><i>summary</i>"/]
+  file_manifest_json[/"manifest.json<br/><i>summary</i>"/]
+  file_scripts_representative_traces___png[/"*.png<br/><i>summary</i>"/]
+  file_scripts_snr_figures___png[/"*.png<br/><i>summary</i>"/]
+  file_scripts_snr_sta_figures___png[/"*.png<br/><i>summary</i>"/]
+  file_scripts_snr_sta_variance___png[/"*.png<br/><i>summary</i>"/]
+  file_selected_cells_csv[/"selected_cells.csv<br/><i>summary</i>"/]
+  file_snr_metrics_csv[/"snr_metrics.csv<br/><i>per FOV</i>"/]
+  file_sta_csv[/"sta.csv<br/><i>per FOV</i>"/]
+  file_sta_by_fov_parquet[/"sta_by_fov.parquet<br/><i>summary</i>"/]
+  file_sta_by_well_csv[/"sta_by_well.csv<br/><i>summary</i>"/]
+  file_sta_cell_features_parquet[/"sta_cell_features.parquet<br/><i>summary</i>"/]
+  file_sta_cells_mat[/"sta_cells.mat<br/><i>per FOV</i>"/]
+  file_sta_variance_by_fov_csv[/"sta_variance_by_fov.csv<br/><i>summary</i>"/]
+  files_scripts_snr_aggregate[/"4 output files<br/><i>summary</i>"/]
+  files_snr_analysis_snr_snr_compare[/"11 output files<br/><i>summary</i>"/]
+  file_ALI_Result_mat --> scripts_representative_traces
+  file_cells_all_parquet --> scripts_representative_traces
+  file_sta_cell_features_parquet --> scripts_representative_traces
+  scripts_representative_traces --> file_scripts_representative_traces___png
+  scripts_representative_traces --> file_selected_cells_csv
+  file_fov_metadata_json --> scripts_snr_aggregate
+  file_snr_metrics_csv --> scripts_snr_aggregate
+  scripts_snr_aggregate --> file_cells_all_parquet
+  scripts_snr_aggregate --> files_scripts_snr_aggregate
+  scripts_snr_aggregate --> file_fov_summary_csv
+  scripts_snr_aggregate --> file_manifest_json
+  file_ALI_Result_mat --> scripts_snr_corpus
+  file_fov_metadata_json --> scripts_snr_corpus
+  scripts_snr_corpus --> file_snr_metrics_csv
+  file_fov_summary_csv --> scripts_snr_figures
+  file_manifest_json --> scripts_snr_figures
+  scripts_snr_figures --> file_scripts_snr_figures___png
+  scripts_snr_figures --> file_index_html
+  file_ALI_Result_mat --> scripts_snr_sta
+  file_fov_metadata_json --> scripts_snr_sta
+  scripts_snr_sta --> file_sta_csv
+  scripts_snr_sta --> file_sta_cells_mat
+  file_fov_summary_csv --> scripts_snr_sta_figures
+  file_sta_csv --> scripts_snr_sta_figures
+  scripts_snr_sta_figures --> file_scripts_snr_sta_figures___png
+  scripts_snr_sta_figures --> file_sta_by_fov_parquet
+  scripts_snr_sta_figures --> file_sta_by_well_csv
+  file_cells_all_parquet --> scripts_snr_sta_variance
+  file_fov_summary_csv --> scripts_snr_sta_variance
+  file_snr_metrics_csv --> scripts_snr_sta_variance
+  file_sta_cells_mat --> scripts_snr_sta_variance
+  scripts_snr_sta_variance --> file_scripts_snr_sta_variance___png
+  scripts_snr_sta_variance --> file_sta_cell_features_parquet
+  scripts_snr_sta_variance --> file_sta_variance_by_fov_csv
+  file_ALI_Result_mat --> snr_analysis_snr_snr_compare
+  snr_analysis_snr_snr_compare --> files_snr_analysis_snr_snr_compare
+  mod_pyali_io -.->|load_v73| scripts_representative_traces
+  mod_pyali_io -.->|load_v73| scripts_snr_corpus
+  mod_pyali_io -.->|load_v73, save_mat_v73| scripts_snr_sta
+  mod_pyali_io -.->|load_v73| scripts_snr_sta_variance
+  mod_pyali_metrics -.->|metrics| scripts_snr_aggregate
+  mod_pyali_metrics -.->|per_cell_snr| scripts_snr_corpus
+  mod_pyali_metrics -.->|highpass, robust_sigma| scripts_snr_sta

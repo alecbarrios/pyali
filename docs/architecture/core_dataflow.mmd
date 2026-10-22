@@ -1,0 +1,54 @@
+flowchart TD
+  pyali_io_read_bin_mov["read_bin_mov<br/><i>io.py</i>"]
+  pyali_preprocess_reference_and_correlation_image["reference_and_correlation_image<br/><i>preprocess.py</i>"]
+  pyali_preprocess_sharpen["sharpen<br/><i>preprocess.py</i>"]
+  pyali_preprocess_adaptive_background["adaptive_background<br/><i>preprocess.py</i>"]
+  pyali_preprocess_motion_correct["motion_correct<br/><i>preprocess.py</i>"]
+  pyali_preprocess_clip_saturation["clip_saturation<br/><i>preprocess.py  ·  if p.saturation_clip is not None</i>"]
+  style pyali_preprocess_clip_saturation stroke-dasharray: 6 3
+  pyali_segmentation_cell_segmentation["cell_segmentation<br/><i>segmentation.py</i>"]
+  pyali_segmentation_drop_oversized_regions["drop_oversized_regions<br/><i>segmentation.py</i>"]
+  pyali_io_save_mat_v73_72[/"ALI_Int_Result.mat<br/><i>io.save_mat_v73  ·  if save and out_dir</i>"/]
+  style pyali_io_save_mat_v73_72 stroke-dasharray: 6 3
+  pyali_extract_temporal_filter["temporal_filter<br/><i>extract.py  ·  if need_global_filter</i>"]
+  style pyali_extract_temporal_filter stroke-dasharray: 6 3
+  pyali_utils_dog_kernel["dog_kernel<br/><i>utils.py</i>"]
+  pyali_extract_extract_footprints["extract_footprints<br/><i>extract.py</i>"]
+  pyali_extract_per_pixel_noise_map["per_pixel_noise_map<br/><i>extract.py  ·  if p.whiten_traces</i>"]
+  style pyali_extract_per_pixel_noise_map stroke-dasharray: 6 3
+  pyali_extract_extract_cell_traces["extract_cell_traces<br/><i>extract.py</i>"]
+  pyali_io_save_mat_v73_108[/"ALI_Result.mat<br/><i>io.save_mat_v73  ·  if save and out_dir</i>"/]
+  style pyali_io_save_mat_v73_108 stroke-dasharray: 6 3
+  pyali_metadata_write_metadata[/"fov_metadata.json<br/><i>metadata.write_metadata  ·  if save and out_dir</i>"/]
+  style pyali_metadata_write_metadata stroke-dasharray: 6 3
+  pyali_figures_save_result_figures[/"5 result figures<br/><i>figures.save_result_figures  ·  if make_figures and out_dir</i>"/]
+  style pyali_figures_save_result_figures stroke-dasharray: 6 3
+  file_frames1_bin[/"frames1.bin<br/><i>fov_dir/</i>"/]
+  file_frames1_bin -->|reads| pyali_io_read_bin_mov
+  pyali_io_read_bin_mov -->|movie (T, H, W)| pyali_preprocess_reference_and_correlation_image
+  pyali_preprocess_reference_and_correlation_image -->|reference_image (H, W)| pyali_preprocess_sharpen
+  pyali_io_read_bin_mov -->|movie (T, H, W) in place| pyali_preprocess_adaptive_background
+  pyali_preprocess_adaptive_background -->|movie (T, H, W) in place| pyali_preprocess_motion_correct
+  pyali_preprocess_motion_correct -.->|movie (T, H, W) in place| pyali_preprocess_clip_saturation
+  pyali_preprocess_sharpen -->|sharpened (H, W)| pyali_segmentation_cell_segmentation
+  pyali_segmentation_cell_segmentation -->|binary_map (H, W) in place<br/>regions  in place| pyali_segmentation_drop_oversized_regions
+  pyali_preprocess_reference_and_correlation_image -.->|reference_image (H, W)| pyali_io_save_mat_v73_72
+  pyali_preprocess_sharpen -.->|I2, LoG, LoG_n,<br/>+4 more, each (H, W)| pyali_io_save_mat_v73_72
+  pyali_preprocess_clip_saturation -.->|movie (T, H, W)| pyali_extract_temporal_filter
+  pyali_extract_temporal_filter -.->|filtered_movie (T, H, W)| pyali_extract_extract_footprints
+  pyali_preprocess_clip_saturation -.->|movie (T, H, W)| pyali_extract_extract_footprints
+  pyali_segmentation_cell_segmentation -->|spatial_footprints| pyali_extract_extract_footprints
+  pyali_segmentation_drop_oversized_regions -->|regions| pyali_extract_extract_footprints
+  pyali_utils_dog_kernel -->|dog (width,)| pyali_extract_extract_footprints
+  pyali_extract_temporal_filter -.->|filtered_movie (T, H, W)| pyali_extract_per_pixel_noise_map
+  pyali_extract_extract_footprints -->|footprint (H, W, N)| pyali_extract_extract_cell_traces
+  pyali_extract_per_pixel_noise_map -.->|noise_map (H, W)| pyali_extract_extract_cell_traces
+  pyali_preprocess_clip_saturation -.->|movie (T, H, W)| pyali_extract_extract_cell_traces
+  pyali_extract_extract_cell_traces -.->|cell_traces (N, T)| pyali_io_save_mat_v73_108
+  pyali_extract_extract_footprints -.->|footprint (H, W, N)<br/>footprint_center (N, 2)| pyali_io_save_mat_v73_108
+  pyali_extract_extract_cell_traces -.->|cell_traces (N, T)| pyali_metadata_write_metadata
+  pyali_segmentation_drop_oversized_regions -.->|dropped<br/>regions| pyali_metadata_write_metadata
+  pyali_extract_extract_cell_traces -.->|cell_traces (N, T)| pyali_figures_save_result_figures
+  pyali_extract_extract_footprints -.->|COMs<br/>footprint (H, W, N)<br/>footprint_center (N, 2)| pyali_figures_save_result_figures
+  pyali_preprocess_reference_and_correlation_image -.->|reference_image (H, W)| pyali_figures_save_result_figures
+  pyali_segmentation_drop_oversized_regions -.->|binary_map (H, W)<br/>regions| pyali_figures_save_result_figures

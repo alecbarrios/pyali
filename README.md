@@ -95,6 +95,20 @@ is auto-detected from the sidecar `.txt`:
 python scripts/find_video_dims.py FRAMES.bin
 ```
 
+## Architecture
+
+`scripts/arch_graph.py` derives the module / function / dataflow graph from the source with the
+standard-library `ast` module and renders two figures: the core voltage-extraction dataflow through
+`process_fov`, and the post-hoc QC pass as script → file → script. Outputs live in
+`docs/architecture/` (`architecture.html` is the self-contained page; the figures are also written as
+standalone SVG and as Mermaid text, and `arch.json` is the full graph). They are committed, so
+`--check` fails when they no longer match the source.
+
+```bash
+python scripts/arch_graph.py            # regenerate docs/architecture/
+python scripts/arch_graph.py --check    # exit 1 if the committed outputs are stale
+```
+
 ## References
 
 This algorithm is modeled after the voltage extraction pipelines in Zhang, J., Gong, D., Barrios, A., et al. 2026 (unpublished), and Chen, TW, et al. Nature Methods (2025). 
