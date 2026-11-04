@@ -34,12 +34,20 @@ python scripts/run_pyali.py "/path/to/your/video_dir" --figures
 Writes to `/path/to/your/video_dir/analysis/`:
 
 - `ALI_Int_Result.mat` — reference image and the sharpening chain
-- `ALI_Result.mat` — `footprint`, `footprint_center`, `cell_traces`
+- `ALI_Result.mat` — `footprint`, `footprint_center`, `cell_traces` (gzip-compressed HDF5; MATLAB
+  and `pyali.io.load_v73` read it transparently)
+- `fov_metadata.json` — provenance sidecar: the input directory, every `Params` value the
+  movie was analysed with, the package version and commit, and region / cell / frame counts
 - with `--figures`: `detected_regions.png`, `coms.png`, `cell_traces.png`,
   `center_of_cell_regions.png`, and **`cell_traces.html`** — an interactive plot
   (zoom/pan, hover for values, click a legend entry to hide/isolate a trace)
 
 A full field of view takes several minutes; progress is printed per stage.
+
+Bit depth (8- or 16-bit samples) is auto-detected from the file; `--read-dtype` overrides it.
+`--compute-dtype float32` halves peak RAM for large movies (an 8-bit source is represented
+losslessly). `--max-region-bbox-frac 0.01` rejects segmentation artifacts whose bounding box
+spans most of the frame, e.g. an un-illuminated band at a frame edge (off by default).
 
 ## Python API
 
@@ -56,6 +64,28 @@ footprint, traces = out["footprint"], out["cell_traces"]
 `Params` holds all tunables (frame size, frame rate, background/baseline ranges, sharpening,
 AP threshold, clustering, etc.). The background and baseline frame ranges are acquisition-
 specific — set `Params.bkg_ranges` / `Params.std_ranges` for your protocol.
+
+Knobs that keep their previous behaviour at the defaults: `read_dtype` / `compute_dtype`
+(sample type on disk, working precision in RAM), `seg_neighborhood` / `seg_threshold_mult`
+(the adaptive-threshold window and multiplier; a window of a few cell diameters splits touching
+cells), `max_region_bbox_frac` (oversized-region guard), `patch_local_filter` (filter each
+region's patch on demand instead of materializing a second movie; bit-identical).
+
+### Trace features
+
+`pyali.features` computes per-cell waveform features from `cell_traces` without touching the
+movie. Spike detection matches `pyali.metrics.per_cell_snr`.
+
+```python
+from pyali.features import spike_triggered_average, cell_features, sta_variance_decomposition
+
+sta = spike_triggered_average(traces, fps=800.0)        # [N, T] traces -> per-cell STA in sigma units
+feat = cell_features(sta["sta"], sta["n_spikes_used"], sta["cell_index"], sta["t_ms"])
+spread = sta_variance_decomposition(sta["sta"], sta["n_spikes_used"], sta["t_ms"])
+```
+
+`feat` holds equal-length arrays (`peak_sigma`, `decay`, `decay_5ms`, `fwhm_ms`, ...); the decay
+ratio separates genuine action potentials from threshold noise crossings by shape alone.
 
 ## Benchmarking a pipeline change (SNR)
 
