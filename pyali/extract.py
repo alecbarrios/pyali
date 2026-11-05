@@ -469,7 +469,9 @@ def project_movie(op, movie, chunk_bytes=_PROJECT_CHUNK_BYTES):
     bounds that temporary to roughly ``chunk_bytes``.
 
     Time is an *output* axis, not the contracted one: every output element is still the full
-    ``H*W`` dot product, so the result is arithmetically identical to the unchunked form.
+    ``H*W`` dot product, so the result is mathematically identical to the unchunked form. The
+    BLAS kernel may block a chunk differently from the whole movie, so individual values can
+    differ from the unchunked product at the last few bits (observed: <= 4e-15 relative).
 
     Parameters
     ----------

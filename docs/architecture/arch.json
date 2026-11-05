@@ -86,7 +86,7 @@
    "dst": "pyali.extract.footprint_isolated_mask",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 640,
+   "line": 642,
    "src": "pyali.extract.extract_cell_traces",
    "src_module": "pyali.extract"
   },
@@ -95,7 +95,7 @@
    "dst": "pyali.extract.pinv_traces",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 639,
+   "line": 641,
    "src": "pyali.extract.extract_cell_traces",
    "src_module": "pyali.extract"
   },
@@ -104,7 +104,7 @@
    "dst": "pyali.extract.whitened_gls_traces",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 636,
+   "line": 638,
    "src": "pyali.extract.extract_cell_traces",
    "src_module": "pyali.extract"
   },
@@ -203,7 +203,7 @@
    "dst": "pyali.extract.project_movie",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 521,
+   "line": 523,
    "src": "pyali.extract.pinv_traces",
    "src_module": "pyali.extract"
   },
@@ -230,7 +230,7 @@
    "dst": "pyali.extract.project_movie",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 619,
+   "line": 621,
    "src": "pyali.extract.whitened_gls_traces",
    "src_module": "pyali.extract"
   },
@@ -5083,44 +5083,44 @@
     },
     {
      "doc": "Apply a ``[N, H*W]`` spatial operator to a ``[T, H, W]`` movie -> ``[N, T]``.",
-     "end": 494,
+     "end": 496,
      "kind": "function",
      "line": 462,
      "name": "project_movie"
     },
     {
      "doc": "Extract per-footprint temporal traces via the spatial pseudoinverse.",
-     "end": 521,
+     "end": 523,
      "kind": "function",
-     "line": 497,
+     "line": 499,
      "name": "pinv_traces"
     },
     {
      "doc": "Per-pixel high-frequency noise std from the baseline (no-stimulus) frames.",
-     "end": 552,
+     "end": 554,
      "kind": "function",
-     "line": 527,
+     "line": 529,
      "name": "per_pixel_noise_map"
     },
     {
      "doc": "Boolean ``[N]`` mask: True where a footprint's support bounding box overlaps no other.",
-     "end": 583,
+     "end": 585,
      "kind": "function",
-     "line": 555,
+     "line": 557,
      "name": "footprint_isolated_mask"
     },
     {
      "doc": "Noise-weighted (GLS/BLUE) trace extraction.",
-     "end": 620,
+     "end": 622,
      "kind": "function",
-     "line": 586,
+     "line": 588,
      "name": "whitened_gls_traces"
     },
     {
      "doc": "Dispatch trace extraction per ``p.whiten_traces``.",
-     "end": 646,
+     "end": 648,
      "kind": "function",
-     "line": 623,
+     "line": 625,
      "name": "extract_cell_traces"
     }
    ],
@@ -5158,7 +5158,7 @@
      "target": "sklearn.cluster.DBSCAN"
     }
    ],
-   "loc": 647,
+   "loc": 649,
    "path": "pyali/extract.py"
   },
   "pyali.features": {
