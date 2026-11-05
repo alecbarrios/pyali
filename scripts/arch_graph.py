@@ -6,16 +6,14 @@ order. For each stage the tool records the function, its module, the ``if`` it s
 it consumes and produces (array shapes come from the callee's numpydoc docstring), the files it
 reads or writes, and, for a stage that only saves or plots, the names it takes in. That ordered
 list is the whole representation; edges are drawn only into stages that compute something. It is
-written as a Markdown table and drawn twice with straight, axis-aligned edges:
+written as a Markdown table and drawn with straight, axis-aligned edges:
 
-    docs/architecture/architecture.md               the stage table
-    docs/architecture/architecture_vertical.svg     one column; data that skips stages runs in
-                                                    labelled lanes on the right, nothing on edges
-    docs/architecture/architecture_horizontal.svg   rows of five, left to right, later rows lower;
-                                                    labels sit on the edges
+    docs/architecture/architecture.md    the stage table
+    docs/architecture/architecture.svg   one column in call order; data that skips a stage runs in
+                                         a labelled lane on the right, so no edge carries text
 
 Every coordinate is a function of the stage index, so the outputs are deterministic and the
-renderer asserts that no box, label or edge overlaps anything it should not. ``--check``
+renderer asserts that no box or edge overlaps anything it should not. ``--check``
 regenerates everything in memory and exits 1 if the committed files differ. Stdlib only.
 """
 import ast
@@ -204,26 +202,6 @@ def _wrap(items, prefix, width):
     return lines + [cur]
 
 
-def _split(text, width):
-    """Break a label at ', ' or ' ' into lines of at most ``width`` characters (at most three)."""
-    lines, cur = [], ""
-    for w in text.replace(", ", ",\0").split("\0"):           # first between variables ...
-        if cur and len(cur) + len(w) > width:
-            lines.append(cur)
-            cur = w
-        else:
-            cur += w
-    lines.append(cur)
-    out = []
-    for ln in lines:                                            # ... then at spaces if still too long
-        while len(ln) > width and " " in ln[:width]:
-            cut = ln[:width].rfind(" ")
-            out.append(ln[:cut])
-            ln = ln[cut + 1:]
-        out.append(ln)
-    return out[:3]
-
-
 def box_lines(st, shape, width=46):
     """[(style, text)] shown inside a stage box: title, module/condition, the movie line, what the
     stage produces, the files it reads/writes, and the arrays it stores."""
@@ -255,7 +233,7 @@ def box_lines(st, shape, width=46):
 
 # ------------------------------------------------------------------ geometry
 class Canvas:
-    """Collects SVG elements plus the rectangles and segments used by the overlap check."""
+    """Collects SVG elements plus the boxes and segments used by the overlap check."""
 
     def __init__(self):
         self.el, self.rects, self.segs = [], [], []
@@ -272,14 +250,6 @@ class Canvas:
             self.el.append(f'<text x="{x + 9}" y="{ty}" {cls}>{_esc(text)}</text>')
             ty += 14
 
-    def label(self, x, y, text, anchor="start"):
-        """Text with a white halo; (x, y) is the baseline start (or end for anchor='end')."""
-        w = len(text) * MONO + 6
-        x0 = x - 3 if anchor == "start" else x - w + 3
-        self.rects.append((x0, y - 11, x0 + w, y + 3, "label"))
-        self.el.append(f'<rect x="{x0}" y="{y - 11}" width="{w}" height="14" fill="#fff"/>')
-        self.el.append(f'<text x="{x}" y="{y}" text-anchor="{anchor}" fill="#374151">{_esc(text)}</text>')
-
     def path(self, pts, arrow=True, dotted=False, dot=False):
         for a, b in zip(pts, pts[1:]):
             self.segs.append((a, b))
@@ -290,7 +260,7 @@ class Canvas:
             self.el.append(f'<circle cx="{pts[-1][0]}" cy="{pts[-1][1]}" r="2.6" fill="#1f2933"/>')
 
     def check(self):
-        """No two boxes/labels overlap; no segment crosses the inside of a box or label."""
+        """No two boxes overlap; no segment crosses the inside of a box."""
         for i, a in enumerate(self.rects):
             for b in self.rects[i + 1:]:
                 assert a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1], \
@@ -374,90 +344,6 @@ def svg_vertical(sts, shape):
     return cv.svg(X0 + BW + 38 + len(lanes) * LW + 16, y - GAP + 16, "pyali process_fov, stages top to bottom")
 
 
-# ------------------------------------------------------------------ figure 2: rows of five
-def svg_horizontal(sts, shape, cols=5):
-    BW, GX, M, CH = 236, 150, 16, 30
-    edges = _edges(sts)
-    lines = [box_lines(st, shape, width=33) for st in sts]
-    nrows = (len(sts) + cols - 1) // cols
-    row_h = [18 + 14 * max(len(lines[i]) for i in range(r * cols, min(len(sts), (r + 1) * cols)))
-             for r in range(nrows)]
-    row, col = lambda i: i // cols, lambda i: i % cols
-    # channel bookkeeping: band r sits above row r; each edge owns one channel per band it uses
-    band, trunk, routes = defaultdict(list), [], []
-    for i, j, vars_ in edges:
-        if j == i + 1 and row(i) == row(j):
-            routes.append(("direct", i, j, vars_))
-        elif row(i) == row(j):
-            routes.append(("same", i, j, vars_, len(band[row(i) + 1])))
-            band[row(i) + 1].append((i, j))
-        elif row(j) == row(i) + 1 and j != i + 1:
-            routes.append(("next", i, j, vars_, len(band[row(j)])))
-            band[row(j)].append((i, j))
-        else:                                                   # via the trunk on the right
-            routes.append(("trunk", i, j, vars_, len(band[row(i) + 1]), len(band[row(j)]), len(trunk)))
-            band[row(i) + 1].append((i, j))
-            band[row(j)].append((i, j))
-            trunk.append((i, j))
-    for i in range(cols - 1, len(sts) - 1, cols):              # end of a row -> start of the next
-        vars_ = next((v for a, b, v in edges if (a, b) == (i, i + 1)), [])
-        routes.append(("wrap", i, i + 1, vars_, len(band[row(i + 1)]), len(trunk)))
-        band[row(i + 1)].append((i, i + 1))
-        trunk.append((i, i + 1))
-    band_h = {r: 24 + CH * len(band[r]) for r in range(nrows + 1)}
-    row_y, y = [], M
-    for r in range(nrows):
-        y += band_h[r]
-        row_y.append(y)
-        y += row_h[r]
-    width = M + cols * BW + (cols - 1) * GX + 24 + 14 * len(trunk) + M
-    cv = Canvas()
-    bx = lambda i: M + col(i) * (BW + GX)
-    cx = lambda i: bx(i) + BW // 2
-    by = lambda i: row_y[row(i)]
-    bot = lambda i: row_y[row(i)] + row_h[row(i)]
-    chan = lambda r, n: row_y[r] - band_h[r] + 16 + CH * n       # channel n of the band above row r
-    tx = lambda n: M + cols * BW + (cols - 1) * GX + 18 + 14 * n
-    for i, st in enumerate(sts):
-        cv.box(bx(i), by(i), BW, row_h[row(i)], lines[i], bool(st["cond"]))
-    for rt in routes:
-        kind, i, j, vars_ = rt[:4]
-        text = ", ".join(f"{v} {shape.get(v, '')}".strip() for v in vars_)
-        text = text if len(text) <= 36 else text[:33] + "..."
-        ym = by(i) + row_h[row(i)] // 2
-        # a channel label goes right of the drop unless it would run into the trunk area
-        side = ("start", cx(i) + 8) if cx(i) + 8 + len(text) * MONO + 6 < tx(0) - 6 else ("end", cx(i) - 8)
-        if kind == "direct":                                    # label stacked above the arrow
-            cv.path([(bx(i) + BW, ym), (bx(j), ym)])
-            parts = _split(text, int((GX - 12) / MONO))
-            for n, part in enumerate(parts):
-                cv.label(bx(i) + BW + 6, ym - 6 - 14 * (len(parts) - 1 - n), part)
-        elif kind == "same":
-            yc = chan(row(i) + 1, rt[4]) if row(i) + 1 < nrows else bot(i) + 16 + CH * rt[4]
-            cv.path([(cx(i), bot(i)), (cx(i), yc), (cx(j), yc), (cx(j), bot(j))])
-            cv.label(side[1], yc - 4, text, side[0])
-        elif kind == "next":
-            yc = chan(row(j), rt[4])
-            cv.path([(cx(i), bot(i)), (cx(i), yc), (cx(j), yc), (cx(j), by(j))])
-            cv.label(side[1], yc - 4, text, side[0])
-        elif kind == "trunk":
-            y1, y2, x = chan(row(i) + 1, rt[4]), chan(row(j), rt[5]), tx(rt[6])
-            cv.path([(cx(i), bot(i)), (cx(i), y1), (x, y1), (x, y2), (cx(j), y2), (cx(j), by(j))])
-            cv.label(side[1], y1 - 4, text, side[0])
-        else:                                                   # wrap
-            yc, x = chan(row(j), rt[4]), tx(rt[5])
-            cv.path([(bx(i) + BW, ym), (x, ym), (x, yc), (cx(j), yc), (cx(j), by(j))])
-            if text:
-                cv.label(cx(j) + 8, yc - 4, text)
-    direct = {(i, j) for i, j, _ in edges if j == i + 1}
-    for k in range(len(sts) - 1):                               # order-only arrows where no data flows
-        if (k, k + 1) not in direct and row(k) == row(k + 1):
-            ym = by(k) + row_h[row(k)] // 2
-            cv.path([(bx(k) + BW, ym), (bx(k + 1), ym)], dotted=True)
-    height = row_y[-1] + row_h[-1] + band_h.get(nrows, 24) + M
-    return cv.svg(width, height, "pyali process_fov, stages left to right then down")
-
-
 # ------------------------------------------------------------------ table + driver
 def render_md(sts, shape):
     rows = ["# pyali architecture", "",
@@ -479,8 +365,7 @@ def build():
     pk = Package(SRC)
     sts, shape = stages(pk)
     return {"architecture.md": render_md(sts, shape),
-            "architecture_vertical.svg": svg_vertical(sts, shape),
-            "architecture_horizontal.svg": svg_horizontal(sts, shape)}
+            "architecture.svg": svg_vertical(sts, shape)}
 
 
 def main(argv=None):

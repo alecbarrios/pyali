@@ -136,13 +136,11 @@ python scripts/find_video_dims.py FRAMES.bin
 
 The pipeline is the sequence of calls `process_fov` makes into the package. `scripts/arch_graph.py`
 reads that sequence from the source (stdlib `ast`), including what each stage consumes, produces,
-reads and writes, and renders it as a table and two figures in `docs/architecture/`:
-[the stage table](docs/architecture/architecture.md), a vertical figure where data that skips a
-stage runs in labelled lanes, and a horizontal figure with labels on the edges.
+reads and writes, and renders it as [a table](docs/architecture/architecture.md) and the figure
+below (`docs/architecture/`): one column in call order, with data that skips a stage running in
+a labelled lane on the right.
 
-![pyali stages, vertical](docs/architecture/architecture_vertical.svg)
-
-![pyali stages, horizontal](docs/architecture/architecture_horizontal.svg)
+![pyali stages](docs/architecture/architecture.svg)
 
 ```bash
 python scripts/arch_graph.py            # regenerate docs/architecture/
