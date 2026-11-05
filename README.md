@@ -134,18 +134,23 @@ python scripts/find_video_dims.py FRAMES.bin
 
 ## Architecture
 
-`scripts/arch_graph.py` derives the module / function / dataflow graph from the source with the
-standard-library `ast` module and renders two figures: the core voltage-extraction dataflow through
-`process_fov`, and the post-hoc QC pass (the A/B benchmark harness in `snr_analysis/`) as
-script → file → script. Outputs live in
-`docs/architecture/` (`architecture.html` is the self-contained page; the figures are also written as
-standalone SVG and as Mermaid text, and `arch.json` is the full graph). They are committed, so
-`--check` fails when they no longer match the source.
+The pipeline is the sequence of calls `process_fov` makes into the package. `scripts/arch_graph.py`
+reads that sequence from the source (stdlib `ast`), including what each stage consumes, produces,
+reads and writes, and renders it as a table and two figures in `docs/architecture/`:
+[the stage table](docs/architecture/architecture.md), a vertical figure where data that skips a
+stage runs in labelled lanes, and a horizontal figure with labels on the edges.
+
+![pyali stages, vertical](docs/architecture/architecture_vertical.svg)
+
+![pyali stages, horizontal](docs/architecture/architecture_horizontal.svg)
 
 ```bash
 python scripts/arch_graph.py            # regenerate docs/architecture/
 python scripts/arch_graph.py --check    # exit 1 if the committed outputs are stale
 ```
+
+`snr_analysis/` is a separate A/B harness that compares two runs of the pipeline on the same
+movie; it is not part of the extraction.
 
 ## References
 
