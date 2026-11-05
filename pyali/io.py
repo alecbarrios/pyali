@@ -2,13 +2,15 @@
 
 Movie convention: ``[T, H, W]`` float64, row-major C-order.
 """
+import os
+
 import numpy as np
 
 
 _RAW_DTYPE = {"uint8": "<u1", "u1": "<u1", "uint16": "<u2", "u2": "<u2"}
 
 
-def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64"):
+def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64", chunk_frames=256):
     """Read a raw ``frames1.bin`` movie into ``[T, H, W]``.
 
     Parameters
@@ -24,17 +26,30 @@ def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64"):
         ``"float32"`` halves peak RAM, which can be what lets a large movie fit, and
         represents an 8-bit source losslessly.
 
+    chunk_frames : int
+        Frames converted per read. The cast is done chunk-wise straight into the output
+        array, so peak memory is one float movie plus one chunk of raw samples, rather than
+        the float movie plus a complete raw copy (which is 25% more for uint16 -> float64
+        and 25% more for uint8 -> float32, and was what tipped a full-frame movie over the
+        RAM of a mid-sized box). Values are identical to a whole-file ``astype``.
+
     Notes
     -----
     The raw stream is frame-major and row-major within each frame, so a plain C-order
     reshape ``(T, nrow, ncol)`` recovers the frames directly. Returns the full movie;
-    the caller decides how many trailing frames to drop. On limited RAM use
-    :func:`open_bin_memmap` instead.
+    the caller decides how many trailing frames to drop (a trailing partial frame is
+    ignored). On limited RAM use :func:`open_bin_memmap` instead.
     """
-    raw = np.fromfile(path, dtype=_RAW_DTYPE.get(str(read_dtype), read_dtype))
-    T = raw.size // (nrow * ncol)
-    mov = raw[:T * nrow * ncol].reshape(T, nrow, ncol)   # frame, row, col
-    return mov.astype(out_dtype)
+    raw_dtype = np.dtype(_RAW_DTYPE.get(str(read_dtype), read_dtype))
+    frame = nrow * ncol
+    T = os.path.getsize(path) // (frame * raw_dtype.itemsize)
+    mov = np.empty((T, nrow, ncol), dtype=out_dtype)
+    with open(path, "rb") as f:
+        for t0 in range(0, T, chunk_frames):
+            n = min(chunk_frames, T - t0)
+            raw = np.fromfile(f, dtype=raw_dtype, count=n * frame)
+            mov[t0:t0 + n] = raw.reshape(n, nrow, ncol)          # frame, row, col; cast here
+    return mov
 
 
 def open_bin_memmap(path, nrow, ncol, read_dtype="uint16"):

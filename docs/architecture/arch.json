@@ -401,7 +401,7 @@
    "dst": "pyali._h5read.read_mat_v73",
    "dst_module": "pyali._h5read",
    "lazy": true,
-   "line": 74,
+   "line": 89,
    "src": "pyali.io.load_v73",
    "src_module": "pyali.io"
   },
@@ -410,7 +410,7 @@
    "dst": "pyali.io._from_h5",
    "dst_module": "pyali.io",
    "lazy": false,
-   "line": 79,
+   "line": 94,
    "src": "pyali.io.load_v73",
    "src_module": "pyali.io"
   },
@@ -3634,7 +3634,7 @@
   {
    "dst": "pyali._h5read",
    "lazy": true,
-   "line": 73,
+   "line": 88,
    "name": "pyali._h5read",
    "src": "pyali.io"
   },
@@ -5369,37 +5369,37 @@
    "defs": [
     {
      "doc": "Read a raw ``frames1.bin`` movie into ``[T, H, W]``.",
-     "end": 37,
+     "end": 52,
      "kind": "function",
-     "line": 11,
+     "line": 13,
      "name": "read_bin_mov"
     },
     {
      "doc": "Memory-map ``frames1.bin`` as a read-only ``[T, H, W]`` integer view (no RAM cost).",
-     "end": 49,
+     "end": 64,
      "kind": "function",
-     "line": 40,
+     "line": 55,
      "name": "open_bin_memmap"
     },
     {
      "doc": "",
-     "end": 54,
+     "end": 69,
      "kind": "function",
-     "line": 52,
+     "line": 67,
      "name": "_from_h5"
     },
     {
      "doc": "Load variable(s) from a ``.mat`` (HDF5 v7.3) file.",
-     "end": 79,
+     "end": 94,
      "kind": "function",
-     "line": 57,
+     "line": 72,
      "name": "load_v73"
     },
     {
      "doc": "Write arrays to a ``.mat`` (HDF5 v7.3) file.",
-     "end": 123,
+     "end": 138,
      "kind": "function",
-     "line": 82,
+     "line": 97,
      "name": "save_mat_v73"
     }
    ],
@@ -5409,25 +5409,30 @@
     {
      "lazy": false,
      "line": 5,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 7,
      "target": "numpy"
     },
     {
      "lazy": true,
-     "line": 108,
+     "line": 123,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 71,
+     "line": 86,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 73,
+     "line": 88,
      "target": "pyali._h5read"
     }
    ],
-   "loc": 124,
+   "loc": 139,
    "path": "pyali/io.py"
   },
   "pyali.metadata": {
