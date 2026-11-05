@@ -16,6 +16,10 @@ Usage:
     python scripts/run_pyali.py /path/to/fov_dir --figures
     python scripts/run_pyali.py /path/to/fov_dir --figures --out /path/to/analysis
     python scripts/run_pyali.py /path/to/fov_dir --nrow 312 --ncol 1200
+    python scripts/run_pyali.py /path/to/fov_dir --bkg-ranges 201-601,1321-1481,2881-3041
+
+The background/baseline frame windows are the stimulus-OFF periods of the acquisition
+protocol. The defaults are the reference protocol's; pass ``--bkg-ranges`` for any other.
 """
 import argparse
 import os
@@ -29,6 +33,9 @@ sys.path.insert(0, _HERE)                             # so `import find_video_di
 import find_video_dims as fvd                          # noqa: E402
 from pyali.params import Params                        # noqa: E402
 from pyali.pipeline import process_fov                 # noqa: E402
+
+
+_REFERENCE_PROTOCOL_FRAMES = 6399          # length of the acquisition the default windows were derived for
 
 
 def detect_bit_depth(bin_path, n_bytes=1 << 22):
@@ -67,6 +74,18 @@ def detect_bit_depth(bin_path, n_bytes=1 << 22):
     return depth
 
 
+def _parse_ranges(text):
+    """``"201-601,1321-1481"`` -> ``[(201, 601), (1321, 1481)]`` (1-indexed inclusive)."""
+    out = []
+    for tok in text.split(","):
+        a, b = tok.strip().split("-")
+        a, b = int(a), int(b)
+        if a < 1 or b < a:
+            raise ValueError(f"bad frame range {tok!r}: need 1 <= A <= B")
+        out.append((a, b))
+    return out
+
+
 def _clamp_ranges(ranges, T):
     """Clamp 1-indexed inclusive frame ranges to [1, T]; drop empties. Returns (ranges, changed)."""
     out, changed = [], False
@@ -103,6 +122,13 @@ def main(argv=None):
     ap.add_argument("--max-region-bbox-frac", type=float, default=None,
                     help="reject segmentation regions whose bounding box exceeds this fraction "
                          "of the frame (default: off; 0.01 is a sensible guard)")
+    ap.add_argument("--bkg-ranges", default=None, metavar="A-B,C-D,...",
+                    help="stimulus-OFF frame windows (1-indexed, inclusive) used for the adaptive "
+                         "background, e.g. 201-601,1321-1481. Default: the reference protocol's "
+                         "windows (a 6399-frame acquisition); set this for any other protocol")
+    ap.add_argument("--std-ranges", default=None, metavar="A-B,C-D,...",
+                    help="stimulus-OFF windows used for the noise/baseline estimate (default: "
+                         "same as --bkg-ranges)")
     a = ap.parse_args(argv)
 
     bin_path = os.path.join(a.fov_dir, "frames1.bin")
@@ -141,9 +167,23 @@ def main(argv=None):
         print(f"[pyali] whitened GLS trace extraction ON "
               f"(isolated_only={p.whiten_isolated_only})")
 
-    # ---- clamp protocol frame-ranges to this video's length ----
+    # ---- stimulus-OFF windows: given, or the reference protocol's defaults ----
     nframes = os.path.getsize(bin_path) // (nrow * ncol * itemsize)
     T = nframes - p.truncate_last
+    if a.bkg_ranges or a.std_ranges:
+        try:
+            if a.bkg_ranges:
+                p.bkg_ranges = _parse_ranges(a.bkg_ranges)
+            p.std_ranges = _parse_ranges(a.std_ranges) if a.std_ranges else list(p.bkg_ranges)
+        except ValueError as e:
+            ap.error(str(e))
+        print(f"[pyali] stimulus-OFF windows: bkg {p.bkg_ranges}, std {p.std_ranges}")
+    elif abs(nframes - _REFERENCE_PROTOCOL_FRAMES) > 100:
+        print(f"[pyali] WARNING: no --bkg-ranges given, so the background/std windows are the "
+              f"reference protocol's defaults {p.bkg_ranges}, derived for a "
+              f"{_REFERENCE_PROTOCOL_FRAMES}-frame acquisition. This movie has {nframes} frames, "
+              f"so it is probably a different stimulus protocol; pass its stimulus-OFF windows "
+              f"with --bkg-ranges.")
     p.bkg_ranges, c1 = _clamp_ranges(p.bkg_ranges, T)
     p.std_ranges, c2 = _clamp_ranges(p.std_ranges, T)
     if c1 or c2:

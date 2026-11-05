@@ -2543,7 +2543,7 @@
    "dst": "pyali.params.Params",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 131,
+   "line": 157,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -2552,7 +2552,7 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
-   "line": 158,
+   "line": 198,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -2561,7 +2561,7 @@
    "dst": "scripts.find_video_dims.detect_pixels_per_frame",
    "dst_module": "scripts.find_video_dims",
    "lazy": false,
-   "line": 122,
+   "line": 148,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -2570,7 +2570,7 @@
    "dst": "scripts.find_video_dims.recover_dims",
    "dst_module": "scripts.find_video_dims",
    "lazy": false,
-   "line": 125,
+   "line": 151,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -2579,7 +2579,16 @@
    "dst": "scripts.run_pyali._clamp_ranges",
    "dst_module": "scripts.run_pyali",
    "lazy": false,
-   "line": 147,
+   "line": 187,
+   "src": "scripts.run_pyali.main",
+   "src_module": "scripts.run_pyali"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_pyali._parse_ranges",
+   "dst_module": "scripts.run_pyali",
+   "lazy": false,
+   "line": 176,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -2588,7 +2597,7 @@
    "dst": "scripts.run_pyali.detect_bit_depth",
    "dst_module": "scripts.run_pyali",
    "lazy": false,
-   "line": 113,
+   "line": 139,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -4124,21 +4133,21 @@
   {
    "dst": "pyali.params",
    "lazy": false,
-   "line": 30,
+   "line": 34,
    "name": "pyali.params.Params",
    "src": "scripts.run_pyali"
   },
   {
    "dst": "pyali.pipeline",
    "lazy": false,
-   "line": 31,
+   "line": 35,
    "name": "pyali.pipeline.process_fov",
    "src": "scripts.run_pyali"
   },
   {
    "dst": "scripts.find_video_dims",
    "lazy": false,
-   "line": 29,
+   "line": 33,
    "name": "scripts.find_video_dims",
    "src": "scripts.run_pyali"
   }
@@ -4388,7 +4397,7 @@
    "file": "frames1.bin",
    "func": "scripts.run_pyali.main",
    "kind": "read",
-   "line": 113,
+   "line": 139,
    "loc": "summary",
    "module": "scripts.run_pyali"
   },
@@ -7551,23 +7560,30 @@
    "defs": [
     {
      "doc": "Return ``\"uint8\"`` or ``\"uint16\"`` from a byte-plane adjacency test.",
-     "end": 67,
+     "end": 74,
      "kind": "function",
-     "line": 34,
+     "line": 41,
      "name": "detect_bit_depth"
     },
     {
-     "doc": "Clamp 1-indexed inclusive frame ranges to [1, T]; drop empties. Returns (ranges, changed).",
-     "end": 81,
+     "doc": "``\"201-601,1321-1481\"`` -> ``[(201, 601), (1321, 1481)]`` (1-indexed inclusive).",
+     "end": 86,
      "kind": "function",
-     "line": 70,
+     "line": 77,
+     "name": "_parse_ranges"
+    },
+    {
+     "doc": "Clamp 1-indexed inclusive frame ranges to [1, T]; drop empties. Returns (ranges, changed).",
+     "end": 100,
+     "kind": "function",
+     "line": 89,
      "name": "_clamp_ranges"
     },
     {
      "doc": "",
-     "end": 163,
+     "end": 203,
      "kind": "function",
-     "line": 84,
+     "line": 103,
      "name": "main"
     }
    ],
@@ -7576,41 +7592,41 @@
    "imports": [
     {
      "lazy": false,
-     "line": 20,
+     "line": 24,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 21,
+     "line": 25,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 22,
+     "line": 26,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 29,
+     "line": 33,
      "target": "scripts.find_video_dims"
     },
     {
      "lazy": false,
-     "line": 30,
+     "line": 34,
      "target": "pyali.params.Params"
     },
     {
      "lazy": false,
-     "line": 31,
+     "line": 35,
      "target": "pyali.pipeline.process_fov"
     },
     {
      "lazy": true,
-     "line": 45,
+     "line": 52,
      "target": "numpy"
     }
    ],
-   "loc": 168,
+   "loc": 208,
    "path": "scripts/run_pyali.py"
   },
   "snr_analysis.snr.snr_compare": {

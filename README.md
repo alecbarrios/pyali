@@ -48,6 +48,11 @@ Bit depth (8- or 16-bit samples) is auto-detected from the file; `--read-dtype` 
 `--compute-dtype float32` halves peak RAM for large movies (an 8-bit source is represented
 losslessly). `--max-region-bbox-frac 0.01` rejects segmentation artifacts whose bounding box
 spans most of the frame, e.g. an un-illuminated band at a frame edge (off by default).
+The adaptive background and the noise baseline are estimated from the **stimulus-OFF**
+windows of the acquisition protocol; the defaults are the reference protocol's windows,
+so for any other protocol pass them explicitly, e.g. `--bkg-ranges 201-601,1321-1481`
+(1-indexed, inclusive; `--std-ranges` if the baseline windows differ). The CLI warns when
+a movie's length does not match the reference protocol and no windows were given.
 
 ## Python API
 
