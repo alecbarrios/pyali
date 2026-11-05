@@ -1,11 +1,10 @@
 # ---- virtual environments ----
-# (a venv was created merged into the package dir pyali/pyali/; ignore its parts, keep the .py)
 .venv/
-pyali/bin/
-pyali/lib/
-pyali/include/
-pyali/share/
-pyali/pyvenv.cfg
+
+# ---- packaging artefacts ----
+src/pyali.egg-info/
+build/
+dist/
 
 # ---- python caches ----
 __pycache__/

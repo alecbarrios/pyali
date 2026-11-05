@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # outer pyali/ -> import pyali
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))   # repo src/ -> import pyali
 
 from pyali.registration import coordinates, phasecorr, io       # noqa: E402
 from pyali.params import Params                                 # noqa: E402

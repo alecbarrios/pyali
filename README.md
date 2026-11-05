@@ -15,11 +15,13 @@ Arrays are row-major C-order; movies are `[T, H, W]` float64.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.txt   # exact pinned versions
+python -m pip install -e .                   # the package itself (src layout, pyproject.toml)
 ```
 
 Dependencies: numpy, scipy, scikit-image, scikit-learn, h5py, matplotlib, and (for the
-interactive figure) plotly.
+interactive figure) plotly. The package lives in `src/pyali/`; the scripts in `scripts/` also run
+without an install.
 
 ## Analyze a movie
 

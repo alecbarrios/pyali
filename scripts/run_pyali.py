@@ -26,8 +26,8 @@ import os
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_REPO = os.path.dirname(_HERE)                        # the pyali repo root (contains the package)
-sys.path.insert(0, _REPO)                             # so `import pyali` works
+_REPO = os.path.dirname(_HERE)                        # the pyali repo root
+sys.path.insert(0, os.path.join(_REPO, "src"))        # so `import pyali` works without an install
 sys.path.insert(0, _HERE)                             # so `import find_video_dims` works
 
 import find_video_dims as fvd                          # noqa: E402

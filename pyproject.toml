@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyali"
+description = "Voltage-imaging waveform extraction: reference image, segmentation, per-cell footprints and traces from a raw movie"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dynamic = ["version"]
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-image",
+    "scikit-learn",
+    "h5py",
+    "matplotlib",
+    "plotly",
+]
+
+[project.optional-dependencies]
+registration = ["tifffile", "pandas", "pyarrow"]
+dev = ["pytest"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pyali.__version__" }

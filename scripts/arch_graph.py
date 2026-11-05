@@ -46,7 +46,7 @@ from collections import defaultdict, deque
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_HERE)
 
-SCAN_DIRS = ("pyali", "scripts", "snr_analysis")
+SCAN_DIRS = ("src/pyali", "scripts", "snr_analysis")
 SKIP_DIRS = {"bin", "lib", "include", "share", "site-packages", "__pycache__"}
 ENTRY = "pyali.pipeline.process_fov"
 CORE_ORDER = ("pyali.pipeline", "pyali.io", "pyali.preprocess", "pyali.segmentation",
@@ -105,6 +105,7 @@ class Repo:
     # ---------------------------------------------------------------- discovery
     def module_name(self, path):
         rel = os.path.relpath(path, self.root)[:-3].replace(os.sep, ".")
+        rel = rel[4:] if rel.startswith("src.") else rel          # src layout: src/pyali -> pyali
         return rel[:-9] if rel.endswith(".__init__") else rel
 
     def discover(self):

@@ -4851,7 +4851,7 @@
     }
    ],
    "loc": 13,
-   "path": "pyali/__init__.py"
+   "path": "src/pyali/__init__.py"
   },
   "pyali._h5read": {
    "defs": [
@@ -4974,7 +4974,7 @@
     }
    ],
    "loc": 202,
-   "path": "pyali/_h5read.py"
+   "path": "src/pyali/_h5read.py"
   },
   "pyali.extract": {
    "defs": [
@@ -5168,7 +5168,7 @@
     }
    ],
    "loc": 649,
-   "path": "pyali/extract.py"
+   "path": "src/pyali/extract.py"
   },
   "pyali.features": {
    "defs": [
@@ -5240,7 +5240,7 @@
     }
    ],
    "loc": 264,
-   "path": "pyali/features.py"
+   "path": "src/pyali/features.py"
   },
   "pyali.figures": {
    "defs": [
@@ -5372,7 +5372,7 @@
     }
    ],
    "loc": 405,
-   "path": "pyali/figures.py"
+   "path": "src/pyali/figures.py"
   },
   "pyali.io": {
    "defs": [
@@ -5442,7 +5442,7 @@
     }
    ],
    "loc": 139,
-   "path": "pyali/io.py"
+   "path": "src/pyali/io.py"
   },
   "pyali.metadata": {
    "defs": [
@@ -5510,7 +5510,7 @@
     }
    ],
    "loc": 73,
-   "path": "pyali/metadata.py"
+   "path": "src/pyali/metadata.py"
   },
   "pyali.metrics": {
    "defs": [
@@ -5566,7 +5566,7 @@
     }
    ],
    "loc": 62,
-   "path": "pyali/metrics.py"
+   "path": "src/pyali/metrics.py"
   },
   "pyali.params": {
    "defs": [
@@ -5610,7 +5610,7 @@
     }
    ],
    "loc": 94,
-   "path": "pyali/params.py"
+   "path": "src/pyali/params.py"
   },
   "pyali.pipeline": {
    "defs": [
@@ -5689,7 +5689,7 @@
     }
    ],
    "loc": 146,
-   "path": "pyali/pipeline.py"
+   "path": "src/pyali/pipeline.py"
   },
   "pyali.preprocess": {
    "defs": [
@@ -5820,7 +5820,7 @@
     }
    ],
    "loc": 286,
-   "path": "pyali/preprocess.py"
+   "path": "src/pyali/preprocess.py"
   },
   "pyali.registration": {
    "defs": [],
@@ -5859,7 +5859,7 @@
     }
    ],
    "loc": 22,
-   "path": "pyali/registration/__init__.py"
+   "path": "src/pyali/registration/__init__.py"
   },
   "pyali.registration.benchmark_demix": {
    "defs": [
@@ -5988,7 +5988,7 @@
     }
    ],
    "loc": 183,
-   "path": "pyali/registration/benchmark_demix.py"
+   "path": "src/pyali/registration/benchmark_demix.py"
   },
   "pyali.registration.coordinates": {
    "defs": [
@@ -6114,7 +6114,7 @@
     }
    ],
    "loc": 169,
-   "path": "pyali/registration/coordinates.py"
+   "path": "src/pyali/registration/coordinates.py"
   },
   "pyali.registration.demix": {
    "defs": [
@@ -6191,7 +6191,7 @@
     }
    ],
    "loc": 190,
-   "path": "pyali/registration/demix.py"
+   "path": "src/pyali/registration/demix.py"
   },
   "pyali.registration.io": {
    "defs": [
@@ -6326,7 +6326,7 @@
     }
    ],
    "loc": 183,
-   "path": "pyali/registration/io.py"
+   "path": "src/pyali/registration/io.py"
   },
   "pyali.registration.mosaic": {
    "defs": [
@@ -6453,7 +6453,7 @@
     }
    ],
    "loc": 294,
-   "path": "pyali/registration/mosaic.py"
+   "path": "src/pyali/registration/mosaic.py"
   },
   "pyali.registration.phasecorr": {
    "defs": [
@@ -6651,7 +6651,7 @@
     }
    ],
    "loc": 259,
-   "path": "pyali/registration/phasecorr.py"
+   "path": "src/pyali/registration/phasecorr.py"
   },
   "pyali.registration.place_cells": {
    "defs": [
@@ -6678,7 +6678,7 @@
     }
    ],
    "loc": 24,
-   "path": "pyali/registration/place_cells.py"
+   "path": "src/pyali/registration/place_cells.py"
   },
   "pyali.registration.register": {
    "defs": [
@@ -6842,7 +6842,7 @@
     }
    ],
    "loc": 338,
-   "path": "pyali/registration/register.py"
+   "path": "src/pyali/registration/register.py"
   },
   "pyali.registration.viz": {
    "defs": [
@@ -7159,7 +7159,7 @@
     }
    ],
    "loc": 483,
-   "path": "pyali/registration/viz.py"
+   "path": "src/pyali/registration/viz.py"
   },
   "pyali.segmentation": {
    "defs": [
@@ -7239,7 +7239,7 @@
     }
    ],
    "loc": 175,
-   "path": "pyali/segmentation.py"
+   "path": "src/pyali/segmentation.py"
   },
   "pyali.utils": {
    "defs": [
@@ -7310,7 +7310,7 @@
     }
    ],
    "loc": 250,
-   "path": "pyali/utils.py"
+   "path": "src/pyali/utils.py"
   },
   "scripts.dev_smoke_registration": {
    "defs": [
