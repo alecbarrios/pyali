@@ -256,7 +256,9 @@ def main():
         print(f"[corpus] mean {total_bytes/ok/1e6:.0f} MB per FOV  ->  "
               f"{total_bytes/ok*6504/1e12:.2f} TB projected for all 6504", flush=True)
     print(f"[corpus] manifest: {a.manifest}", flush=True)
-    return 1 if fail else 0
+    # Non-zero if ANY FOV did not complete -- either it failed, or the pool gave up on it after
+    # exhausting restarts. Returning 0 with unprocessed FOVs made a partial day look successful.
+    return 1 if (fail or remaining) else 0
 
 
 if __name__ == "__main__":
