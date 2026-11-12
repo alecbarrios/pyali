@@ -25,6 +25,7 @@ absolute trace units are not, since bit depth, frame size and footprint weightin
 import argparse
 import os
 import sys
+import textwrap
 from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib
@@ -82,6 +83,28 @@ def grid_dpi(n_panels, base=DPI_DEFAULT, floor=600, cap=900):
     return int(min(cap, max(floor, base * (n_panels / 6.0) ** 0.5)))
 
 
+def finish_grid(fig, th, title, note, days, labels, color_of, h_pad=1.9, w_pad=1.4):
+    """Title, note, legend and tight_layout with the margins reserved in **inches**.
+
+    The margins used to be figure fractions (top 0.952, bottom 0.035) tuned on a 6-row, 14.7-inch
+    grid. On a 1-row grid (4 inches) the same fractions leave 0.14 inch, so the title lands on
+    the note and the legend on the x-axis labels; a single-panel figure also clips the note on
+    the right. Reserving inches and wrapping the note to the figure width fixes both while
+    changing the tall corpus grids by only a few hundredths of the figure height.
+    """
+    w, h = fig.get_size_inches()
+    note = textwrap.fill(note, width=max(40, int(w * 13)))          # ~13 chars/in at 8.5 pt
+    n_note = note.count("\n") + 1
+    top_in = 0.42 + 0.16 * n_note
+    bot_in = 0.30 + 0.20 * int(np.ceil(len(days) / 3.0))              # legend rows (ncol=3)
+    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left",
+                 y=1.0 - 0.06 / h, va="top")
+    fig.text(0.008, 1.0 - 0.36 / h, note, color=th["secondary"], fontsize=8.5, ha="left",
+             va="top")
+    legend(fig, th, days, labels, color_of)
+    fig.tight_layout(rect=(0, bot_in / h, 1, 1.0 - top_in / h), h_pad=h_pad, w_pad=w_pad)
+
+
 def grid_figure(panels, out_dir, stem, title, band_note, labels, days, dpi=None, ncols=5):
     """One small-multiple panel per entry in ``panels`` = [(label, day, t, lo, mid, hi, n)]."""
     th = THEME["light"]
@@ -121,10 +144,7 @@ def grid_figure(panels, out_dir, stem, title, band_note, labels, days, dpi=None,
     # it did, 8 times. Amplitude genuinely goes negative (the undershoot), so unlike firing rate
     # this cannot be fixed by clamping the limit to zero.
     axf[0].yaxis.set_major_locator(MaxNLocator(nbins=4, prune="both"))
-    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
-    fig.text(0.008, 0.962, band_note, color=th["secondary"], fontsize=8.5, ha="left")
-    legend(fig, th, days, labels, color_of)
-    fig.tight_layout(rect=(0, 0.035, 1, 0.952), h_pad=1.9, w_pad=1.4)
+    finish_grid(fig, th, title, band_note, days, labels, color_of)
     w, h = fig.get_size_inches()
     fig.savefig(os.path.join(out_dir, f"{stem}__light.png"), dpi=dpi, facecolor=th["surface"])
     plt.close(fig)

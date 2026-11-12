@@ -47,9 +47,9 @@ from pyali.io import load_v73                                            # noqa:
 from snr_aggregate import OUT_DEFAULT                                    # noqa: E402
 from snr_corpus import METRICS, REQUIRED, S3_DEFAULT, list_fovs          # noqa: E402
 from snr_corpus import READ_ROOT_DEFAULT                                 # noqa: E402
-from snr_figures import THEME, _color_of, day_label, legend, style       # noqa: E402
+from snr_figures import THEME, _color_of, day_label, style               # noqa: E402
 from snr_sta import STA_CELLS                                            # noqa: E402
-from snr_sta_figures import INTERIOR, grid_dpi                           # noqa: E402
+from snr_sta_figures import INTERIOR, finish_grid, grid_dpi              # noqa: E402
 
 # Diverging map for the heatmap: STA amplitude relative to a 0 baseline is genuine polarity
 # (depolarising vs hyperpolarising), so a diverging scale is the right encoding -- two hues with a
@@ -210,10 +210,7 @@ def grid(panels, draw, out_dir, stem, title, note, labels, days, dpi=None, ncols
             pad = 0.06 * (hi - lo)
             axf[0].set_ylim(lo - pad, hi + pad)
     axf[0].yaxis.set_major_locator(MaxNLocator(nbins=5, prune="both"))
-    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
-    fig.text(0.008, 0.962, note, color=th["secondary"], fontsize=8.5, ha="left")
-    legend(fig, th, days, labels, color_of)
-    fig.tight_layout(rect=(0, 0.035, 1, 0.952), h_pad=1.9, w_pad=1.4)
+    finish_grid(fig, th, title, note, days, labels, color_of)
     fig.savefig(os.path.join(out_dir, f"{stem}__light.png"), dpi=dpi, facecolor=th["surface"])
     plt.close(fig)
     w, h = fig.get_size_inches()
@@ -317,10 +314,7 @@ def hist_grid(panels, out_dir, stem, title, note, labels, days, cut_by_day, dpi=
             ax.tick_params(labelbottom=True)
     axf[0].set_xlim(-0.3, 0.8)
     axf[0].set_xticks([-0.2, 0.0, 0.2, 0.4, 0.6])
-    fig.suptitle(title, color=th["primary"], fontsize=12.5, x=0.008, ha="left", y=0.997)
-    fig.text(0.008, 0.962, note, color=th["secondary"], fontsize=8.5, ha="left")
-    legend(fig, th, days, labels, color_of)
-    fig.tight_layout(rect=(0, 0.035, 1, 0.952), h_pad=1.9, w_pad=1.4)
+    finish_grid(fig, th, title, note, days, labels, color_of)
     fig.savefig(os.path.join(out_dir, f"{stem}__light.png"), dpi=dpi, facecolor=th["surface"])
     plt.close(fig)
     return dpi

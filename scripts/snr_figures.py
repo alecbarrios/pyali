@@ -75,10 +75,16 @@ METRIC_UNIT = {"noise_sigma": "1.4826 x MAD of the 20 Hz high-pass trace  (log s
                "snr_median": "median spike amplitude / noise floor",
                "spectral_hf_snr": "excess 20-150 Hz PSD power over the white floor  (asinh scale)"}
 
-# Slots 1-3 of the validated categorical theme, in fixed order. Assigned to days by sort order,
-# so a day keeps its hue no matter which subset is plotted -- colour follows the entity.
+# Slots 1-3 of the validated categorical theme, in fixed order, plus the theme's violet (slot 7)
+# as a fourth LIGHT hue for runs with four groups (the arrayed-KD perturbation set). Violet rather
+# than the theme's own slot 4 (yellow) because yellow fails the all-pairs floors beside orange;
+# the light four were re-validated together with `--pairs all`: worst-pair CVD dE 9.2,
+# normal-vision 16.3, both above the floors. No fourth DARK hue in the theme passes against the
+# dark trio (violet/magenta/yellow/red/green all fail the normal-vision floor), so dark stays at
+# three -- it is not rendered anyway. Assigned to days by sort order, so a day keeps its hue no
+# matter which subset is plotted -- colour follows the entity.
 THEME = {
-    "light": dict(series=["#2a78d6", "#eb6834", "#1baf7a"], surface="#fcfcfb",
+    "light": dict(series=["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"], surface="#fcfcfb",
                   primary="#0b0b0b", secondary="#52514e", grid="#dededa"),
     "dark": dict(series=["#3987e5", "#d95926", "#199e70"], surface="#1a1a19",
                  primary="#ffffff", secondary="#c3c2b7", grid="#3a3a38"),
@@ -309,6 +315,9 @@ def trend_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, title,
     th = THEME[mode]
     color_of = _color_of(days, th)
     f = fovs.dropna(subset=[xcol, "rate_hz"])
+    if not len(f):                           # e.g. no timestamps in the metadata at all
+        print(f"[fig] skip {stem}: no FOV has {xcol}", flush=True)
+        return
     panels = [("all days", f)] + [(d, f[f["day"] == d]) for d in days]
     dpi = dpi or auto_dpi(len(panels))
     fig, axes = plt.subplots(len(panels), 1, figsize=(8.2, 2.5 * len(panels) + 1.4),
@@ -355,6 +364,9 @@ def trend_grid_figure(fovs, out_dir, mode, labels, days, xcol, xlabel, stem, tit
     th = THEME[mode]
     color_of = _color_of(days, th)
     f = fovs.dropna(subset=[xcol, "rate_hz"])
+    if not len(f):                           # plt.subplots(0, ncols) would raise
+        print(f"[fig] skip {stem}: no FOV has {xcol}", flush=True)
+        return
     keys = sorted(f.groupby(["day", "plate", "well"]).groups)
     dpi = dpi or auto_dpi(len(keys))
     nrows = int(np.ceil(len(keys) / ncols))
@@ -525,7 +537,10 @@ def main():
                  f"rate_vs_timeofday_by_well__{mode}.png"]
 
     def imgs(*stems):
-        return "\n".join(f'<img src="figures/{s_}__light.png" alt="{s_}">' for s_ in stems)
+        # Only figures that were actually written -- a trend figure is skipped when no FOV
+        # carries its x axis (no timestamps), and a broken <img> would otherwise stand in for it.
+        return "\n".join(f'<img src="figures/{s_}__light.png" alt="{s_}">' for s_ in stems
+                         if os.path.exists(os.path.join(out_dir, f"{s_}__light.png")))
 
     sections = []
     for stem, heading in [("by_well", "By well"), ("by_plate", "By plate"),
