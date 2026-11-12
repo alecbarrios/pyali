@@ -1,0 +1,50 @@
+[
+  {
+    "label": "cells",
+    "seconds": 45.7,
+    "n_regions": 86,
+    "n_cells": 89,
+    "n_aps": 443,
+    "T": 8389,
+    "crop": {
+      "source": "/tmp/claude-1000/-home-jovyan-workbench-pyali/bf70b146-14ed-4e33-8a9c-4397cbbd2a81/scratchpad/fov/133603_P-4_W-C2_443-2_443screen2_DIV35__burst47",
+      "row": 120,
+      "col": 60,
+      "size": 256,
+      "T": 8399,
+      "dtype": "uint8"
+    }
+  },
+  {
+    "label": "cells_global_filter",
+    "seconds": 47.7,
+    "n_regions": 86,
+    "n_cells": 89,
+    "n_aps": 443,
+    "T": 8389,
+    "crop": {
+      "source": "/tmp/claude-1000/-home-jovyan-workbench-pyali/bf70b146-14ed-4e33-8a9c-4397cbbd2a81/scratchpad/fov/133603_P-4_W-C2_443-2_443screen2_DIV35__burst47",
+      "row": 120,
+      "col": 60,
+      "size": 256,
+      "T": 8399,
+      "dtype": "uint8"
+    }
+  },
+  {
+    "label": "dark",
+    "seconds": 65.6,
+    "n_regions": 152,
+    "n_cells": 152,
+    "n_aps": 113,
+    "T": 8389,
+    "crop": {
+      "source": "/tmp/claude-1000/-home-jovyan-workbench-pyali/bf70b146-14ed-4e33-8a9c-4397cbbd2a81/scratchpad/fov/133603_P-4_W-C2_443-2_443screen2_DIV35__burst47",
+      "row": 0,
+      "col": 544,
+      "size": 256,
+      "T": 8399,
+      "dtype": "uint8"
+    }
+  }
+]

@@ -1,0 +1,18 @@
+[
+ {
+  "name": "reviewer",
+  "role": "review extract.py against the rubric",
+  "wall_minutes": 20,
+  "notes": "1 general-purpose agent; 646 lines / 22 functions; 22 probes incl. three 45-65 s real-crop runs; 10 findings + 22 non-findings",
+  "tokens": 179870,
+  "tool_uses": 40
+ },
+ {
+  "name": "verifier",
+  "role": "reproduce each claim; classify reachability and severity",
+  "wall_minutes": 17,
+  "tokens": 161657,
+  "tool_uses": 38,
+  "notes": "1 general-purpose agent; 10 reproducers + 3 instrumented real-crop runs (4.7 GB maxrss each); 0 rejected, 2 severities lowered"
+ }
+]

@@ -1,0 +1,249 @@
+{
+ "findings": [
+  {
+   "id": "EXT-01",
+   "file": "pyali/extract.py",
+   "line": 175,
+   "function": "detect_region_aps",
+   "category": 3,
+   "severity": "S1",
+   "claim": "The peak refinement argmax(thr[t0-3:t0+3]) re-maps two findpeaks peaks that lie <=2 frames apart onto the same frame, so one double-peaked AP is emitted as two region_AP rows with identical [row,col,frame] (the first row still carrying the amplitude of its original, unrefined frame), and these duplicates survive dedup_close_peaks and reach COMs and DBSCAN.",
+   "failure_scenario": "patch_movie (T=100, 12x12) zero except a region-mean trace of 5 at frame 50, 4 at frame 51, 6 at frame 52 and tiny noise in frames 10-39 used as std_frames; selection 4x4 block -> detect_region_aps returns region_AP [[5,5,52,0.3125],[5,5,52,0.375]] (two rows, same frame, first amplitude is frame 50's value 5/16); dedup_close_peaks(region_AP, 15) returns both rows unchanged. If the secondary peak is 3 frames away instead (5 at 50, 8 at 53) the two rows stay distinct and dedup removes BOTH, so one physical AP yields 2 or 0 rows, never 1. Downstream: DBSCAN(eps=1.5,min_samples=3).fit_predict([[10,10],[10,10],[11,10]]) -> [0,0,0] (a cluster/footprint from two real APs) whereas [[10,10],[11,10]] -> [-1,-1].",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import detect_region_aps, dedup_close_peaks; from pyali.utils import dog_kernel\nT=100; pm=np.zeros((T,12,12)); sel=np.zeros((12,12)); sel[4:8,4:8]=1\nfor t,v in ((50,5.0),(51,4.0),(52,6.0)): pm[t,5,5]=v*144/16\npm[10:40]+=np.random.default_rng(0).normal(scale=0.01,size=(30,12,12))\nap,d=detect_region_aps(pm,sel,(0,0),dog_kernel(),np.arange(10,40),3.25,8); print(ap); print(dedup_close_peaks(ap,15))\n# expect two rows with frame 52; then: from sklearn.cluster import DBSCAN; DBSCAN(eps=1.5,min_samples=3).fit_predict(np.array([[10.,10],[10,10],[11,10]]))",
+   "confidence": "high",
+   "rationale": "Confirmed by probe P3/P17. Requires two local maxima of thr within 2 frames, both above threshold; on the real 256x256 crop (459 pre-dedup APs) and the saturated crop (84) the instrumented run found 0 such collapses, so it is rare at 3-sigma threshold but it is a plausible shape for a bursting/double-peaked AP at 800 Hz. The root is the refinement picking a different local maximum than the one findpeaks reported; dedup's equal-frame blindness (EXT-02) lets it through. Severity S1: the pipeline completes with an AP counted twice in APs/COMs and DBSCAN min_samples can be met by a duplicate."
+  },
+  {
+   "id": "EXT-02",
+   "file": "pyali/extract.py",
+   "line": 199,
+   "function": "dedup_close_peaks",
+   "category": 2,
+   "severity": "S1",
+   "claim": "dedup_close_peaks does not implement its docstring ('remove APs whose frame is within min_interval of another'): rows with identical frames are both kept (each equals the group representative under both groupings), and the greedy first-element grouping of uniquetol_reps keeps a frame that is only 2 frames from a dropped neighbour.",
+   "failure_scenario": "region_AP = [[5,5,12,3],[5,5,12,4]] (two rows, same frame), min_interval=15 -> returns both rows unchanged. region_AP with frames [10,24,26] -> returns only the row with frame 26, although 26 is within 2 frames of 24 (24 and 10 are dropped because they share a group [10,24]; 26 starts a new group because 26-10=16>15).",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import dedup_close_peaks\nprint(dedup_close_peaks(np.array([[5,5,12,3.],[5,5,12,4.]]),15))  # 2 rows\nprint(dedup_close_peaks(np.array([[5,5,10,1.],[5,5,24,1.],[5,5,26,1.]]),15))  # [[5,5,26,1]]",
+   "confidence": "medium",
+   "rationale": "Both behaviours confirmed by probe P2/P2b. The equal-frame case is a definite hole (it is exactly what EXT-01 produces). The greedy-grouping case is likely MATLAB uniquetol parity (uniquetol also anchors each group on its first sorted element), so whether the docstring or the code is the intent is ambiguous; hence medium. Note MATLAB uniquetol's default tolerance is relative to max(abs(A)) unless DataScale=1 was passed; the port uses an absolute tolerance, which I could not check against the MATLAB source (none in the repo)."
+  },
+  {
+   "id": "EXT-03",
+   "file": "pyali/extract.py",
+   "line": 35,
+   "function": "temporal_filter",
+   "category": 2,
+   "severity": "S1",
+   "claim": "temporal_filter and temporal_filter_patch return uninitialised memory for the interior frames (window//2 .. T-window+window//2) when the (T,H,W) movie is not laid out so that its two spatial axes can be merged into a C-order view (e.g. a Fortran-ordered array, or a MATLAB (H,W,T) array loaded column-major and transposed to (T,H,W)); only the shrinking end windows are correct.",
+   "failure_scenario": "m = rng.normal(size=(40,30,30)); temporal_filter(np.asfortranarray(m)) differs from temporal_filter(np.ascontiguousarray(m)) by max|diff| = 1.66 in frames 4..36 while frames 0-3 and 37-39 match exactly; temporal_filter_patch(np.asfortranarray(m),3,20,5,27) likewise. mov = np.transpose(np.asfortranarray(hwt),(2,0,1)) (loadmat-style) -> max|diff| = 2.35. Root cause: utils.movmedian_time does out = np.empty_like(a) (order 'K', so F-ordered) then out_flat = out.reshape(n,-1), which for that layout is a COPY, so the window==8 fast path writes the medians into a temporary and the returned array's interior is np.empty garbage.",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import temporal_filter\nrng=np.random.default_rng(1); m=rng.normal(size=(40,30,30))\nref=temporal_filter(np.ascontiguousarray(m)); got=temporal_filter(np.asfortranarray(m))\nprint(np.abs(ref-got)[4:37].max(), np.abs(ref-got)[:4].max())  # ~1.6 vs 0.0",
+   "confidence": "medium",
+   "rationale": "Reproduced (probe P11/P14b). Domain caveat: process_fov's movie is always C-contiguous (read_bin_mov astype, in-place preprocessing, leading-axis slice), so the pipeline never hits it; a direct API caller with a loadmat/F-ordered array does, and the function's docstring admits any '(T,H,W) float array' and claims bit-identity. The defect lives in utils.movmedian_time (another module) but extract.temporal_filter is the documented entry point; the window!=8 reference path is unaffected. A C-contiguous moveaxis of an (H,W,T) C-array happens to be fine because its axes merge into an F-view."
+  },
+  {
+   "id": "EXT-04",
+   "file": "pyali/extract.py",
+   "line": 162,
+   "function": "detect_region_aps",
+   "category": 3,
+   "severity": "S2",
+   "claim": "detect_region_aps indexes dog_filtered[std_frames] without clipping to T, so a movie shorter than the last std_range (e.g. a 443screen2 acquisition with fewer than 8251 raw frames) raises IndexError for the first region, after preprocess has silently accepted the same ranges (background_samples slices tolerate it).",
+   "failure_scenario": "pm shape (100,10,10), std_frames = np.arange(90,120) -> IndexError: index 100 is out of bounds for axis 0 with size 100. Pipeline level (confirmed): the first 8100 frames of the real 256x256 443screen2 crop (T=8090 after truncate_last=10; std_frames max 8240) with Params.profile_443screen2(nrow=256,ncol=256) -> process_fov raises 'IndexError: index 8090 is out of bounds for axis 0 with size 8090' at extract.py:162 via extract_footprints (pipeline.py:89); reference image, background subtraction, motion correction and segmentation all complete first with no warning.",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import detect_region_aps; from pyali.utils import dog_kernel\npm=np.random.default_rng(0).normal(size=(100,10,10)); detect_region_aps(pm,np.ones((10,10)),(0,0),dog_kernel(),np.arange(90,120),3.25,8)\n# pipeline: np.fromfile(crop_cells/frames1.bin,uint8)[:8100*256*256].tofile(short/frames1.bin); process_fov(short, p=Params.profile_443screen2(nrow=256,ncol=256), save=False)",
+   "confidence": "high",
+   "rationale": "Function-level IndexError confirmed (P12). The rubric lists 'movies shorter than the protocol ranges' as a degenerate input to check. preprocess.background_samples uses slices so a range partly beyond T just averages fewer frames (only a range entirely beyond T gives NaN), so the first hard failure is here. Whether short acquisitions occur in the corpus is a domain question (sidecar frames1_dropped_frames.txt suggests frame loss exists)."
+  },
+  {
+   "id": "EXT-05",
+   "file": "pyali/extract.py",
+   "line": 237,
+   "function": "svd_denoise_ap_stack",
+   "category": 3,
+   "severity": "S2",
+   "claim": "The 'probe pixel' trick keep = ~((sa[-1,-1,:]==0) & (sa[9,9,:]==0)) silently drops a genuine centre frame whenever the denoised frame is exactly 0 at both probe pixels (e.g. two dead/saturated-constant pixels at patch positions (9,9) and (Hp-1,Wp-1)), and indexes [9,9] unconditionally so a patch with Hp<=9 or Wp<=9 raises; either way com_via_svd then fails with IndexError.",
+   "failure_scenario": "pm = rng.normal(size=(50,20,20)); pm[:,9,9]=0; pm[:,-1,-1]=0; svd_denoise_ap_stack(pm, [10,20,30]) returns centers of shape (20,20,0) instead of (20,20,3); com_via_svd(pm,[10,20,30],arange(1,21),arange(1,21)) -> IndexError: index 0 is out of bounds for axis 2 with size 0. With only one dead probe pixel the shape is (20,20,3). Parameter-coupled variant: compute_patch([50,2],[47.5,0.5,5,4],(15,15),200,200) gives a 9-row patch; svd_denoise_ap_stack on a (60,9,16) patch -> IndexError: index 9 is out of bounds for axis 0 with size 9.",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import svd_denoise_ap_stack, com_via_svd\nrng=np.random.default_rng(0); pm=rng.normal(size=(50,20,20)); pm[:,9,9]=0; pm[:,-1,-1]=0\nprint(svd_denoise_ap_stack(pm,np.array([10,20,30]))[1].shape)\ncom_via_svd(pm,np.array([10,20,30]),np.arange(1,21),np.arange(1,21))",
+   "confidence": "medium",
+   "rationale": "Both failure modes reproduced (P7, P15). Real-data plausibility: the full 443screen2 FOV has 2723 pixels constant over all 8399 frames (1190 at 255); inside a saturated plateau the background sample equals the plateau, the motion-correction gradient is 0, so the filtered value is exactly 0 for all t. The blobs in this FOV are <=42 px so they cannot cover both probe pixels of a 28x28 patch (a crop around the largest blob ran clean, 0 dropped frames in 17 SVD calls), hence medium. The Hp<=9 branch needs patch_size<=~16, not the default 27 (default patches are always >=14 rows even at the border). The right fix is to keep frames 7i+3 by index instead of probing values."
+  },
+  {
+   "id": "EXT-06",
+   "file": "pyali/extract.py",
+   "line": 285,
+   "function": "region_grow_brightest",
+   "category": 4,
+   "severity": "S3",
+   "claim": "region_grow_brightest assumes at least com_n_pixels 4-connected pixels lie within com_radius of the maximum inside the patch; nothing asserts it, and the margin at a patch corner is only 65 vs 50, so a smaller com_radius or larger com_n_pixels makes current.ravel()[idx].max() hit an empty queue.",
+   "failure_scenario": "current = random 28x28 with current[0,0]=100 (maximum at the patch corner): region_grow_brightest(current, radius=8.5, n_pixels=50) works (quarter disc = 65 px); radius=5.0 -> ValueError: zero-size array to reduction operation maximum which has no identity; radius=8.5, n_pixels=70 -> same ValueError.",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import region_grow_brightest\ncur=np.random.default_rng(0).normal(size=(28,28)); cur[0,0]=100\nregion_grow_brightest(cur,8.5,50).shape; region_grow_brightest(cur,5.0,50)",
+   "confidence": "high",
+   "rationale": "Reproduced (P8, P16). Default-safe by a 15-pixel margin (corner budget 65; clipped 14x28 patch at the frame border also 65). This is the rubric's own category-4 example; recorded with the exact numbers so the next review need not redo it. Tie behaviour (argmax over the whole patch for a shared value) can also return duplicate picks (P9) but only for exactly equal floats."
+  },
+  {
+   "id": "EXT-07",
+   "file": "pyali/extract.py",
+   "line": 173,
+   "function": "detect_region_aps",
+   "category": 4,
+   "severity": "S3",
+   "claim": "The end guards (t0<=2, t0>=T-4) and the +-3-frame refinement only keep the refined frame inside [3, T-4] because the first/last round(filter_window/2) frames are zeroed; with filter_window<=4 (half=2) a refined AP can land on frame 2 or T-3 and svd_denoise_ap_stack's patch_movie[t-3:t+4] then has 0 or 6 frames and raises ValueError.",
+   "failure_scenario": "filter_window=4, 16x16 patch with region-mean trace 10 at frame 2, 1 at 3, 1 at 4, 5 at 5, 1 at 6 (noise frames 20-59 as std_frames): detect_region_aps returns region_AP frame 2.0 (peak at 5 refined to the larger value at 2); com_via_svd on it -> ValueError: could not broadcast input array from shape (16,16,0) into shape (16,16,7). Mirror case at the end (10 at T-3, 5 at T-5) -> frame 97.0 -> ValueError ... shape (16,16,6) into (16,16,7). Same traces with filter_window=8 give frame 5 and no error.",
+   "reproducer_sketch": "import numpy as np; from pyali.extract import detect_region_aps, dedup_close_peaks, com_via_svd; from pyali.utils import dog_kernel\nT=100; pm=np.zeros((T,16,16)); sel=np.zeros((16,16)); sel[6:10,6:10]=1\nfor t,v in ((2,10.),(3,1.),(4,1.),(5,5.),(6,1.)): pm[t,7,7]=v*16\npm[20:60]+=np.random.default_rng(0).normal(scale=0.01,size=(40,16,16)); pm[:2]=0; pm[T-2:]=0\nap,_=detect_region_aps(pm,sel,(0,0),dog_kernel(),np.arange(20,60),3.25,filter_window=4); print(ap[:,2])\ncom_via_svd(pm,ap[:,2].astype(int),np.arange(1,17),np.arange(1,17))",
+   "confidence": "high",
+   "rationale": "Reproduced (P6/P6b/P6c). Safe at the default window 8 (and any window>=5) only because the zeroed end frames can never be the argmax; the guard constants 2 and T-4 do not themselves bound the refined frame. filter_window is a public Params field with no documented lower bound."
+  },
+  {
+   "id": "EXT-08",
+   "file": "pyali/extract.py",
+   "line": 520,
+   "function": "pinv_traces",
+   "category": 8,
+   "severity": "S3",
+   "claim": "pinv_traces builds a dense (H*W, N) matrix and calls np.linalg.pinv on it, which materialises about 3x that matrix (copy + U + product) on top of the (H,W,N) footprint and the planes list extract_footprints still holds, i.e. ~13 GB transient for an 800x800 FOV with ~870 footprints and ~44 GB for 1080x1080 with ~1580, although each footprint has at most an 11x11 (or region-bbox) support.",
+   "failure_scenario": "footprint (300,300,200) with 11x11 supports, float32 movie (50,300,300): tracemalloc peak inside pinv_traces = 432 MB = 3.00x the 144 MB dense footprint matrix, result 0.1 MB. Scaling the measured factor: 800x800x870 footprints -> 4.5 GB x3 = 13 GB; 1080x1080x1580 -> 44 GB, plus the 2x(H,W,N) held by extract_footprints' planes list and np.stack at line 443.",
+   "reproducer_sketch": "import numpy as np, tracemalloc; from pyali.extract import pinv_traces\nH=W=300;N=200;fp=np.zeros((H,W,N));rng=np.random.default_rng(0)\nfor n in range(N): r,c=rng.integers(5,H-6,2); fp[r-5:r+6,c-5:c+6,n]=rng.random((11,11))\nmovie=rng.normal(size=(50,H,W)).astype(np.float32); tracemalloc.start(); pinv_traces(movie,fp); print(tracemalloc.get_traced_memory()[1]/(H*W*N*8))",
+   "confidence": "medium",
+   "rationale": "Measured factor 3.0 at small scale; the absolute numbers at FOV scale are extrapolated (870 footprints = the crop's 89 scaled by area; 1580 for 1080^2). Whether it OOMs depends on the box (the project targets 62 GB with a ~21-30 GB float32 movie resident), so S3 rather than S2. A sparse/blockwise solve or a QR on the compact support would remove it; the per-chunk float32 promotion is already handled by project_movie."
+  },
+  {
+   "id": "EXT-09",
+   "file": "pyali/extract.py",
+   "line": 544,
+   "function": "per_pixel_noise_map",
+   "category": 8,
+   "severity": "S3",
+   "claim": "per_pixel_noise_map fancy-indexes the baseline frames into a (n_base,H,W) copy and then forms base-med and abs(base-med) as two more full temporaries, ~3x n_base*H*W*itemsize, i.e. ~12 GB transient for the 443screen2 profile (1515 baseline frames x 800^2 float32) while the full filtered movie is also resident on the whiten_traces path.",
+   "failure_scenario": "filtered_movie (350,200,200) float32, std_frames = arange(300): tracemalloc peak = 145 MB = 3.03x the 48 MB baseline slice. Scaled to profile_443screen2: 1515 x 800 x 800 x 4 B = 3.9 GB x 3 = 12 GB transient.",
+   "reproducer_sketch": "import numpy as np, tracemalloc; from pyali.extract import per_pixel_noise_map\nfm=np.random.default_rng(0).normal(size=(350,200,200)).astype(np.float32); tracemalloc.start(); per_pixel_noise_map(fm,np.arange(300)); print(tracemalloc.get_traced_memory()[1]/(300*200*200*4))",
+   "confidence": "medium",
+   "rationale": "Measured. Opt-in path only (whiten_traces=False by default), and it already requires the global filtered movie, so this is an aggravation of an expensive path rather than a default-path regression. A per-pixel-chunk MAD (as movmedian_time chunks) would bound it."
+  },
+  {
+   "id": "EXT-10",
+   "file": "pyali/extract.py",
+   "line": 86,
+   "function": "compute_patch",
+   "category": 9,
+   "severity": "S3",
+   "claim": "compute_patch applies patch_size[1] (documented as cols) to the row range and patch_size[0] (rows) to the column range, so a non-square patch_size produces the transposed patch; it is correct today only because the default is square.",
+   "failure_scenario": "compute_patch([50,50],[48.5,47.5,4,6],(27,11),200,200) -> rows 44..55 (12 rows) and cols 36..63 (28 cols); the docstring's (rows, cols)=(27,11) would give 28 rows and 12 cols. With (27,27) both spans are 28.",
+   "reproducer_sketch": "from pyali.extract import compute_patch; pr,pc,o=compute_patch([50.,50.],[48.5,47.5,4,6],(27,11),200,200); print(len(pr),len(pc))  # 12 28",
+   "confidence": "high",
+   "rationale": "Reproduced (P1). Pure parameter-coupled/doc drift: ph,pw = patch_size then min_row uses pw and min_col uses ph. Also note (not a separate finding) that a patch_size of 27 yields 28x28 patches (floor(c-13.5)..floor(c+13.5) inclusive), matching the MATLAB construction but not the '27x27' wording in Params/README."
+  }
+ ],
+ "non_findings": [
+  {
+   "function": "temporal_filter",
+   "checked": "median-minus-movie sign (negative-going spikes become positive), in-place subtraction on the fresh movmedian output (no aliasing of the input), float32 preserved, int input upcast; bit-identical to the patch path on C-contiguous input (test_patch_local_filter_is_bit_identical and probe P11). Only the non-C-layout case fails (EXT-03)."
+  },
+  {
+   "function": "temporal_filter_patch",
+   "checked": "half-open 0-indexed bounds match extract_footprints' r0,r1,c0,c1 derivation from 1-indexed inclusive patch ranges; output is C-contiguous and bit-identical to slicing the global filter for C-contiguous movies (probe P11, max|diff| 0.0, float32 kept)."
+  },
+  {
+   "function": "compute_patch",
+   "checked": "bbox term: floor(y_ul+0.5) = 1-indexed min row and floor(y_ul+0.5+h) = 1-indexed max row + 1, so the patch always contains the region's bbox (needed by region_fallback_footprint's np.ix_ shapes); clipping to [1,H]/[1,W]; origin0 = first index - 1; default patches are never fewer than 14 rows/cols even for a centroid on the frame edge (so sa[9,9] and the 50-pixel grow are safe at defaults). Axis swap for non-square sizes is EXT-10."
+  },
+  {
+   "function": "build_selection_map",
+   "checked": "[col,row] 1-indexed PixelList -> sel[row-1, col-1]; (H,W) float64 temporary per region (5 MB at 800^2), released each iteration."
+  },
+  {
+   "function": "apply_dog_gain",
+   "checked": "dog[len//2] is the unit centre tap of utils.dog_kernel (also 1.0 for an even width since the two central taps are equal and maximal); effectively a no-op, used only for the noise estimate."
+  },
+  {
+   "function": "forward_rolling_min_subtract",
+   "checked": "out[i] = x[i] - min(x[i+1:i+1+look]) with the window clipped at n-1, last sample 0, n=0/1 safe; matches its docstring. Whether MATLAB movmin included the current sample could not be checked (no MATLAB source in the repo)."
+  },
+  {
+   "function": "detect_region_aps",
+   "checked": "end zeroing with round-half-away(window/2); spatial mean over the whole patch (scale cancels in the relative threshold); nanstd ddof=1 on 0-indexed std_frames; thr thresholding; findpeaks (strict, flat top -> left edge); [row,col,frame,amp] 0-indexed absolute via origin0 with first-max column-major tie break; empty result reshaped to (0,4); refined frame stays within [4, T-5] at the default window so the SVD stack always has 7 frames. Findings: EXT-01, EXT-04, EXT-07. Degenerate std noise: std_frames empty -> NaN threshold -> thr keeps negatives and utils.findpeaks can IndexError on a trailing flat run (out of the pipeline domain since Params.std_frames_index raises on empty std_ranges); zero baseline noise -> threshold 0 -> every positive local max becomes an AP (by construction)."
+  },
+  {
+   "function": "dedup_close_peaks",
+   "checked": "empty input passthrough; float frame keys exact; intersect/isin logic. Contract gaps are EXT-02."
+  },
+  {
+   "function": "svd_denoise_ap_stack",
+   "checked": "7-frame stacks at t-3..t+3 for t in [3,T-4]; F-order reshape in and out are consistent (pixel = r + c*Hp both ways); rank cap k=min(rank,7nAP) and slicing beyond len(s) is safe; centre-frame selection by zeroing the other 6 frames. Probe-pixel keep heuristic is EXT-05."
+  },
+  {
+   "function": "region_grow_brightest",
+   "checked": "first-max column-major seed; 4-neighbour queue restricted to the Euclidean disc; queued &= ~is_picked each step; C-order idx into C-order ravel (consistent) and F-order first-occurrence for the pick; result is (n_pixels,2) 0-indexed. Budget/ties: EXT-06 and notes."
+  },
+  {
+   "function": "_weighted_com",
+   "checked": "row x column hull via np.ix_ (documented MATLAB-style indexing), negatives excluded, intensity^2 weights, 1-indexed patch coordinates -> 1-indexed absolute COM consistent with figures.fig_coms. NaN only if the denoised centre frame has no positive pixel in the hull (0 of 543 real APs in the instrumented runs); exact reconstruction for nAP<=2 makes it impossible there."
+  },
+  {
+   "function": "com_via_svd",
+   "checked": "coms[:,2]=frame (0-indexed), coms[:,:2] 1-indexed [row,col]; per-AP loop over centers; parameter pass-through of rank/radius/n_pixels."
+  },
+  {
+   "function": "region_fallback_footprint",
+   "checked": "column-major pixel order used identically for the full map and the patch map, so np.ix_(x,y) and np.ix_(xp,yp) have equal shapes and the hull is filled with the patch max-projection at the matching offsets; the patch always contains the region bbox (compute_patch), so no shape mismatch."
+  },
+  {
+   "function": "cluster_footprints",
+   "checked": "mean of the filtered AP frames; brightest in-selection pixel (first, column-major) -> 1-indexed absolute centre; 11x11 window built 0-indexed with border clipping; plane filled only on the patch via np.ix_(patch_rows-1, patch_cols-1); centres are 1-indexed [row,col] as figures/tests assume. masked.max()>0 is guaranteed when threshold>=0 because every AP frame had a positive selection-mean."
+  },
+  {
+   "function": "extract_footprints",
+   "checked": "patch/selection/origin bookkeeping; half-open bounds; pm is always a fresh array (temporal_filter_patch output or .copy()) so the end-zeroing does not mutate the caller's movie/filtered_movie; fallback for no-AP and all-noise DBSCAN; cluster_times from labels; empty-output shapes (H,W,0), (0,2), (0,4), (0,3) (test_constant_movie passes); APs/COMs include fallback regions and so do not align row-wise with footprints (documented nowhere, consumers do not assume it). Memory: planes list + np.stack = 2x(H,W,N) float64 (see EXT-08)."
+  },
+  {
+   "function": "region_center_rowcol",
+   "checked": "[col,row] -> [row,col], 1-indexed, consistent with cluster centres."
+  },
+  {
+   "function": "project_movie",
+   "checked": "C-order (T,H*W) view of a C-contiguous movie; chunk step from op's itemsize; out[:, t0:t1] = op @ chunk.T is exactly the unchunked product (time is an output axis); N=0 and T<step fine. A non-C-contiguous movie would make reshape copy the whole movie (same domain caveat as EXT-03)."
+  },
+  {
+   "function": "pinv_traces",
+   "checked": "footprint (H,W,N) -> (H*W,N) C-order view matches movie (T,H*W) C-order pixel index row*W+col; rcond = max(shape)*eps is relative to the largest singular value in NumPy as in MATLAB's pinv; -project_movie gives spike-positive traces; N=0 returns (0,T). Memory: EXT-08."
+  },
+  {
+   "function": "per_pixel_noise_map",
+   "checked": "MAD*1.4826 over 0-indexed baseline frames; floor at the floor_pct percentile of positive sigmas; all-zero sigma -> ones. Memory: EXT-09."
+  },
+  {
+   "function": "footprint_isolated_mask",
+   "checked": "nonzero bounding boxes; inclusive intersection so touching boxes count as overlapping; empty footprints flagged -1 and treated as isolated-neutral; O(N^2) Python loop is ~1-5 s at FOV scale."
+  },
+  {
+   "function": "whitened_gls_traces",
+   "checked": "W = 1/sigma^2 on the same C-order flattening; A = F^T W F + ridge*mean(diag A)*I; B = -F^T W movie via project_movie; solve. N=0 returns (0,T) with only RuntimeWarnings (probe P4)."
+  },
+  {
+   "function": "extract_cell_traces",
+   "checked": "getattr defaults correspond to real Params fields (mechanical p_attr_unknown=0); default path is exactly pinv_traces; whiten path raises a clear ValueError without noise_map; isolated-only merge copies the pinv rows and overwrites isolated rows."
+  }
+ ],
+ "probes": [
+  "cd /home/jovyan/workbench/pyali && /home/jovyan/.venvs/pyali/bin/python -c 'P1: compute_patch([50,50],[48.5,47.5,4,6],(27,11),200,200) -> rows 44..55 (12), cols 36..63 (28); (27,27) -> 28/28'",
+  "P2/P2b: dedup_close_peaks([[5,5,12,3],[5,5,12,4]],15) -> both rows; dedup_close_peaks(frames [10,24,26],15) -> [26]",
+  "P3: detect_region_aps on a 12x12 patch with region-mean trace 5/4/6 at frames 50/51/52 (std_frames 10..39, window 8) -> region_AP [[5,5,52,0.3125],[5,5,52,0.375]]; dedup keeps both",
+  "P4/P5: whitened_gls_traces / extract_cell_traces(whiten_traces=True) with footprint (8,8,0) -> (0,T) with RuntimeWarnings only; np.linalg.solve(0x0, 0x5) -> (0,5)",
+  "P6/P6b/P6c: detect_region_aps(..., filter_window=4) with trace 10@2,1@3,1@4,5@5,1@6 -> frame 2.0; com_via_svd -> ValueError (16,16,0) into (16,16,7); mirrored at the end -> frame 97 -> ValueError (16,16,6); filter_window=8 -> frame 5, no error",
+  "P7: svd_denoise_ap_stack(pm with pm[:,9,9]=0 and pm[:,-1,-1]=0, times [10,20,30]) -> centers (20,20,0); com_via_svd -> IndexError; one dead probe pixel -> (20,20,3)",
+  "P8: region_grow_brightest(28x28 with max at (0,0), radius 8.5, 50) ok; radius 5.0 -> ValueError zero-size array; n_pixels 70 -> ValueError",
+  "P9: region_grow_brightest ties (value 0.5 at (5,6) queued and (0,0) unqueued) -> picked contains (0,0) five times, 2 unique pixels",
+  "P10: _weighted_com on an all-negative 12x12 frame -> (nan, nan)",
+  "P11: temporal_filter_patch on a C-order float32 view: C-contiguous, bit-identical to global slice; np.asfortranarray movie -> not identical",
+  "P12: detect_region_aps with std_frames=arange(90,120) on T=100 -> IndexError index 100",
+  "P13/P13b: std_frames empty -> threshold NaN -> utils.findpeaks IndexError on trailing flat run; zero-noise baseline -> threshold 0.0, 4 APs from 1 planted spike + 1e-3 noise",
+  "P14: moveaxis of a C-order (H,W,T) array -> identical (axes merge into an F view); np.asfortranarray (T,H,W) -> interior frames 4..36 max|diff| 1.66, end frames 0.0; transpose(loadmat-style F (H,W,T)) -> max|diff| 2.35; movmedian_time alone reproduces it",
+  "tracemalloc: pinv_traces on footprint (300,300,200) -> peak 3.00x the dense matrix (432 MB vs 144 MB); per_pixel_noise_map on (350,200,200) float32 with 300 baseline frames -> peak 3.03x the slice",
+  "DBSCAN(eps=1.5,min_samples=3): [[10,10],[11,10]] -> [-1,-1]; with a duplicated row -> [0,0,0]",
+  "P15: compute_patch([50,2],[47.5,0.5,5,4],(15,15),200,200) -> 9 rows; svd_denoise_ap_stack on (60,9,16) -> IndexError index 9",
+  "P16: pixels within radius 8.5 of a patch corner = 65 (interior 225; clipped 14x28 patch corner 65) vs com_n_pixels 50",
+  "P17: trace 5@50,1@51,1@52,8@53 -> region_AP frames [50,53] -> dedup removes both; 5@50,1@51,8@52 -> [52,52] -> dedup keeps both",
+  "Real crop_cells (256x256, 8389 frames, profile_443screen2): process_fov 44 s, 86 regions, 89 footprints, 443 APs, no duplicate (row,col,frame) AP/COM rows, traces finite; instrumented run: 459 pre-dedup APs, 0 refinement moves, 0 duplicate frames, 0 dropped centre frames, 0 non-positive centre frames, 0 NaN COMs, min patch dim 17",
+  "Real full FOV frames1.bin (800x800x8399 uint8): 2723 pixels constant over all frames, 1190 at 255, largest constant blob 42 px (rows 325-335, cols 403-413); crop_sat (256x256 around it) instrumented: 23 regions, 84 APs, 0 dropped centre frames, status ok",
+  "crop_short (first 8100 frames of crop_cells, T=8090) -> process_fov with profile_443screen2(nrow=256,ncol=256): IndexError index 8090 out of bounds for axis 0 with size 8090 at extract.py:162 (detect_region_aps) from extract_footprints; preprocessing stages completed silently",
+  "Real crop_dark (256x256 outside the well) instrumented: 152 regions, 113 APs (none removed by dedup), 0 refinement moves, 0 duplicate frames, 0 dropped centre frames, 0 non-positive centre frames, 0 NaN COMs, min patch dim 16, status ok"
+ ],
+ "notes": "Parity questions I could not settle (no MATLAB source in the repo): (1) the refinement window thr[t0-3:t0+3] is 6 samples [t0-3,t0+2] -- if the MATLAB original was max(thr(t0-3:t0+3)) (7 samples) this is a half-open port slip; the comment documents the 6-sample window; (2) forward_rolling_min_subtract excludes the current sample where MATLAB movmin(x,[0 k]) would include it; (3) uniquetol tolerance absolute vs MATLAB's default relative-to-max(abs) scaling. Not findings: compute_patch yields 28x28 patches for patch_size 27 (floor(c-13.5)..floor(c+13.5) inclusive), consistent with a MATLAB colon range but not with the '27x27' wording; the AP pixel in region_AP is the brightest pixel of the whole patch at the refined frame (not restricted to the region's selection), so a speckle region adjacent to a bright cell reports the cell's pixel -- by construction, affects APs/QC only; region_grow_brightest's whole-patch argmax on ties can pick an unqueued pixel and then repeat it (P9), only for exactly equal floats; _weighted_com returns NaN (then DBSCAN raises ValueError) if the denoised centre frame has no positive pixel -- 0 of 543 real APs, impossible for nAP<=2 where the rank cap gives exact reconstruction; APs/COMs rows include regions that fell back to the region footprint, so they do not align one-to-one with footprint planes (no consumer assumes they do). Belongs to other modules: utils.movmedian_time's out.reshape(n,-1) copy on non-C layouts is the root of EXT-03; utils.findpeaks IndexErrors on a trailing flat run that is 'rising into' (only reachable with a NaN/negative threshold); Params.std_frames_index raises on empty std_ranges (so the NaN-threshold path is unreachable from the pipeline); preprocess.background_samples silently tolerates ranges beyond T, which is why EXT-04 is the first hard failure for a short movie. Memory not counted as a finding: build_selection_map and cluster_footprints' sel allocate a full (H,W) float64 per region/cluster but release it; per-region work is otherwise O(T x 28 x 28). Oracle status: tests/test_extract_oracle.py 11 passed, 1 xfail (segmentation) at the start of this review; nothing under /home/jovyan/workbench/pyali was modified."
+}
