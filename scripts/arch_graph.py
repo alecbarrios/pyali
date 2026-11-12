@@ -775,7 +775,7 @@ def layout(nodes, edges, gap_x=34, gap_y=78, margin=18):
                 a[1] += b[1]
                 a[2] = a[0] / a[1]
         out = []
-        for s, c, v in blocks:
+        for _s, c, v in blocks:
             out += [v] * c
         return out
 
@@ -801,7 +801,7 @@ def layout(nodes, edges, gap_x=34, gap_y=78, margin=18):
         place(layers[L], {i: mean_centre(opred[i] + osucc[i], centre(i)) for i in layers[L]})
     shift = margin - min(xs.values())
     boxes, y = {}, margin
-    for L, row in enumerate(layers):
+    for row in layers:
         for i in row:
             w, h = size(i)
             boxes[i] = (round(xs[i] + shift, 1), y, w, h)

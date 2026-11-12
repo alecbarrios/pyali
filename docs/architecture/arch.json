@@ -3386,6 +3386,42 @@
   },
   {
    "defined": true,
+   "dst": "scripts.review_ledger._git",
+   "dst_module": "scripts.review_ledger",
+   "lazy": false,
+   "line": 104,
+   "src": "scripts.review_ledger.main",
+   "src_module": "scripts.review_ledger"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.review_ledger._junit",
+   "dst_module": "scripts.review_ledger",
+   "lazy": false,
+   "line": 100,
+   "src": "scripts.review_ledger.main",
+   "src_module": "scripts.review_ledger"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.review_ledger._load",
+   "dst_module": "scripts.review_ledger",
+   "lazy": false,
+   "line": 94,
+   "src": "scripts.review_ledger.main",
+   "src_module": "scripts.review_ledger"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.review_ledger._short",
+   "dst_module": "scripts.review_ledger",
+   "lazy": false,
+   "line": 145,
+   "src": "scripts.review_ledger.main",
+   "src_module": "scripts.review_ledger"
+  },
+  {
+   "defined": true,
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
@@ -7987,6 +8023,22 @@
    "returns": [],
    "write": [
     "out_path"
+   ]
+  },
+  "scripts.review_ledger._load": {
+   "read": [
+    "path"
+   ],
+   "returns": [],
+   "write": []
+  },
+  "scripts.review_ledger.main": {
+   "read": [
+    "argv"
+   ],
+   "returns": [],
+   "write": [
+    "argv"
    ]
   },
   "scripts.run_pyali.detect_bit_depth": {
@@ -12684,6 +12736,91 @@
    ],
    "loc": 226,
    "path": "scripts/representative_traces.py"
+  },
+  "scripts.review_ledger": {
+   "defs": [
+    {
+     "doc": "",
+     "end": 43,
+     "kind": "function",
+     "line": 39,
+     "name": "_load"
+    },
+    {
+     "doc": "",
+     "end": 54,
+     "kind": "function",
+     "line": 46,
+     "name": "_git"
+    },
+    {
+     "doc": "",
+     "end": 73,
+     "kind": "function",
+     "line": 57,
+     "name": "_junit"
+    },
+    {
+     "doc": "",
+     "end": 78,
+     "kind": "function",
+     "line": 76,
+     "name": "_short"
+    },
+    {
+     "doc": "",
+     "end": 212,
+     "kind": "function",
+     "line": 81,
+     "name": "main"
+    }
+   ],
+   "doc": "Assemble a code-review ledger from the agents' JSON outputs and the oracle runs.",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 19,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 20,
+     "target": "json"
+    },
+    {
+     "lazy": false,
+     "line": 21,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 22,
+     "target": "re"
+    },
+    {
+     "lazy": false,
+     "line": 23,
+     "target": "subprocess"
+    },
+    {
+     "lazy": false,
+     "line": 24,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 25,
+     "target": "xml.etree.ElementTree"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "collections.Counter"
+    }
+   ],
+   "loc": 217,
+   "path": "scripts/review_ledger.py"
   },
   "scripts.run_corpus": {
    "defs": [
