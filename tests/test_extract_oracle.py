@@ -74,6 +74,38 @@ def test_detects_planted_spikes(fov):
         assert precision >= 0.9, f"cell {i}: precision {precision:.2f}"
 
 
+@pytest.fixture(scope="module")
+def burst_fov(tmp_path_factory):
+    d = tmp_path_factory.mktemp("fov_burst")
+    data = make_movie(seed=0, burst=True)
+    write_fov(d, data["movie"])
+    out = run(d, data["params"])
+    return dict(dir=d, truth=data["truth"], params=data["params"], out=out)
+
+
+def test_bursts_keep_one_spike_per_burst_at_min_interval(burst_fov):
+    """Spikes planted in 4-spike bursts at 10-frame spacing (plus isolated spikes): the per-region
+    dedup keeps the largest member of each burst instead of discarding the whole burst. Every
+    detected frame is a planted spike (precision), at least one spike per burst is recalled, and
+    a cell's detected frames are pairwise >= ``min_peak_interval`` apart."""
+    out, truth, p = burst_fov["out"], burst_fov["truth"], burst_fov["params"]
+    groups = _per_cell_ap_frames(out, truth["centers"])
+    burst_hits, isolated_hits = [], []
+    for i, planted in enumerate(truth["spike_times"]):
+        found = np.array(sorted(set(groups[i])), int)
+        assert len(found), f"cell {i}: no APs"
+        _, precision = spike_recall_precision(found, planted, tol=1)
+        assert precision >= 0.9, f"cell {i}: precision {precision:.2f}"
+        if len(found) > 1:
+            assert np.diff(found).min() >= p.min_peak_interval, f"cell {i}: frames {found}"
+        for g in truth["spike_groups"][i]:
+            hit = bool(np.any(np.abs(found[:, None] - np.asarray(g)[None, :]) <= 1))
+            (burst_hits if len(g) > 1 else isolated_hits).append(hit)
+    assert len(burst_hits) >= 4
+    assert np.mean(burst_hits) >= 0.9, f"burst recall {np.mean(burst_hits):.2f}"
+    assert np.mean(isolated_hits) >= 0.9, f"isolated-spike recall {np.mean(isolated_hits):.2f}"
+
+
 def test_traces_carry_the_planted_spikes(fov):
     out, truth = fov["out"], fov["truth"]
     fc = np.asarray(out["footprint_center"], float).reshape(-1, 2) - 1.0

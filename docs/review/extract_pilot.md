@@ -198,6 +198,8 @@ region_AP pre-dedup [row,col,frame,amp]: [[ 0. 0. 52. 0.55555556] [ 0. 0. 52. 0.
 
 <details><summary><b>EXT-02</b> · dedup_close_peaks · S1 · CONFIRMED</summary>
 
+**Resolved (Cycle A, 2026-11-16).** Settled against Mini ALI V2.2 (`mini_ali_patch_detect_spike_times.m:106-116`): `dedup_close_peaks` now keeps the largest-amplitude AP within a 25-frame window (`min_peak_interval` 15 -> 25), output pairwise >= 25 frames; `uniquetol_reps` is no longer used by the pipeline. Tests: `tests/test_cycle_a.py` (dedup) and the burst oracle `test_bursts_keep_one_spike_per_burst_at_min_interval`.
+
 **Claim.** dedup_close_peaks does not implement its docstring ('remove APs whose frame is within min_interval of another'): rows with identical frames are both kept (each equals the group representative under both groupings), and the greedy first-element grouping of uniquetol_reps keeps a frame that is only 2 frames from a dropped neighbour.
 
 **Failure scenario.** region_AP = [[5,5,12,3],[5,5,12,4]] (two rows, same frame), min_interval=15 -> returns both rows unchanged. region_AP with frames [10,24,26] -> returns only the row with frame 26, although 26 is within 2 frames of 24 (24 and 10 are dropped because they share a group [10,24]; 26 starts a new group because 26-10=16>15).
@@ -303,6 +305,8 @@ two dead probe pixels: centers shape (20, 20, 0) (expected (20,20,3)); reconstru
 </details>
 
 <details><summary><b>EXT-06</b> · region_grow_brightest · S3 · CONFIRMED</summary>
+
+**Resolved (Cycle A, 2026-11-16).** `region_grow_brightest` now follows `mini_ali_spk_fine.m`: an empty queue ends the growth (no raise, result may be shorter than `com_n_pixels`), the pick is the argmax inside the queue (closes the whole-patch tie pick noted under non-findings), defaults `com_radius` 8.5 -> 6.0 and `com_n_pixels` 50 -> 25. With it, `_weighted_com` weights only the picked pixels and returns NaN on zero mass, and `com_via_svd` masks the denoised frame with the region, skips NaN COMs and rejects COMs that round outside the region (`run_miniali_fov.m:362-370`); `extract_footprints` falls back when no COM survives; `cluster_footprints` clips negative weights (`run_miniali_fov.m:486`). Tests: `tests/test_cycle_a.py`.
 
 **Claim.** region_grow_brightest assumes at least com_n_pixels 4-connected pixels lie within com_radius of the maximum inside the patch; nothing asserts it, and the margin at a patch corner is only 65 vs 50, so a smaller com_radius or larger com_n_pixels makes current.ravel()[idx].max() hit an empty queue.
 
@@ -583,9 +587,9 @@ before fixes.
 ### Fix order proposed for `extract.py` (not done in the pilot)
 
 1. EXT-04: clamp or reject out-of-range baseline frames inside the library path, not only in the CLI.
-2. EXT-02: settle against the MATLAB source, then either fix the code or the docstring.
+2. EXT-02: settle against the MATLAB source, then either fix the code or the docstring. — done, Cycle A (keep-max-in-25-frame-window; see the EXT-02 note).
 3. EXT-10: swap `patch_size` to `(rows, cols)` as documented; add a non-square test.
 4. EXT-01: collapse identical `[row, col, frame]` rows after refinement.
-5. EXT-06 and EXT-07: assert the invariants on `com_radius`/`com_n_pixels` and `filter_window` at `Params` construction.
+5. EXT-06 and EXT-07: assert the invariants on `com_radius`/`com_n_pixels` and `filter_window` at `Params` construction. — EXT-06 done, Cycle A (the empty-queue case no longer raises, so no `com_radius`/`com_n_pixels` invariant is needed; see the EXT-06 note). EXT-07 open.
 6. EXT-08: replace the dense pseudoinverse with a least-squares solve or a chunked product; EXT-09: in-place MAD.
 7. EXT-05: explicit index bookkeeping instead of probe pixels; EXT-03: `np.ascontiguousarray` guard in the filters.

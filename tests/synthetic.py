@@ -75,9 +75,37 @@ def plant_spike_times(rng, T, n, min_gap=25, forbidden=(), margin=8):
     return np.array(sorted(times), int)
 
 
+def plant_burst_spike_times(rng, T, n_bursts=3, n_isolated=6, forbidden=(), margin=8,
+                            burst_len=4, burst_gap=10, min_gap=25):
+    """``n_bursts`` bursts of ``burst_len`` spikes ``burst_gap`` frames apart plus ``n_isolated``
+    single spikes. Every group (burst or single) is >= ``min_gap`` frames from every other group,
+    edge to edge; all frames lie in ``[margin, T - margin)`` outside ``forbidden`` (0-indexed
+    inclusive ranges). Returns ``(times, groups)``: the sorted frames and one int array per group.
+    """
+    ok = np.ones(T, bool)
+    ok[:margin] = False
+    ok[T - margin:] = False
+    for a, b in forbidden:
+        ok[max(a, 0):min(b + 1, T)] = False
+    spans = [burst_gap * (burst_len - 1)] * n_bursts + [0] * n_isolated
+    placed, groups = [], []
+    for span in spans:
+        for _ in range(10000):
+            t = int(rng.integers(0, T - span))
+            if ok[t:t + span + 1].all() and all(t - e >= min_gap or s - (t + span) >= min_gap
+                                                for s, e in placed):
+                placed.append((t, t + span))
+                groups.append(np.arange(t, t + span + 1, burst_gap) if span else np.array([t]))
+                break
+        else:
+            raise RuntimeError("could not place every spike group")
+    return np.sort(np.concatenate(groups)).astype(int), groups
+
+
 def make_movie(seed=0, H=96, W=96, T=800, n_cells=4, cells=None, spike_times=None,
                spikes_per_cell=None, motion=False, blank=False, baseline=1500.0, cell_amp=700.0,
-               sigma_px=2.2, spike_frac=0.25, common_frac=0.05, noise=True, drift=True):
+               sigma_px=2.2, spike_frac=0.25, common_frac=0.05, noise=True, drift=True,
+               burst=False):
     """Build the movie and its ground truth.
 
     ``T=800`` with ``n_ref=600`` matches the production reference length: the correlation image
@@ -102,14 +130,20 @@ def make_movie(seed=0, H=96, W=96, T=800, n_cells=4, cells=None, spike_times=Non
     drift : bool
         Spatial gradient plus bleaching (default). ``False`` gives a flat constant background;
         with ``noise=False`` and ``blank=True`` that is a perfectly constant movie.
+    burst : bool
+        Plant each cell's spikes with :func:`plant_burst_spike_times` (3 four-spike bursts at
+        10-frame spacing plus 6 isolated spikes) instead of isolated spikes >= 25 frames apart.
+        Default off: the standing oracle is unchanged.
 
     Returns
     -------
     dict(movie, truth, params)
         ``movie`` is ``(T + truncate_last, H, W)`` uint16. ``truth`` has ``centers`` (N, 2)
-        ``[row, col]``; ``spike_times`` list of int arrays; ``footprints`` (N, H, W);
-        ``traces`` (N, T): the negated intensity of each cell's peak pixel, so a spike is a
-        positive peak exactly as in ``cell_traces``; ``bleach`` (T,).
+        ``[row, col]``; ``spike_times`` list of int arrays; ``spike_groups`` list (per cell) of
+        lists of int arrays — the planted bursts, or one single-frame group per spike when
+        ``burst=False``; ``footprints`` (N, H, W); ``traces`` (N, T): the negated intensity of
+        each cell's peak pixel, so a spike is a positive peak exactly as in ``cell_traces``;
+        ``bleach`` (T,).
     """
     rng = np.random.default_rng(seed)
     p = synthetic_params(H, W)
@@ -125,14 +159,18 @@ def make_movie(seed=0, H=96, W=96, T=800, n_cells=4, cells=None, spike_times=Non
         if N else np.zeros((0, H, W))
     forbidden = [(a - 1, b - 1) for a, b in p.std_ranges]
     modulation = np.zeros((N, T_all))
-    times_out = []
+    times_out, groups_out = [], []
     for i in range(N):
+        groups = None
         if spike_times is not None:
             times = np.asarray(spike_times[i], int)
+        elif burst:
+            times, groups = plant_burst_spike_times(rng, T, forbidden=forbidden)
         else:
             n = spikes_per_cell if spikes_per_cell is not None else int(rng.integers(12, 21))
             times = plant_spike_times(rng, T, n, forbidden=forbidden)
         times_out.append(times)
+        groups_out.append(groups if groups is not None else [np.array([t]) for t in times])
         s = np.zeros(T_all)
         for t in times:
             k = min(len(SPIKE_KERNEL), T_all - t)
@@ -154,8 +192,8 @@ def make_movie(seed=0, H=96, W=96, T=800, n_cells=4, cells=None, spike_times=Non
     peak = np.array([footprints[i][cells_rc[i]] for i in range(N)]) if N else np.zeros(0)
     traces = -(cell_amp * peak[:, None] * bleach[None, :T] * (1.0 + modulation[:, :T]))
     truth = dict(centers=np.array(cells_rc, float).reshape(-1, 2), spike_times=times_out,
-                 footprints=footprints, traces=traces, bleach=bleach[:T], cell_amp=cell_amp,
-                 spike_frac=spike_frac)
+                 spike_groups=groups_out, footprints=footprints, traces=traces, bleach=bleach[:T],
+                 cell_amp=cell_amp, spike_frac=spike_frac)
     return dict(movie=movie, truth=truth, params=p)
 
 
