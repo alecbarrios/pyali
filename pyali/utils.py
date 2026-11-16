@@ -3,7 +3,7 @@ peak finding, tolerance grouping)."""
 import numpy as np
 
 # np.trapz was renamed to np.trapezoid in NumPy 2.0 (trapz still works but warns).
-_trapz = getattr(np, "trapezoid", np.trapz)
+_trapz = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
 
 
 def round_half_away_from_zero(x):

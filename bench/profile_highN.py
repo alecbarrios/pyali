@@ -75,7 +75,6 @@ def main():
         ("movmedian_time", "      · movmedian_time (in patch filter)"),
         ("findpeaks", "      · findpeaks (in detect_region_aps)"),
         ("forward_rolling_min_subtract", "      · forward_rolling_min_subtract (in detect)"),
-        ("uniquetol_reps", "      · uniquetol_reps (in dedup)"),
         ("svd_denoise_ap_stack", "      · svd_denoise_ap_stack (in com_via_svd)"),
         ("region_grow_brightest", "      · region_grow_brightest (in com_via_svd)"),
         ("_weighted_com", "      · _weighted_com (in com_via_svd)"),
@@ -110,7 +109,7 @@ def main():
              "  ├ build_selection_map",
              "  ├ detect_region_aps", "      · findpeaks (in detect_region_aps)",
              "      · forward_rolling_min_subtract (in detect)",
-             "  ├ dedup_close_peaks", "      · uniquetol_reps (in dedup)",
+             "  ├ dedup_close_peaks",
              "  ├ com_via_svd", "      · svd_denoise_ap_stack (in com_via_svd)",
              "      · region_grow_brightest (in com_via_svd)",
              "      · _weighted_com (in com_via_svd)",
@@ -133,9 +132,8 @@ def main():
           f"+ {ef-kids:.1f}s elsewhere in the loop")
     gil = sum(T[k] for k in ("      · findpeaks (in detect_region_aps)",
                              "      · forward_rolling_min_subtract (in detect)",
-                             "      · region_grow_brightest (in com_via_svd)",
-                             "      · uniquetol_reps (in dedup)"))
-    print(f"pure-Python inner loops (findpeaks + rolling-min + region_grow + uniquetol): "
+                             "      · region_grow_brightest (in com_via_svd)"))
+    print(f"pure-Python inner loops (findpeaks + rolling-min + region_grow): "
           f"{gil:.1f}s = {100*gil/total:.1f}% of the FOV")
     json.dump(dict(fov=FOV, total_s=total, n_regions=nreg, n_cells=ncell, n_aps=naps,
                    seconds={k: round(v, 2) for k, v in T.items()}, calls=dict(C)),

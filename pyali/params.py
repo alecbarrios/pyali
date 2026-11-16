@@ -47,7 +47,9 @@ class Params:
 
     # AP detection
     threshold_factor: float = 3.25
-    min_peak_interval: int = 15
+    min_peak_interval: int = 25              # frames; keep the largest AP within this window
+                                             #   (Mini ALI V2.2 minimal interval; was 15 with
+                                             #   a rule that dropped every member of a burst)
 
     # segmentation
     seg_threshold: float = 0.90
@@ -73,8 +75,9 @@ class Params:
     # COM + clustering + footprints
     patch_size: tuple = (27, 27)
     svd_rank: int = 15
-    com_radius: float = 8.5
-    com_n_pixels: int = 50
+    com_radius: float = 6.0                  # px from the seed for the COM region growing
+    com_n_pixels: int = 25                   #   (Mini ALI V2.2 fine_radius_px / fine_npix;
+                                             #   were 8.5 / 50)
     dbscan_eps: float = 1.5
     dbscan_min_pts: int = 3
 
@@ -154,6 +157,9 @@ class Params:
             so this is more permissive than either -- confirm during validation.
           * sharpening / segmentation / clustering params are kept at the 6GP002-tuned defaults and
             should be re-checked on real 443screen2 FOVs (see the pipeline validation step).
+          * ``min_peak_interval=25``, ``com_radius=6.0`` and ``com_n_pixels=25`` (dataclass
+            defaults) follow Mini ALI V2.2: the largest AP within a 25-frame window is kept, and
+            the COM is grown over up to 25 in-mask pixels within 6 px of the seed (Cycle A).
         """
         ranges = [(201, 601), (1321, 1481), (2881, 3041), (5841, 5993), (7841, 8241)]
         base = dict(
