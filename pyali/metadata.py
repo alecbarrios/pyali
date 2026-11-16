@@ -188,8 +188,8 @@ def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, ex
 
 
 def write_metadata(out_dir, meta, name="fov_metadata.json"):
-    """Write ``meta`` into ``out_dir`` — the same directory as ``ALI_Result.mat``, so metadata
-    and results sit at identical depth and aggregation downstream is a single glob."""
+    """Write ``meta`` into ``out_dir`` — the same directory as ``signals.h5`` / ``cells.parquet``,
+    so metadata and results sit at identical depth and aggregation downstream is a single glob."""
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
     with open(path, "w") as f:

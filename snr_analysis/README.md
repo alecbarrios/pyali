@@ -62,7 +62,7 @@ $PY snr_analysis/snr/snr_compare.py /tmp/run_new /tmp/run_baseline \
 `snr_compare.py` prints the paired summary and writes `summary.txt`, `summary.json`,
 `per_cell_metrics.csv`, and diagnostic figures (`coherence.png`, `mean_psd.png`,
 `example_matched_cell.png`, `corr_hist.png`, `distributions.png`, three `scatter_*.png`).
-Each positional argument may be an `ALI_Result.mat` or a directory containing one.
+Each positional argument may be a pyali output directory (`signals.h5` + `cells.parquet`), or an archived `ALI_Result.mat` / a directory containing one (legacy fallback).
 
 ## Worked example: the `--whiten-traces` experiment (benchmarked, not adopted)
 

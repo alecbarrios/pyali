@@ -1,7 +1,8 @@
 """End-to-end orchestrator.
 
-``process_fov`` runs the full pipeline on one field of view and writes ``ALI_Int_Result.mat``
-and ``ALI_Result.mat``. ``run_folder`` loops over sub-folders with per-FOV error logging.
+``process_fov`` runs the full pipeline on one field of view and writes the per-FOV results
+(``cells.parquet``/``cells.csv``, ``spikes.parquet``, ``signals.h5`` -- see :mod:`pyali.results`)
+plus ``fov_metadata.json``. ``run_folder`` loops over sub-folders with per-FOV error logging.
 
 Memory note: the working movie is held as float64 (~18 GB for a 6389-frame 312x1200 movie),
 plus the filtered movie during extraction — run on a machine with adequate RAM.
@@ -10,7 +11,7 @@ import os
 import numpy as np
 
 from .params import Params
-from . import io, preprocess, segmentation, extract
+from . import io, preprocess, segmentation, extract, results
 from .utils import dog_kernel
 
 
@@ -42,8 +43,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     log("reference + correlation image ...")
     reference_image, corr_image = preprocess.reference_and_correlation_image(movie[:p.n_ref])
     log("sharpening ...")
-    bkg, I2, blurred, h_lap, LoG, LoG_n, sharpened = preprocess.sharpen(
-        reference_image, p.disk_radius, p.gauss_sigma, p.lap_alpha, p.sharpen_k)
+    *_chain, sharpened = preprocess.sharpen(                 # the intermediate images were only
+        reference_image, p.disk_radius, p.gauss_sigma, p.lap_alpha, p.sharpen_k)   # ever debug output
 
     # ---- adaptive background, motion correction, clip (preprocess) ----
     log("adaptive background subtraction ...")
@@ -68,11 +69,6 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             f"{100 * p.max_region_bbox_frac:g}% of frame; worst {100 * worst / frame_px:.1f}%)")
     log(f"segmented {len(regions)} regions")
 
-    if save and out_dir:
-        io.save_mat_v73(os.path.join(out_dir, "ALI_Int_Result.mat"),
-                        reference_image=reference_image, bkg=bkg, I2=I2, blurred=blurred,
-                        h_lap=h_lap, LoG_image=LoG, LoG_normalized=LoG_n, sharpened=sharpened)
-
     # ---- filters + per-region extraction ----
     # extract_footprints only ever reads ~27x27 patches of the filtered movie, so the global
     # array is a full extra copy of the movie for mostly wasted work. Build it only when
@@ -86,7 +82,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         filtered_movie = None
     dog = dog_kernel(p.dog_sigma1, p.dog_sigma2, p.dog_width)
     log(f"extracting footprints from {len(regions)} regions ...")
-    APs, COMs, footprint, footprint_center = extract.extract_footprints(
+    (APs, COMs, footprint, footprint_center, region_of_footprint, region_of_ap,
+     region_of_spike, spike_cell_row) = extract.extract_footprints(
         movie, filtered_movie, regions, spatial_footprints, dog, p.std_frames_index(), p, H, W,
         verbose=verbose)
     # Build the per-pixel noise map (whitened GLS only) BEFORE freeing filtered_movie.
@@ -105,10 +102,17 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     log("done.")
 
     if save and out_dir:
-        io.save_mat_v73(os.path.join(out_dir, "ALI_Result.mat"),
-                        footprint=footprint, footprint_center=footprint_center,
-                        cell_traces=cell_traces)
-        # Metadata lands in out_dir alongside the .mat files, at identical depth, so a
+        n_spikes = np.bincount(spike_cell_row[spike_cell_row >= 0], minlength=footprint.shape[2])
+        results.write_results(
+            out_dir,
+            cells_df=results.make_cells(footprint_center, region_of_footprint, n_spikes),
+            traces=cell_traces, footprints=footprint,
+            spikes_df=results.pack_spikes(APs, COMs, spike_cell_row, region_of_spike,
+                                          region_of_ap),
+            images=dict(reference=reference_image, binary_map=binary_map),
+            attrs=dict(fps=p.fps, profile=profile, n_ap_detected=len(APs),
+                       n_ap_localized=len(COMs)))
+        # Metadata lands in out_dir alongside the results, at identical depth, so a
         # downstream aggregation over the corpus is a single glob.
         from .metadata import fov_metadata, write_metadata
         write_metadata(out_dir, fov_metadata(
@@ -125,7 +129,9 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
 
     return dict(reference_image=reference_image, corr_image=corr_image, sharpened=sharpened,
                 regions=regions, binary_map=binary_map, footprint=footprint,
-                footprint_center=footprint_center, cell_traces=cell_traces, APs=APs, COMs=COMs)
+                footprint_center=footprint_center, cell_traces=cell_traces, APs=APs, COMs=COMs,
+                region_of_footprint=region_of_footprint, region_of_ap=region_of_ap,
+                region_of_spike=region_of_spike, spike_cell_row=spike_cell_row)
 
 
 def run_folder(root_path, p=Params()):

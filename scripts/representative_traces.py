@@ -21,7 +21,7 @@ percentiles would describe the detector rather than the cells.
     python scripts/representative_traces.py --days 20260715
 
 Reads nothing but ``cells_all.parquet``, ``sta_cell_features.parquet`` and the one
-``ALI_Result.mat`` per selected FOV. Changes no existing output.
+``signals.h5`` per selected FOV. Changes no existing output.
 """
 import argparse
 import os
@@ -38,9 +38,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 sys.path.insert(0, _HERE)
 
-from pyali.io import load_v73                                            # noqa: E402
+from pyali.results import load_results                                   # noqa: E402
 from snr_aggregate import OUT_DEFAULT                                    # noqa: E402
-from snr_corpus import READ_ROOT_DEFAULT, RESULT                         # noqa: E402
+from snr_corpus import READ_ROOT_DEFAULT                                 # noqa: E402
 from snr_figures import FONT_STACK, THEME, style                         # noqa: E402
 
 OUT_DIR_DEFAULT = ("/home/jovyan/spatial-technology-platform/AB/pyali_3fc51c7_outputs/"
@@ -187,9 +187,8 @@ def main():
 
     made = 0
     for (day, dir_name), idxs in need.items():
-        path = os.path.join(a.read_root, day, dir_name, RESULT)
         try:
-            ct = np.asarray(load_v73(path, "cell_traces"))
+            ct = load_results(os.path.join(a.read_root, day, dir_name)).traces
         except Exception as e:                                # noqa: BLE001
             print(f"[trace] READ FAIL {day}/{dir_name}: {e}", flush=True)
             continue

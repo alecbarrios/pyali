@@ -38,9 +38,10 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 sys.path.insert(0, _HERE)
 
-from pyali.io import load_v73, save_mat_v73                              # noqa: E402
+from pyali.io import save_mat_v73                                        # noqa: E402
 from pyali.metrics import highpass, robust_sigma                         # noqa: E402
-from snr_corpus import META, REQUIRED, RESULT, _write, list_fovs         # noqa: E402
+from pyali.results import load_results                                   # noqa: E402
+from snr_corpus import META, REQUIRED, _write, list_fovs                 # noqa: E402
 from snr_corpus import READ_ROOT_DEFAULT, S3_DEFAULT                     # noqa: E402
 
 STA = "sta.csv"
@@ -139,9 +140,7 @@ def _run_one(job):
         fov = os.path.join(read_root, day, dir_name)
         with open(os.path.join(fov, META)) as f:
             fps = float(json.load(f)["analysis"]["fps"])
-        ct = np.asarray(load_v73(os.path.join(fov, RESULT), "cell_traces"))
-        if ct.ndim != 2:
-            ct = ct.reshape(0, 0)
+        ct = load_results(fov).traces                        # (N, T) float32; (0, T) when empty
         half = HALF
         t_ms = np.arange(-half, half + 1) * (1000.0 / fps)
         curves, idx, used, n_used, n_total = [], [], [], 0, 0

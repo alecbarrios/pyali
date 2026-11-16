@@ -31,13 +31,36 @@ dimensions are auto-detected; `--figures` also saves the result plots.
 python scripts/run_pyali.py "/path/to/your/video_dir" --figures
 ```
 
-Writes to `/path/to/your/video_dir/analysis/`:
+Writes to `/path/to/your/video_dir/analysis/` (the layout is defined in `pyali/results.py`,
+the only writer and loader of these files):
 
-- `ALI_Int_Result.mat` — reference image and the sharpening chain
-- `ALI_Result.mat` — `footprint`, `footprint_center`, `cell_traces`
+- `cells.parquet` (+ `cells.csv` for eyeballing) — one row per cell: `local_cell_id` (1..N),
+  `trace_row` (0-based row in `signals.h5`), `x_px`/`y_px` (footprint centre, 1-indexed),
+  `region_id` (segmentation region), `n_spikes` (APs assigned to the cell; 0 for a fallback cell)
+- `spikes.parquet` — one row per localized AP: `region_id`, `frame` (0-based), `row`/`col`
+  (centre of mass, 1-indexed), `amplitude`, `cell_row` (-1 = not assigned to a cell)
+- `signals.h5` — `/traces/raw` float32 `[T, N]` on disk (gzip; MATLAB/Octave read it as
+  `[N, T]`), `/footprints/{values,pixel,offsets}` (sparse COO per cell, C-order pixel index
+  `row * W + col`), `/images/{reference,binary_map}`, and attributes `height`, `width`,
+  `n_frames`, `fps`, `pyali_git`, `schema_version`
+- `fov_metadata.json` — acquisition and analysis metadata
 - with `--figures`: `detected_regions.png`, `coms.png`, `cell_traces.png`,
   `center_of_cell_regions.png`, and **`cell_traces.html`** — an interactive plot
   (zoom/pan, hover for values, click a legend entry to hide/isolate a trace)
+
+Read a result directory back with `pyali.results.load_results`:
+
+```python
+from pyali.results import load_results
+r = load_results("/path/to/your/video_dir/analysis")
+r.traces            # (N, T) float32, spikes positive
+r.centers           # (N, 2) [row, col], 1-indexed
+r.cells, r.spikes   # DataFrames
+r.footprints.plane(k)   # dense (H, W) footprint of cell k; .dense() rebuilds the (H, W, N) array
+```
+
+`ALI_Result.mat` / `ALI_Int_Result.mat` are no longer written; `pyali.io.load_v73` stays for
+reading archived runs.
 
 A full field of view takes several minutes; progress is printed per stage.
 

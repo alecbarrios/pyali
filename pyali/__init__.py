@@ -9,4 +9,4 @@ Convention: arrays are row-major C-order; movies are ``[T, H, W]`` float64.
 
 __version__ = "0.1.0"
 
-from . import utils, io, preprocess, segmentation, extract, params, pipeline  # noqa: F401
+from . import utils, io, preprocess, segmentation, extract, params, results, pipeline  # noqa: F401

@@ -223,6 +223,9 @@ def test_extract_footprints_falls_back_when_no_com_survives(tmp_path, monkeypatc
     assert np.asarray(out["COMs"]).shape == (0, 3)
     assert np.asarray(out["footprint"]).shape[2] == len(out["regions"])   # one fallback plane each
     assert np.isfinite(np.asarray(out["cell_traces"], float)).all()
+    assert out["region_of_footprint"].tolist() == list(range(len(out["regions"])))
+    assert out["region_of_ap"].shape == (len(out["APs"]),)
+    assert out["region_of_spike"].shape == (0,) and out["spike_cell_row"].shape == (0,)
 
 
 # --------------------------------------------------------------------------- #

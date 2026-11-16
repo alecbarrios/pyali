@@ -7,7 +7,7 @@ Frame dimensions (nrow, ncol) are auto-detected from the sidecar + pixel correla
 you pass ``--nrow``/``--ncol``.
 
 Outputs are written to an ``analysis`` folder inside the FOV directory (or ``--out``):
-    ALI_Int_Result.mat, ALI_Result.mat
+    cells.parquet, cells.csv, spikes.parquet, signals.h5, fov_metadata.json   (pyali/results.py)
 and, with ``--figures``, the presentation result figures:
     detected_regions.png, coms.png, cell_traces.png, center_of_cell_regions.png,
     and cell_traces.html (interactive; zoom/pan and click a legend entry to isolate a trace)
@@ -212,7 +212,7 @@ def main(argv=None):
     process_fov(a.fov_dir, out_dir=out_dir, p=p, save=True, verbose=True, make_figures=a.figures,
                 keep_row=keep_row, profile=name, day=a.day)
 
-    print(f"\n[pyali] wrote ALI_Int_Result.mat, ALI_Result.mat" +
+    print(f"\n[pyali] wrote cells.parquet, cells.csv, spikes.parquet, signals.h5, fov_metadata.json" +
           (" + result figures (detected_regions/coms/cell_traces/center_of_cell_regions .png "
            "and interactive cell_traces.html)" if a.figures else "") + f" to:\n  {out_dir}")
     return 0
