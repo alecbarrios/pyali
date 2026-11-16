@@ -6,7 +6,7 @@ Movies are ``[T, H, W]``; patch movies ``[T, Hp, Wp]``. Frame/pixel indices in
 """
 import numpy as np
 
-from .utils import movmedian_time, findpeaks, uniquetol_reps, round_half_away_from_zero
+from .utils import movmedian_time, findpeaks, round_half_away_from_zero
 
 
 # --------------------------------------------------------------------------- #
@@ -147,7 +147,9 @@ def detect_region_aps(patch_movie, selection_map_patch, origin0, dog, std_frames
     Returns
     -------
     (region_AP, diag)
-        ``region_AP`` : (k, 4) = ``[row, col, frame, amplitude]`` (0-indexed, pre-dedup);
+        ``region_AP`` : (k, 4) = ``[row, col, frame, amplitude]`` (0-indexed, pre-dedup); the
+        pixel is the brightest *in-mask* pixel of the refined frame (Mini ALI's coarse
+        location), informational only — :func:`com_via_svd` re-finds the maximum;
         ``diag`` : dict of intermediate traces/thresholds.
     """
     pm = np.array(patch_movie, dtype=np.float64, copy=True)
@@ -175,7 +177,7 @@ def detect_region_aps(patch_movie, selection_map_patch, origin0, dog, std_frames
         shift = int(np.argmax(thr[t0 - 3:t0 + 3])) - 3                 # refine within [t0-3, t0+2]
         t0r = t0 + shift
         peak_time[f] = t0r
-        frame = pm[t0r]
+        frame = pm[t0r] * selection_map_patch                          # coarse location inside the mask
         pv = frame.max()
         fi = int(np.argmax(frame.ravel(order="F") == pv))             # first occurrence, column-major
         px0, py0 = np.unravel_index(fi, frame.shape, order="F")
@@ -187,18 +189,38 @@ def detect_region_aps(patch_movie, selection_map_patch, origin0, dog, std_frames
     return region_AP, diag
 
 
-def dedup_close_peaks(region_AP, min_interval=15):
-    """Remove APs whose frame is within ``min_interval`` of another.
+def dedup_close_peaks(region_AP, min_interval=25):
+    """Keep the largest-amplitude AP within any ``min_interval``-frame window.
 
-    Keeps only frames that are their own representative under both the 'highest' and 'lowest'
-    tolerance groupings (i.e. isolated frames).
+    Rows are ``[row, col, frame, amplitude]``; the amplitude is the thresholded-trace peak value
+    stored by :func:`detect_region_aps`. Frames are grouped into runs anchored at the earliest
+    member (a run extends while ``frame - first_frame < min_interval``) and the largest amplitude
+    of each run survives; a second greedy pass by amplitude then resolves survivors of adjacent
+    runs that are still closer than ``min_interval``. The output is sorted by frame and pairwise
+    ``>= min_interval`` frames apart, so a burst of spikes keeps its largest member instead of
+    losing every member (the previous intersect-of-``uniquetol`` rule). Follows Mini ALI V2.2's
+    minimal-interval rule with the user's "keep max in window" refinement.
     """
     if len(region_AP) == 0:
         return region_AP
-    times = region_AP[:, 2]
-    keep = np.intersect1d(uniquetol_reps(times, min_interval, "highest"),
-                          uniquetol_reps(times, min_interval, "lowest"))
-    return region_AP[np.isin(times, keep)]
+    AP = region_AP[np.argsort(region_AP[:, 2], kind="stable")]
+    times, amps = AP[:, 2], AP[:, 3]
+    n = len(AP)
+    keep = []
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and times[j + 1] - times[i] < min_interval:    # run anchored at i
+            j += 1
+        keep.append(i + int(np.argmax(amps[i:j + 1])))                   # ties -> earliest
+        i = j + 1
+    kept = AP[keep]
+    accept = []
+    for idx in np.argsort(-kept[:, 3], kind="stable"):                    # greedy by amplitude
+        if all(abs(kept[idx, 2] - kept[a, 2]) >= min_interval for a in accept):
+            accept.append(int(idx))
+    accept.sort(key=lambda a: kept[a, 2])
+    return kept[accept]
 
 
 # --------------------------------------------------------------------------- #
@@ -238,87 +260,109 @@ def svd_denoise_ap_stack(patch_movie, times, rank=15):
     return recon, sa[:, :, keep]
 
 
-def region_grow_brightest(current, radius=8.5, n_pixels=50):
-    """Greedily grow ``n_pixels`` bright pixels outward from the max, within ``radius``.
+def region_grow_brightest(current, radius=6.0, n_pixels=25):
+    """Greedily grow up to ``n_pixels`` bright pixels outward from the maximum, within ``radius``
+    of it (Mini ALI V2.2 ``mini_ali_spk_fine``).
 
     Parameters
     ----------
     current : (Hp, Wp) float array
+        A denoised AP frame, already masked to the region (zeros outside).
     radius : float
+        Euclidean radius, in pixels, measured from the seed (the global maximum).
     n_pixels : int
+        Maximum number of pixels to pick.
 
     Returns
     -------
-    (n_pixels, 2) int array of 0-indexed (row, col)
+    (k, 2) int array of 0-indexed (row, col), ``1 <= k <= n_pixels``, seed first.
 
     Notes
     -----
-    Each step adds a pixel's 4-neighbors to a queue and picks the brightest queued pixel
-    (first occurrence in column-major order — note this is the first such value *anywhere in
-    the patch*, not necessarily the queued pixel that supplied it; preserved as-is).
-
-    The queue is held as a boolean mask rather than a coordinate array. The previous version
-    re-scanned it with a Python list comprehension every step to drop already-picked entries —
-    O(len(queue)) NumPy calls per step, ~35M calls per FOV and 13% of total runtime. Membership
-    is now O(1) and the result is unchanged.
+    The seed is the global maximum (first in column-major order on ties, as MATLAB's
+    ``max(x(:))``). Each step queues the 4-neighbours of the last picked pixel that lie inside
+    the patch and within ``radius`` of the seed, drops already-picked pixels, and picks the
+    brightest pixel *inside the queue*; an empty queue ends the growth early instead of raising
+    (``spk_fine`` lines 54-56), so the result may be shorter than ``n_pixels``. The queue is a
+    boolean mask (O(1) membership); on exactly equal float values it breaks ties in
+    column-major order where MATLAB's coordinate list breaks them in insertion order — the one
+    accepted deviation, immaterial on denoised data.
     """
     Hp, Wp = current.shape
-    flat_f = current.ravel(order="F")                   # hoisted: was rebuilt every iteration
-    picked = np.zeros((n_pixels, 2), int)
-    fi = int(np.argmax(flat_f == current.max()))
-    picked[0] = np.unravel_index(fi, current.shape, order="F")
-
-    rr, cc = np.ogrid[:Hp, :Wp]
-    in_radius = ((rr - picked[0, 0]) ** 2 + (cc - picked[0, 1]) ** 2) <= radius ** 2
-    queued = np.zeros((Hp, Wp), bool)
+    flat_f = current.ravel(order="F")
+    seed = np.unravel_index(int(np.argmax(flat_f)), current.shape, order="F")
+    picked = [seed]
     is_picked = np.zeros((Hp, Wp), bool)
-    is_picked[picked[0, 0], picked[0, 1]] = True
+    is_picked[seed] = True
+    rr, cc = np.ogrid[:Hp, :Wp]
+    in_radius = ((rr - seed[0]) ** 2 + (cc - seed[1]) ** 2) <= radius ** 2
+    queued = np.zeros((Hp, Wp), bool)
 
-    for pc in range(1, n_pixels):
-        pr, pcol = picked[pc - 1]
-        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):           # 4-neighbors
-            r, c = pr + dr, pcol + dc
+    while len(picked) < n_pixels:
+        pr, pc = picked[-1]
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):           # 4-neighbours
+            r, c = pr + dr, pc + dc
             if 0 <= r < Hp and 0 <= c < Wp and in_radius[r, c]:
                 queued[r, c] = True
         queued &= ~is_picked                                        # drop already-picked
-        idx = np.flatnonzero(queued)
-        mval = current.ravel()[idx].max()                           # brightest queued pixel
-        fi = int(np.argmax(flat_f == mval))
-        picked[pc] = np.unravel_index(fi, current.shape, order="F")
-        is_picked[picked[pc, 0], picked[pc, 1]] = True
-    return picked
+        idx = np.flatnonzero(queued.ravel(order="F"))               # queue in column-major order
+        if idx.size == 0:
+            break
+        q = int(idx[int(np.argmax(flat_f[idx]))])                   # argmax INSIDE the queue
+        rc = np.unravel_index(q, current.shape, order="F")
+        picked.append(rc)
+        is_picked[rc] = True
+    return np.array(picked, int).reshape(-1, 2)
 
 
 def _weighted_com(current, picked, patch_rows, patch_cols):
-    """Intensity^2-weighted centroid over the row x column hull of the picked pixels.
+    """Intensity^2-weighted centroid of the picked pixels (``mini_ali_spk_fine`` lines 72-86).
 
-    The picked pixels define a row x column hull (via ``np.ix_``); the centroid is computed
-    over it in absolute coordinates. ``patch_rows``/``patch_cols`` are 1-indexed.
+    Negative values are clipped to zero before squaring; only the picked pixels themselves
+    carry weight (not their row x column hull). Returns ``(nan, nan)`` when the total mass is
+    zero. ``patch_rows``/``patch_cols`` are 1-indexed absolute coordinates, so the centroid is
+    absolute and 1-indexed.
     """
-    ap = np.zeros(current.shape)
-    ap[np.ix_(picked[:, 0], picked[:, 1])] = 1.0
-    ap[ap == 0] = np.nan
-    cp = current * ap
-    cp[cp < 0] = np.nan
-    total = np.nansum(cp * cp)
-    row_c = np.nansum(cp * cp * patch_rows[:, None]) / total
-    col_c = np.nansum(cp * cp * patch_cols[None, :]) / total
+    picked = np.asarray(picked, int).reshape(-1, 2)
+    vals = current[picked[:, 0], picked[:, 1]].astype(np.float64)
+    vals[vals < 0] = 0.0
+    w = vals * vals
+    total = w.sum()
+    if total == 0:
+        return np.nan, np.nan
+    row_c = (w * patch_rows[picked[:, 0]]).sum() / total
+    col_c = (w * patch_cols[picked[:, 1]]).sum() / total
     return row_c, col_c
 
 
-def com_via_svd(patch_movie, times, patch_rows, patch_cols, rank=15, radius=8.5, n_pixels=50):
-    """Center of mass per AP -> ``[nAP, 3]`` = ``[row, col, frame]`` (0-indexed frame).
+def com_via_svd(patch_movie, times, patch_rows, patch_cols, sel_patch, rank=15, radius=6.0,
+                n_pixels=25):
+    """Center of mass per AP -> ``[k, 3]`` = ``[row, col, frame]`` (0-indexed frame), ``k <= nAP``.
 
-    ``patch_rows``/``patch_cols`` are the 1-indexed absolute patch coordinates.
+    Each SVD-denoised center frame is masked with ``sel_patch`` (the region's pixels; Mini ALI's
+    ``dF_AP .* patch_mask``), the brightest in-mask pixels are grown with
+    :func:`region_grow_brightest` and their intensity^2 centroid taken. An AP is dropped when
+    the centroid is undefined (no positive in-mask mass) or when its rounded position falls
+    outside ``sel_patch`` (``run_miniali_fov.m`` lines 363-370), so the result can be shorter
+    than ``times`` — even empty. ``patch_rows``/``patch_cols`` are the 1-indexed absolute patch
+    coordinates and the returned ``[row, col]`` are 1-indexed absolute.
     """
     _recon, centers = svd_denoise_ap_stack(patch_movie, times, rank)
-    n = len(times)
-    coms = np.zeros((n, 3))
-    coms[:, 2] = times
-    for h in range(n):
-        picked = region_grow_brightest(centers[:, :, h], radius, n_pixels)
-        coms[h, 0], coms[h, 1] = _weighted_com(centers[:, :, h], picked, patch_rows, patch_cols)
-    return coms
+    Hp, Wp = sel_patch.shape
+    r_off, c_off = int(patch_rows[0]), int(patch_cols[0])
+    coms = []
+    for h in range(len(times)):
+        img = centers[:, :, h] * sel_patch
+        picked = region_grow_brightest(img, radius, n_pixels)
+        r, c = _weighted_com(img, picked, patch_rows, patch_cols)
+        if np.isnan(r) or np.isnan(c):
+            continue
+        pr = int(round_half_away_from_zero(r)) - r_off                 # back to patch 0-indexed
+        pc = int(round_half_away_from_zero(c)) - c_off
+        if not (0 <= pr < Hp and 0 <= pc < Wp) or sel_patch[pr, pc] == 0:
+            continue                                                   # outside the region
+        coms.append([r, c, times[h]])
+    return np.array(coms, dtype=np.float64).reshape(-1, 3)
 
 
 # --------------------------------------------------------------------------- #
@@ -340,8 +384,8 @@ def region_fallback_footprint(selection_map, selection_map_patch, patch_movie_ma
 
 def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_rows, patch_cols,
                        height, width):
-    """Per-cluster footprints: mean of each cluster's AP frames, masked to an 11x11 window
-    around the brightest in-selection pixel.
+    """Per-cluster footprints: mean of each cluster's AP frames, negatives clipped to zero, masked
+    to an 11x11 window around the brightest in-selection pixel.
 
     ``cluster_times`` = list of arrays of 0-indexed frames per cluster. Returns
     ``(planes, centers)`` — each plane ``[H, W]``; each center ``[row, col]`` (1-indexed).
@@ -350,6 +394,8 @@ def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_ro
     planes, centers = [], []
     for times in cluster_times:
         raw = patch_movie[np.asarray(times, int)].mean(axis=0)            # [Hp, Wp]
+        raw = np.maximum(raw, 0.0)                 # footprint(footprint<0)=0 (run_miniali_fov.m:486):
+        #   a negative weight would subtract neighbour signal with the wrong sign in the pinv
         masked = raw * selection_map_patch
         mx = masked.max()
         fi = int(np.argmax(masked.ravel(order="F") == mx))               # first, column-major
@@ -428,7 +474,9 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
         APs.append(region_AP)
 
         region_COMs = com_via_svd(pm, region_AP[:, 2].astype(int), patch_rows, patch_cols,
-                                  p.svd_rank, p.com_radius, p.com_n_pixels)
+                                  sel_patch, p.svd_rank, p.com_radius, p.com_n_pixels)
+        if len(region_COMs) == 0:                         # every COM undefined or outside the mask
+            _fallback(sel_full, sel_patch, pm_max, region); continue
         COMs.append(region_COMs)
         labels = DBSCAN(eps=p.dbscan_eps, min_samples=p.dbscan_min_pts).fit_predict(region_COMs[:, :2])
         if np.all(labels == -1):
