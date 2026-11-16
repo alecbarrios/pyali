@@ -293,6 +293,15 @@ def test_written_results_round_trip(fov):
     assert r.spikes["cell_row"].tolist() == scr.tolist()
     assert np.isfinite(r.spikes["amplitude"]).all() and (r.spikes["amplitude"] > 0).all()
     assert r.attrs["n_ap_detected"] == len(out["APs"]) and r.attrs["n_ap_localized"] == len(coms)
-    assert r.attrs["fps"] == fov["params"].fps and r.attrs["schema_version"] == 1
+    assert r.attrs["fps"] == fov["params"].fps and r.attrs["schema_version"] == 2
     assert np.array_equal(r.images["reference"], np.asarray(out["reference_image"], np.float32))
     assert np.array_equal(r.images["binary_map"], np.asarray(out["binary_map"], np.uint8))
+    assert np.array_equal(r.images["brightness_reference"], out["brightness_reference"])
+    # Cycle B2 columns
+    ident = out["identity"]
+    assert r.cells["source"].tolist() == out["source_of_footprint"]
+    assert r.cells["fov_id"].tolist() == [ident.fov_id] * N and r.attrs["fov_id"] == ident.fov_id
+    assert r.cells["cell_id"].tolist() == [ident.cell_id(i) for i in range(1, N + 1)]
+    b = r.cells["weighted_brightness"].to_numpy()
+    assert np.array_equal(b, np.asarray(out["brightness"], np.float32), equal_nan=True)
+    assert np.isfinite(b[r.cells["source"] == "spiking"]).all()

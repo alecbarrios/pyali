@@ -71,6 +71,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
 from pyali.metadata import write_metadata                                # noqa: E402
+from pyali.metadata import Identity                                                  # noqa: E402
 from pyali.results import SparseFootprints, make_cells, pack_spikes, write_results   # noqa: E402
 
 _ID = re.compile(r"cell_profile_([A-Za-z0-9-]+)\.mat$")
@@ -120,12 +121,19 @@ def convert(path, out_root, fps, bit, invert=True, source_uri=None):
                                         offsets=np.zeros(n + 1, np.uint32), height=H, width=W)
             # HDF5 stores MATLAB's (H, W, n) as (n, W, H); transpose recovers the image as MATLAB
             # would show it (row, col).
+            # No footprints -> no weighted brightness (NaN) and a NaN brightness reference;
+            # the perturbation id stands in for experiment/well, the FOV number is k.
+            ident = Identity(experiment_id=str(pid), plate=int(plate_num or 0), well=str(pid),
+                             fov=int(k))
             write_results(out_dir,
-                          cells_df=make_cells(com[sel], np.zeros(n, int), np.zeros(n, int)),
+                          cells_df=make_cells(com[sel], np.zeros(n, int), np.zeros(n, int),
+                                              ["spiking"] * n, np.full(n, np.nan, np.float32),
+                                              ident),
                           traces=ct, footprints=empty_fp,
                           spikes_df=pack_spikes(np.zeros((0, 4)), np.zeros((0, 3)), [], [], []),
                           images=dict(reference=np.asarray(ref[k - 1]).T,
-                                      binary_map=np.zeros((H, W), np.uint8)),
+                                      binary_map=np.zeros((H, W), np.uint8),
+                                      brightness_reference=np.full((H, W), np.nan, np.float32)),
                           attrs=dict(fps=float(fps), profile="cell_profile_mat",
                                      n_ap_detected=0, n_ap_localized=0))
             meta = dict(

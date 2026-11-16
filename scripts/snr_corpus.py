@@ -143,9 +143,10 @@ def _run_one(job):
         fov_dir = os.path.join(read_root, day, dir_name)
         with open(os.path.join(fov_dir, META)) as f:
             meta = json.load(f)
-        fps = meta.get("analysis", {}).get("fps")
+        # params.fps (schema 2); analysis.fps is the pre-B2 key, still present in the archive
+        fps = meta.get("params", {}).get("fps") or meta.get("analysis", {}).get("fps")
         if not fps:
-            raise RuntimeError(f"no analysis.fps in {META}")
+            raise RuntimeError(f"no params.fps / analysis.fps in {META}")
 
         traces = load_results(fov_dir).traces                # (N, T) float32; (0, T) when empty
         n_cells = int(traces.shape[0])

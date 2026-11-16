@@ -74,8 +74,18 @@ import os                                                                  # noq
 import h5py                                                                # noqa: E402
 import pandas as pd                                                        # noqa: E402
 
+from pyali.metadata import Identity                                        # noqa: E402
 from pyali.results import (CELLS_DTYPES, SCHEMA_VERSION, SPIKES_DTYPES,    # noqa: E402
                            load_results, make_cells, pack_spikes, write_results)
+
+IDENT = Identity("exp", 4, "C2", 47, fov_index=3, batch="443-2")
+
+
+def _cells(centers, region, n_spikes, source=None, brightness=None, identity=IDENT):
+    n = len(np.asarray(centers).reshape(-1, 2))
+    source = ["spiking"] * n if source is None else source
+    brightness = np.arange(n, dtype=np.float32) if brightness is None else brightness
+    return make_cells(centers, region, n_spikes, source, brightness, identity)
 
 
 def _synthetic_fov(rng, H=40, W=50, N=5, T=300):
@@ -92,10 +102,12 @@ def _synthetic_fov(rng, H=40, W=50, N=5, T=300):
     region_of_spike = np.array([0, 0, 1, 3, 3])
     spike_cell_row = np.array([0, 1, 2, -1, 4])
     n_spikes = np.bincount(spike_cell_row[spike_cell_row >= 0], minlength=N)
-    cells = make_cells(centers, region, n_spikes)
+    cells = _cells(centers, region, n_spikes, source=["spiking", "spiking", "spiking", "no_ap", "spiking"],
+                   brightness=np.array([1.5, np.nan, 3.0, 4.0, 5.0], np.float32))
     spikes = pack_spikes(APs, COMs, spike_cell_row, region_of_spike, region_of_ap)
     images = dict(reference=rng.uniform(size=(H, W)).astype(np.float32),
-                  binary_map=(rng.uniform(size=(H, W)) > 0.7).astype(np.uint8))
+                  binary_map=(rng.uniform(size=(H, W)) > 0.7).astype(np.uint8),
+                  brightness_reference=rng.normal(size=(H, W)).astype(np.float32))
     attrs = dict(fps=800.0, profile="synthetic", n_ap_detected=len(APs), n_ap_localized=len(COMs),
                  nothing=None)
     return dict(fp=fp, traces=traces, centers=centers, region=region, n_spikes=n_spikes,
@@ -104,12 +116,30 @@ def _synthetic_fov(rng, H=40, W=50, N=5, T=300):
 
 
 def test_make_cells_schema():
-    cells = make_cells([[10.0, 20.0], [30.5, 40.25]], [3, 7], [2, 0])
+    cells = _cells([[10.0, 20.0], [30.5, 40.25]], [3, 7], [2, 0], source=["spiking", "no_com"],
+                   brightness=[12.5, np.nan])
     assert list(cells.columns) == list(CELLS_DTYPES)
     assert {c: str(t) for c, t in cells.dtypes.items()} == CELLS_DTYPES
     assert cells["local_cell_id"].tolist() == [1, 2] and cells["trace_row"].tolist() == [0, 1]
     assert cells["y_px"].tolist() == [10.0, 30.5] and cells["x_px"].tolist() == [20.0, 40.25]
     assert cells["region_id"].tolist() == [3, 7] and cells["n_spikes"].tolist() == [2, 0]
+    assert cells["cell_id"].tolist() == ["exp_P04_C2_F047_C0001", "exp_P04_C2_F047_C0002"]
+    assert cells["fov_id"].tolist() == ["exp_P04_C2_F047"] * 2
+    assert cells["experiment_id"].tolist() == ["exp"] * 2 and cells["well"].tolist() == ["C2"] * 2
+    assert cells["plate"].tolist() == [4, 4] and cells["fov"].tolist() == [47, 47]
+    assert cells["fov_index"].tolist() == [3, 3]
+    assert cells["source"].tolist() == ["spiking", "no_com"]
+    assert cells["weighted_brightness"][0] == np.float32(12.5) and np.isnan(cells["weighted_brightness"][1])
+
+
+def test_make_cells_rejects_bad_source_and_lengths():
+    import pytest
+    with pytest.raises(ValueError):
+        _cells([[1.0, 1.0]], [0], [0], source=["bogus"])
+    with pytest.raises(ValueError):
+        _cells([[1.0, 1.0], [2.0, 2.0]], [0, 1], [0, 0], source=["spiking"])
+    with pytest.raises(ValueError):
+        _cells([[1.0, 1.0]], [0], [0], brightness=[1.0, 2.0])
 
 
 def test_pack_spikes_joins_amplitude_by_region_and_frame():
@@ -143,7 +173,11 @@ def test_write_and_load_round_trip_every_field(tmp_path):
         assert r.footprints.n() == len(s["cells"])
         assert np.array_equal(r.images["reference"], s["images"]["reference"])
         assert np.array_equal(r.images["binary_map"], s["images"]["binary_map"])
+        assert np.array_equal(r.images["brightness_reference"], s["images"]["brightness_reference"])
         assert r.images["reference"].dtype == np.float32 and r.images["binary_map"].dtype == np.uint8
+        assert r.images["brightness_reference"].dtype == np.float32
+        assert r.cells["source"].tolist() == s["cells"]["source"].tolist()
+        assert r.cells["cell_id"].tolist() == s["cells"]["cell_id"].tolist()
     csv = pd.read_csv(os.path.join(out, "cells.csv"))
     assert list(csv.columns) == list(CELLS_DTYPES) and len(csv) == len(s["cells"])
 
@@ -166,6 +200,8 @@ def test_signals_h5_layout_chunks_and_attrs(tmp_path):
         assert f["/footprints/offsets"].dtype == np.uint32 and f["/footprints/offsets"].shape == (N + 1,)
         assert f["/images/reference"].shape == (H, W) and f["/images/reference"].dtype == np.float32
         assert f["/images/binary_map"].shape == (H, W) and f["/images/binary_map"].dtype == np.uint8
+        assert f["/images/brightness_reference"].shape == (H, W)
+        assert f["/images/brightness_reference"].dtype == np.float32
         a = dict(f.attrs)
         assert a["height"] == H and a["width"] == W and a["n_frames"] == T and a["fps"] == 800.0
         assert a["schema_version"] == SCHEMA_VERSION
@@ -180,9 +216,10 @@ def test_signals_h5_layout_chunks_and_attrs(tmp_path):
 def test_zero_cell_fov_writes_every_file_and_loads(tmp_path):
     H, W, T = 32, 48, 120
     out = str(tmp_path / "empty")
-    cells = make_cells(np.zeros((0, 2)), [], [])
+    cells = _cells(np.zeros((0, 2)), [], [])
     spikes = pack_spikes(np.zeros((0, 4)), np.zeros((0, 3)), [], [], [])
-    images = dict(reference=np.zeros((H, W), np.float32), binary_map=np.zeros((H, W), np.uint8))
+    images = dict(reference=np.zeros((H, W), np.float32), binary_map=np.zeros((H, W), np.uint8),
+                  brightness_reference=np.zeros((H, W), np.float32))
     write_results(out, cells_df=cells, traces=np.zeros((0, T)), footprints=np.zeros((H, W, 0)),
                   spikes_df=spikes, images=images, attrs=dict(fps=800.0))
     for name in ("cells.parquet", "cells.csv", "spikes.parquet", "signals.h5"):

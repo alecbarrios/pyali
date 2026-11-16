@@ -139,7 +139,9 @@ def _run_one(job):
     try:
         fov = os.path.join(read_root, day, dir_name)
         with open(os.path.join(fov, META)) as f:
-            fps = float(json.load(f)["analysis"]["fps"])
+            meta = json.load(f)
+        # params.fps (schema 2); analysis.fps is the pre-B2 key, still present in the archive
+        fps = float(meta.get("params", {}).get("fps") or meta["analysis"]["fps"])
         ct = load_results(fov).traces                        # (N, T) float32; (0, T) when empty
         half = HALF
         t_ms = np.arange(-half, half + 1) * (1000.0 / fps)

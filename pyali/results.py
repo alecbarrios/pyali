@@ -1,8 +1,10 @@
 """Per-FOV results: the only writer and the only loader of pyali's on-disk outputs.
 
-Layout of one FOV output directory (schema version 1)::
+Layout of one FOV output directory (schema version 2)::
 
-    cells.parquet        one row per cell: local_cell_id, trace_row, x_px, y_px, region_id, n_spikes
+    cells.parquet        one row per cell: cell_id, experiment_id, plate, well, fov, fov_id,
+                         fov_index, local_cell_id, trace_row, x_px, y_px, region_id, n_spikes,
+                         source (spiking | no_ap | no_com | all_noise), weighted_brightness
     cells.csv            the same table, for eyeballing
     spikes.parquet       one row per localized AP: region_id, frame (0-based), row, col (COM,
                          1-indexed), amplitude, cell_row (-1 = not assigned to a cell)
@@ -13,8 +15,14 @@ Layout of one FOV output directory (schema version 1)::
                          /footprints/offsets  uint32  [N+1]   cell k owns values[offsets[k]:offsets[k+1]]
                          /images/reference    float32 [H, W]  correlation-weighted reference
                          /images/binary_map   uint8   [H, W]  segmentation mask
+                         /images/brightness_reference  float32 [H, W]  raw-unit mean minus opening,
+                                              the x in weighted_brightness
                          attrs: height, width, n_frames, fps, pyali_git, schema_version, ...
     fov_metadata.json    written separately by :mod:`pyali.metadata`
+
+``cell_id = <fov_id>_C<local_cell_id:04d>`` with ``fov_id`` from :class:`pyali.metadata.Identity`.
+``weighted_brightness = sum(w * x) / sum(w)`` over the cell's footprint pixels (``w`` = footprint
+values, ``x`` = ``/images/brightness_reference``); NaN when the cell has no positive weight.
 
 ``/traces/raw`` is byte-compatible with the Octave corpus's ``signals.h5``. Trace polarity is
 pyali's (spikes positive). Footprints are stored sparse because each cell's plane is an 11x11
@@ -25,15 +33,21 @@ from dataclasses import dataclass
 
 import numpy as np
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 CELLS_FILE = "cells.parquet"
 CELLS_CSV = "cells.csv"
 SPIKES_FILE = "spikes.parquet"
 SIGNALS_FILE = "signals.h5"
 
-CELLS_DTYPES = {"local_cell_id": "uint16", "trace_row": "uint32", "x_px": "float32",
-                "y_px": "float32", "region_id": "uint32", "n_spikes": "uint32"}
+# string columns are plain Python str in an object column (what parquet round-trips to)
+CELLS_DTYPES = {"cell_id": "object", "experiment_id": "object", "plate": "uint16",
+                "well": "object", "fov": "uint16", "fov_id": "object", "fov_index": "uint32",
+                "local_cell_id": "uint16", "trace_row": "uint32", "x_px": "float32",
+                "y_px": "float32", "region_id": "uint32", "n_spikes": "uint32",
+                "source": "object", "weighted_brightness": "float32"}
+SOURCES = ("spiking", "no_ap", "no_com", "all_noise")
+IMAGE_KEYS = ("reference", "binary_map", "brightness_reference")
 SPIKES_DTYPES = {"region_id": "uint32", "frame": "uint32", "row": "float32", "col": "float32",
                  "amplitude": "float32", "cell_row": "int32"}
 
@@ -93,6 +107,29 @@ class SparseFootprints:
             offsets=np.asarray(offsets, np.uint32), height=height, width=width)
 
 
+def weighted_brightness(sp, ref):
+    """Per-cell footprint-weighted brightness: ``sum(w * x) / sum(w)`` over each cell's
+    footprint pixels, with ``w`` the footprint values and ``x`` the ``(H, W)`` brightness
+    reference (see :func:`pyali.preprocess.brightness_reference`). Pixels with ``w <= 0`` or a
+    non-finite ``w``/``x`` are ignored; a cell with no usable pixel gets ``NaN``.
+
+    Returns ``(N,)`` float32.
+    """
+    ref = np.asarray(ref, np.float64)
+    if ref.shape != (sp.height, sp.width):
+        raise ValueError(f"reference shape {ref.shape} != ({sp.height}, {sp.width})")
+    flat = ref.ravel()
+    out = np.full(sp.n(), np.nan, np.float32)
+    for k in range(sp.n()):
+        a, b = int(sp.offsets[k]), int(sp.offsets[k + 1])
+        w = sp.values[a:b].astype(np.float64)
+        x = flat[sp.pixel[a:b]]
+        m = (w > 0) & np.isfinite(w) & np.isfinite(x)
+        if m.any():
+            out[k] = (w[m] * x[m]).sum() / w[m].sum()
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Tables
 # --------------------------------------------------------------------------- #
@@ -103,17 +140,35 @@ def _typed_frame(columns, dtypes):
                          for name, dt in dtypes.items()})
 
 
-def make_cells(centers, region_id, n_spikes):
-    """The ``cells`` table for ``N`` cells: ``centers`` ``(N, 2) = [row, col]`` (1-indexed),
-    ``region_id`` ``(N,)`` and ``n_spikes`` ``(N,)``."""
+def make_cells(centers, region_id, n_spikes, source, brightness, identity):
+    """The ``cells`` table for ``N`` cells.
+
+    ``centers`` ``(N, 2) = [row, col]`` (1-indexed); ``region_id``, ``n_spikes``, ``brightness``
+    ``(N,)``; ``source`` a length-``N`` sequence over :data:`SOURCES`; ``identity`` a
+    :class:`pyali.metadata.Identity` (shared by every row; it supplies ``fov_id`` and the
+    ``cell_id`` prefix).
+    """
     centers = np.asarray(centers, float).reshape(-1, 2)
     N = len(centers)
     region_id, n_spikes = np.asarray(region_id).reshape(-1), np.asarray(n_spikes).reshape(-1)
-    if len(region_id) != N or len(n_spikes) != N:
-        raise ValueError(f"cells: {N} centers, {len(region_id)} region ids, {len(n_spikes)} spike counts")
-    return _typed_frame(dict(local_cell_id=np.arange(1, N + 1), trace_row=np.arange(N),
+    brightness = np.asarray(brightness, np.float32).reshape(-1)
+    source = [str(s) for s in source]
+    if not (len(region_id) == len(n_spikes) == len(source) == len(brightness) == N):
+        raise ValueError(f"cells: {N} centers, {len(region_id)} region ids, {len(n_spikes)} spike "
+                         f"counts, {len(source)} sources, {len(brightness)} brightness values")
+    bad = sorted(set(source) - set(SOURCES))
+    if bad:
+        raise ValueError(f"cells: unknown source values {bad}; expected one of {SOURCES}")
+    local = np.arange(1, N + 1)
+    return _typed_frame(dict(cell_id=[identity.cell_id(i) for i in local],
+                             experiment_id=[identity.experiment_id] * N,
+                             plate=[int(identity.plate)] * N, well=[identity.well] * N,
+                             fov=[int(identity.fov)] * N, fov_id=[identity.fov_id] * N,
+                             fov_index=[int(identity.fov_index)] * N,
+                             local_cell_id=local, trace_row=np.arange(N),
                              x_px=centers[:, 1], y_px=centers[:, 0],
-                             region_id=region_id, n_spikes=n_spikes), CELLS_DTYPES)
+                             region_id=region_id, n_spikes=n_spikes,
+                             source=source, weighted_brightness=brightness), CELLS_DTYPES)
 
 
 def pack_spikes(APs, COMs, spike_cell_row, region_of_spike, region_of_ap):
@@ -154,7 +209,7 @@ class Results:
     centers: np.ndarray          # (N, 2) float64 = [row, col], 1-indexed (from cells y_px / x_px)
     footprints: SparseFootprints
     spikes: object               # DataFrame, SPIKES_DTYPES columns
-    images: dict                 # reference (H, W) float32, binary_map (H, W) uint8
+    images: dict                 # reference / brightness_reference (H, W) float32, binary_map uint8
     attrs: dict                  # signals.h5 attributes
 
 
@@ -182,7 +237,7 @@ def write_results(out_dir, *, cells_df, traces, footprints, spikes_df, images, a
     ``cells_df`` / ``spikes_df`` must carry exactly the schema columns (see :func:`make_cells`,
     :func:`pack_spikes`); ``traces`` is ``(N, T)``; ``footprints`` is the dense ``(H, W, N)``
     array (packed here) or an already packed :class:`SparseFootprints`; ``images``
-    ``{reference: (H, W), binary_map: (H, W)}``; ``attrs`` must include ``fps`` and may carry
+    ``{reference, binary_map, brightness_reference}``, each ``(H, W)``; ``attrs`` must include ``fps`` and may carry
     any other scalars (stored as HDF5 attributes; ``None`` becomes ``''``). ``height``, ``width``,
     ``n_frames``, ``schema_version`` and ``pyali_git`` are filled in here. An ``N == 0`` FOV
     writes every file with zero-length datasets and zero-row tables.
@@ -202,7 +257,9 @@ def write_results(out_dir, *, cells_df, traces, footprints, spikes_df, images, a
     H, W = sp.height, sp.width
     if sp.n() != N or len(cells_df) != N:
         raise ValueError(f"{N} traces, {sp.n()} footprints, {len(cells_df)} cell rows")
-    for key in ("reference", "binary_map"):
+    for key in IMAGE_KEYS:
+        if key not in images:
+            raise ValueError(f"images is missing {key!r}; need {IMAGE_KEYS}")
         if np.asarray(images[key]).shape != (H, W):
             raise ValueError(f"images[{key!r}] shape {np.asarray(images[key]).shape} != ({H}, {W})")
 
@@ -222,6 +279,9 @@ def write_results(out_dir, *, cells_df, traces, footprints, spikes_df, images, a
         f.create_dataset("/images/reference", data=np.asarray(images["reference"], np.float32),
                          compression="gzip", compression_opts=4)
         f.create_dataset("/images/binary_map", data=np.asarray(images["binary_map"], np.uint8),
+                         compression="gzip", compression_opts=4)
+        f.create_dataset("/images/brightness_reference",
+                         data=np.asarray(images["brightness_reference"], np.float32),
                          compression="gzip", compression_opts=4)
         full = dict(attrs)
         full.update(height=int(H), width=int(W), n_frames=int(T), fps=float(attrs["fps"]),
@@ -259,7 +319,9 @@ def load_results(fov_dir):
             offsets=np.asarray(f["/footprints/offsets"], np.uint32),
             height=int(attrs["height"]), width=int(attrs["width"]))
         images = dict(reference=np.asarray(f["/images/reference"], np.float32),
-                      binary_map=np.asarray(f["/images/binary_map"], np.uint8))
+                      binary_map=np.asarray(f["/images/binary_map"], np.uint8),
+                      brightness_reference=np.asarray(f["/images/brightness_reference"],
+                                                      np.float32))
     centers = np.column_stack([cells["y_px"].to_numpy(), cells["x_px"].to_numpy()]).astype(np.float64)
     return Results(cells=cells, traces=traces, centers=centers.reshape(-1, 2),
                    footprints=footprints, spikes=spikes, images=images, attrs=attrs)

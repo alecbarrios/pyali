@@ -225,6 +225,9 @@ def test_extract_footprints_falls_back_when_no_com_survives(tmp_path, monkeypatc
     assert np.isfinite(np.asarray(out["cell_traces"], float)).all()
     assert out["region_of_footprint"].tolist() == list(range(len(out["regions"])))
     assert out["region_of_ap"].shape == (len(out["APs"]),)
+    had_ap = set(out["region_of_ap"].tolist())
+    assert out["source_of_footprint"] == ["no_com" if c in had_ap else "no_ap"
+                                          for c in range(len(out["regions"]))]
     assert out["region_of_spike"].shape == (0,) and out["spike_cell_row"].shape == (0,)
 
 
