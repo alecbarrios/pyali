@@ -16,7 +16,7 @@ from .utils import dog_kernel
 
 
 def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make_figures=False,
-                keep_row=None, profile=None, day=None, identity=None):
+                profile=None, day=None, identity=None):
     """Run the full extraction on one FOV; returns a dict of the key outputs.
 
     ``verbose`` prints per-stage progress (the full-movie steps take minutes each, so the run
@@ -162,7 +162,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         # downstream aggregation over the corpus is a single glob.
         from .metadata import fov_metadata, write_metadata
         write_metadata(out_dir, fov_metadata(
-            fov_dir, day=day, keep_row=keep_row, params=p, profile=profile,
+            fov_dir, day=day, params=p, profile=profile,
             identity=identity, timing=timing,
             extras=dict(n_regions_kept=len(regions), n_regions_dropped=len(dropped),
                         n_cells=int(cell_traces.shape[0]), n_cells_by_source=n_cells_by_source,

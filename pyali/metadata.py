@@ -21,9 +21,8 @@ Quirks the parser has to absorb, all confirmed against the 6504-FOV ``keep.csv``
   see :func:`well_from_multiwell`;
 * ``443GP`` and ``443screen1`` are the same batch.
 
-Prefer ``keep.csv`` for plate/well: it already resolved them for every FOV, including the
-``dir1`` rule. Use this module for what ``keep.csv`` does not carry — timestamp, DIV, batch,
-plate format, and the condition tokens.
+Identity for outputs (``fov_id`` / ``cell_id``) is :class:`Identity`, built from the name by
+:func:`identity_from_dir_name` or supplied by the corpus inventory (``scripts/run_corpus.py``).
 """
 import json
 import os
@@ -184,7 +183,7 @@ def _jsonable(v):
     return v
 
 
-def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, extras=None,
+def fov_metadata(fov_dir, day=None, params=None, profile=None, extras=None,
                  identity=None, timing=None):
     """Full metadata record for one FOV, ready to write beside its analysis outputs.
 
@@ -195,9 +194,6 @@ def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, ex
     day : str, optional
         Acquisition day. Defaults to the parent directory name, which is correct for the AB
         tree; pass it explicitly for nested layouts such as ``20260401/Data_B1/<fov>``.
-    keep_row : dict, optional
-        The FOV's ``keep.csv`` row. **Authoritative for plate/well** — it already applies the
-        multi-well rule — and supplies bit depth, dimensions and frame count.
     params : Params, optional
         Every field is recorded under ``params`` so results stay interpretable.
     profile : str, optional
@@ -221,30 +217,6 @@ def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, ex
     from .results import git_sha
     meta["pyali_git"] = git_sha()
 
-    if keep_row:
-        # keep.csv wins for well (it applies the multi-well rule); its burst column is populated
-        # for dir1 only, so fall back to it rather than over it. Its `plate` is a float string
-        # ("1.0"), so keep the readable name token as `plate` and store the number separately.
-        for src, dst in (("well", "well"), ("well_source", "well_source"),
-                         ("bit", "bit"), ("dims", "dims"), ("fov_path", "fov_path")):
-            v = keep_row.get(src)
-            if v not in (None, ""):
-                meta[dst] = v
-        pv = keep_row.get("plate")
-        if pv not in (None, ""):
-            try:
-                meta["plate_num"] = int(float(pv))
-            except (TypeError, ValueError):
-                meta["plate_num"] = pv
-        if meta.get("burst") is None and keep_row.get("burst") not in (None, ""):
-            meta["burst"] = int(float(keep_row["burst"]))
-        for c, k in (("n_frames_from_bin", "n_frames"), ("bin_bytes", "bin_bytes")):
-            v = keep_row.get(c)
-            if v not in (None, ""):
-                meta[k] = int(float(v))
-        if meta.get("day") != keep_row.get("day") and keep_row.get("day"):
-            meta["day"] = keep_row["day"]
-
     if params is not None:
         meta["params"] = _jsonable(asdict(params))          # every field, not a hand-picked subset
     if timing:
@@ -262,10 +234,3 @@ def write_metadata(out_dir, meta, name="fov_metadata.json"):
     with open(path, "w") as f:
         json.dump(meta, f, indent=2, sort_keys=False, default=str)
     return path
-
-
-def load_keep_index(keep_csv):
-    """``{(day, dir_name): row}`` from ``keep.csv``, for joining during a run."""
-    import csv
-    with open(keep_csv) as f:
-        return {(r["day"], r["dir_name"]): r for r in csv.DictReader(f)}

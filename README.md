@@ -77,6 +77,42 @@ reading archived runs.
 
 A full field of view takes several minutes; progress is printed per stage.
 
+## Analyze a corpus
+
+Two scripts, one contract: an **inventory CSV** with one row per FOV directory.
+
+```bash
+# 1. inventory a dataset (any mounted root; nothing dataset-specific is hard-coded)
+python scripts/build_inventory.py --root /mnt/stp/20260716 --experiment-id 443screen2 \
+    --wells A2 C3 --out inv_20260716.csv
+#    plate relabels are a flag, e.g. the 20260715 folders named P-1 that are plate 5:
+python scripts/build_inventory.py --root /mnt/stp/20260715 --plate-map 20260715:P-1=5 \
+    --experiment-id 443screen2 --out inv_20260715.csv
+
+# 2. gate, then run one run_id (= P<plate>_<well>)
+python scripts/run_corpus.py --inventory inv_20260716.csv --run-id P4_A2 \
+    --s3-prefix s3://spatial-technology-platform/AB/pyali-443screen2 --expected-n 84 --dry-run
+python scripts/run_corpus.py --inventory inv_20260716.csv --run-id P4_A2 \
+    --s3-prefix s3://spatial-technology-platform/AB/pyali-443screen2 --expected-n 84 --workers 8
+```
+
+`build_inventory.py` walks the root for directories holding `frames1.bin`, parses plate / well /
+burst / batch from each name (`pyali.metadata`), reads the acquisition sidecar
+(`frames1_dropped_frames.txt`) and marks zero-byte, partial, aborted or unparseable movies as
+excluded with a reason; excluded rows stay in the file so numbering is stable.
+
+`run_corpus.py` runs each included FOV as its own `scripts/run_pyali.py` subprocess (which owns
+profile, bit-depth and frame-range logic) in a thread pool: wait for RAM and scratch disk, run with
+an RSS watchdog, upload the output directory to
+`<s3_prefix>/Plate_<plate>/Well_<well>/<fov_name>/`, read the `cells.parquet` marker back from S3,
+then delete the local copy. FOVs already carrying the marker are skipped on re-run. The run's
+`manifest.jsonl` (one record per FOV: ids, timings, peak RSS, cell counts, errors), `fov_index.csv`
+and per-FOV logs are archived to `<s3_prefix>/_runs/<run_id>/`. Use `--src-root` to re-root the
+inventory's paths when the mount it was built on is absent, and put run_pyali options after `--`.
+
+The per-FOV unit is `run_pyali.py`, so a Snakefile (one rule per inventory row) can replace
+`run_corpus.py` for a cluster run without touching the pipeline.
+
 ## Python API
 
 ```python
