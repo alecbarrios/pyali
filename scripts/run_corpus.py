@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Run pyali across the corpus, streaming each FOV's outputs to S3 and freeing the local copy.
 
-Outputs are ~114-364 MB per FOV (``footprint`` is a dense ``(H, W, N)`` float64 array, and
-``ALI_Int_Result.mat`` holds 7 full-frame images), so the full corpus is roughly **1 TB**
-against 466 GB of local NVMe. Rather than shrink the outputs, each FOV is written to local
-scratch, uploaded, and deleted immediately — peak local usage is then a few FOVs, not the run.
+Outputs are a few MB per FOV (``signals.h5`` holds the gzipped float32 traces, the footprints
+as a sparse COO list and two full-frame images; ``cells.parquet``/``cells.csv`` and
+``spikes.parquet`` are small tables -- see ``pyali/results.py``), so the full corpus is tens of
+GB. Each FOV is still written to local scratch, uploaded, and deleted immediately — peak local
+usage is then a few FOVs, not the run.
 
 Reads go through the Mountpoint mounts (~4 GB/s); the s3fs mounts are ~32x slower and should
 not be used as the read root. Writes go to local scratch because Mountpoint is read-only here
@@ -14,8 +15,9 @@ and, even writable, supports only sequential writes of new files.
     python scripts/run_corpus.py --keep-csv KEEP.csv --days 20260715 --limit 20 --figures
     python scripts/run_corpus.py --keep-csv KEEP.csv --dry-run
 
-Resumable: FOVs whose ``ALI_Result.mat`` already exists under the destination prefix are
-skipped, so an interrupted run picks up where it stopped.
+Resumable: FOVs whose ``cells.parquet`` already exists under the destination prefix are
+skipped, so an interrupted run picks up where it stopped (it is the last file ``process_fov``
+writes before ``fov_metadata.json``, and the upload is one recursive copy).
 """
 import argparse
 import csv
@@ -46,7 +48,7 @@ PROFILE = {("20260331_dir1", "16-bit"): "6GP002", ("20260331_dir2", "16-bit"): "
            ("20260717", "8-bit"): "443screen2", ("20260718", "8-bit"): "443screen2"}
 FACTORY = {"6GP002": Params.profile_6GP002, "6GP002-8bit": Params.profile_6GP002_8bit,
            "443screen1": Params.profile_443screen1, "443screen2": Params.profile_443screen2}
-RESULT = "ALI_Result.mat"
+RESULT = "cells.parquet"                       # the done-marker (see pyali/results.py)
 
 
 def read_root(day):

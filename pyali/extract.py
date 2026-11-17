@@ -413,6 +413,9 @@ def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_ro
     return planes, centers
 
 
+SOURCES = ("spiking", "no_ap", "no_com", "all_noise")     # cells.source vocabulary
+
+
 def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, std_frames, p,
                        height, width, verbose=False):
     """Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.
@@ -434,8 +437,21 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
 
     Returns
     -------
-    (APs, COMs, footprint, footprint_center)
-        ``footprint`` : (H, W, N); ``footprint_center`` : (N, 2) = ``[row, col]``.
+    (APs, COMs, footprint, footprint_center, region_of_footprint, region_of_ap,
+     region_of_spike, spike_cell_row, source_of_footprint)
+        ``APs`` : (nAP, 4) = ``[row, col, frame, amplitude]`` (0-indexed);
+        ``COMs`` : (nCOM, 3) = ``[row, col, frame]`` (1-indexed row/col) -- ``nCOM <= nAP``
+        because :func:`com_via_svd` drops APs whose centroid is undefined or off-mask;
+        ``footprint`` : (H, W, N); ``footprint_center`` : (N, 2) = ``[row, col]``;
+        ``region_of_footprint`` : (N,) int, the segmentation region each footprint came from;
+        ``region_of_ap`` : (nAP,) int, the region of each ``APs`` row;
+        ``region_of_spike`` : (nCOM,) int, the region of each ``COMs`` row;
+        ``spike_cell_row`` : (nCOM,) int, the footprint row (0-based) each localized spike was
+        clustered into, or -1 (DBSCAN noise, or a region that fell back to one footprint);
+        ``source_of_footprint`` : list of str, one of :data:`SOURCES` per footprint --
+        ``spiking`` for a DBSCAN cluster's footprint, else why the region fell back to one
+        footprint: ``no_ap`` (no AP detected), ``no_com`` (no centroid survived the mask), or
+        ``all_noise`` (every centroid was DBSCAN noise).
     """
     from sklearn.cluster import DBSCAN
 
@@ -443,11 +459,15 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
     fw = p.filter_window
     half = int(round_half_away_from_zero(fw / 2))
     APs, COMs, planes, centers = [], [], [], []
+    region_of_footprint, region_of_ap, region_of_spike, spike_cell_row = [], [], [], []
+    source_of_footprint = []
 
-    def _fallback(sel_full, sel_patch, pm_max, region):
+    def _fallback(sel_full, sel_patch, pm_max, region, c, reason):
         planes.append(region_fallback_footprint(sel_full, sel_patch, pm_max, height, width))
         cen = region_center_rowcol(region)
         centers.append(cen)
+        region_of_footprint.append(c)
+        source_of_footprint.append(reason)
 
     for c, region in enumerate(regions):
         if verbose and (c % 25 == 0 or c == len(regions) - 1):
@@ -470,29 +490,40 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
                                              p.threshold_factor, fw)
         region_AP = dedup_close_peaks(region_AP, p.min_peak_interval)
         if len(region_AP) == 0:
-            _fallback(sel_full, sel_patch, pm_max, region); continue
+            _fallback(sel_full, sel_patch, pm_max, region, c, "no_ap"); continue
         APs.append(region_AP)
+        region_of_ap.extend([c] * len(region_AP))
 
         region_COMs = com_via_svd(pm, region_AP[:, 2].astype(int), patch_rows, patch_cols,
                                   sel_patch, p.svd_rank, p.com_radius, p.com_n_pixels)
         if len(region_COMs) == 0:                         # every COM undefined or outside the mask
-            _fallback(sel_full, sel_patch, pm_max, region); continue
+            _fallback(sel_full, sel_patch, pm_max, region, c, "no_com"); continue
         COMs.append(region_COMs)
+        region_of_spike.extend([c] * len(region_COMs))
         labels = DBSCAN(eps=p.dbscan_eps, min_samples=p.dbscan_min_pts).fit_predict(region_COMs[:, :2])
         if np.all(labels == -1):
-            _fallback(sel_full, sel_patch, pm_max, region); continue
+            spike_cell_row.extend([-1] * len(region_COMs))
+            _fallback(sel_full, sel_patch, pm_max, region, c, "all_noise"); continue
 
-        cluster_times = [region_COMs[labels == k, 2].astype(int)
-                         for k in range(labels.max() + 1) if np.any(labels == k)]
+        # cluster k (in label order, skipping empty labels) becomes the next appended plane
+        kept = [k for k in range(labels.max() + 1) if np.any(labels == k)]
+        cluster_times = [region_COMs[labels == k, 2].astype(int) for k in kept]
         pl, ce = cluster_footprints(pm, cluster_times, sel_patch, patch_rows, patch_cols,
                                     height, width)
+        row_of_label = {k: len(planes) + i for i, k in enumerate(kept)}
+        spike_cell_row.extend(row_of_label.get(int(lab), -1) for lab in labels)
         planes.extend(pl); centers.extend(ce)
+        region_of_footprint.extend([c] * len(pl))
+        source_of_footprint.extend(["spiking"] * len(pl))
 
     footprint = np.stack(planes, axis=2) if planes else np.zeros((height, width, 0))
     footprint_center = np.array(centers, dtype=float).reshape(-1, 2)
     APs = np.vstack(APs) if APs else np.zeros((0, 4))
     COMs = np.vstack(COMs) if COMs else np.zeros((0, 3))
-    return APs, COMs, footprint, footprint_center
+    return (APs, COMs, footprint, footprint_center,
+            np.asarray(region_of_footprint, int), np.asarray(region_of_ap, int),
+            np.asarray(region_of_spike, int), np.asarray(spike_cell_row, int),
+            source_of_footprint)
 
 
 def region_center_rowcol(region):

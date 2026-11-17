@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Per-cell SNR metrics over the pyali corpus outputs -- README section 9, stage 1 of 3.
 
-**Post hoc, not in the pipeline.** This reads ``cell_traces`` from each ``ALI_Result.mat``
-already in S3 and applies :func:`pyali.metrics.per_cell_snr` unchanged. The extraction pipeline
-is never re-run, so a refresh costs minutes rather than days and never reprocesses a movie.
+**Post hoc, not in the pipeline.** This reads the traces from each FOV's ``signals.h5``
+(:func:`pyali.results.load_results`) already in S3 and applies :func:`pyali.metrics.per_cell_snr`
+unchanged. The extraction pipeline is never re-run, so a refresh costs minutes rather than days
+and never reprocesses a movie.
 
-One ``snr_metrics.csv`` is written per FOV, **into the same directory as the ``.mat`` outputs** --
+One ``snr_metrics.csv`` is written per FOV, **into the same directory as the pipeline outputs** --
 the same depth rule ``fov_metadata.json`` follows -- so downstream aggregation stays a single glob:
 
     <out_root>/<day>/<fov_dirname>/
-        ALI_Int_Result.mat   ALI_Result.mat   fov_metadata.json   snr_metrics.csv
+        cells.parquet  cells.csv  spikes.parquet  signals.h5  fov_metadata.json  snr_metrics.csv
 
 Columns: ``cell_index, noise_sigma, snr_median, spectral_hf_snr, n_spikes``.
 
@@ -41,17 +42,17 @@ import numpy as np
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
-from pyali.io import load_v73                                            # noqa: E402
 from pyali.metrics import per_cell_snr                                   # noqa: E402
+from pyali.results import CELLS_FILE, SIGNALS_FILE, load_results         # noqa: E402
 
 S3_DEFAULT = "s3://spatial-technology-platform/AB/pyali_analysis"
 READ_ROOT_DEFAULT = "/home/jovyan/spatial-technology-platform/AB/pyali_analysis"
 
-RESULT = "ALI_Result.mat"
-INT_RESULT = "ALI_Int_Result.mat"
+RESULT = SIGNALS_FILE                      # "signals.h5": the per-FOV traces
+CELLS = CELLS_FILE                         # "cells.parquet"
 META = "fov_metadata.json"
 METRICS = "snr_metrics.csv"
-REQUIRED = (RESULT, INT_RESULT, META)
+REQUIRED = (RESULT, CELLS, META)
 COLUMNS = ("cell_index", "noise_sigma", "snr_median", "spectral_hf_snr", "n_spikes")
 
 
@@ -142,13 +143,12 @@ def _run_one(job):
         fov_dir = os.path.join(read_root, day, dir_name)
         with open(os.path.join(fov_dir, META)) as f:
             meta = json.load(f)
-        fps = meta.get("analysis", {}).get("fps")
+        # params.fps (schema 2); analysis.fps is the pre-B2 key, still present in the archive
+        fps = meta.get("params", {}).get("fps") or meta.get("analysis", {}).get("fps")
         if not fps:
-            raise RuntimeError(f"no analysis.fps in {META}")
+            raise RuntimeError(f"no params.fps / analysis.fps in {META}")
 
-        traces = np.asarray(load_v73(os.path.join(fov_dir, RESULT), "cell_traces"))
-        if traces.ndim != 2:                                # (0,) for a zero-cell FOV
-            traces = traces.reshape(0, 0)
+        traces = load_results(fov_dir).traces                # (N, T) float32; (0, T) when empty
         n_cells = int(traces.shape[0])
         rec.update(n_cells=n_cells, n_frames=int(traces.shape[1]), fps=float(fps),
                    n_cells_meta=meta.get("n_cells"), n_frames_meta=meta.get("n_frames_analyzed"))

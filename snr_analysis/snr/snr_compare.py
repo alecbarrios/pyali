@@ -5,10 +5,11 @@ This is the benchmarking core: run the pipeline two ways (e.g. a new iteration v
 one, or ``--whiten-traces`` vs the default) and measure whether the change actually improved the
 signal-to-noise ratio of the extracted spike waveforms -- rather than just changing the output.
 
-Each run saves a ``cell_traces`` array ``[N, T]`` and a ``footprint_center`` array ``[N, 2]``
-(row, col) inside ``ALI_Result.mat``. This script:
+Each run writes per-cell traces ``[N, T]`` and footprint centres ``[N, 2]`` (row, col) --
+``signals.h5`` + ``cells.parquet`` (:mod:`pyali.results`), or ``ALI_Result.mat`` for archived
+runs and MATLAB conversions. This script:
 
-1. Loads ``cell_traces`` + ``footprint_center`` from run A and run B.
+1. Loads traces + centres from run A and run B (format auto-detected per run).
 2. Matches cells one-to-one by footprint-center proximity (Hungarian assignment) so we compare
    the *same physical cell* across runs (orderings and counts can differ slightly).
 3. Computes a suite of high-frequency SNR metrics per cell for each run:
@@ -30,8 +31,10 @@ Usage
     python snr_compare.py RUN_A RUN_B [--out OUTDIR] [--fps 800] [--hp 20] [--k 4]
                           [--label-a new] [--label-b baseline]
 
-Each positional argument may be either an ``ALI_Result.mat`` file, or a directory that contains
-one (searched directly, then in an ``analysis/`` subdir). Example (whitened vs baseline A/B):
+Each positional argument may be a pyali output directory (``signals.h5`` + ``cells.parquet``,
+searched directly, then in an ``analysis/`` subdir), or -- the legacy fallback -- an
+``ALI_Result.mat`` file or a directory holding one and no ``signals.h5``. Example (whitened vs
+baseline A/B):
 
     python snr_compare.py /path/to/whitened /path/to/baseline \
         --label-a whitened --label-b baseline --out report_whiten_vs_baseline
@@ -44,6 +47,10 @@ import sys
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from scipy.signal import butter, filtfilt, find_peaks, welch, coherence
+
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _REPO not in sys.path:
+    sys.path.insert(0, _REPO)                                           # so `import pyali` works
 
 # ---- Optional plotting (script still emits CSV/summary if matplotlib is missing) ----------
 try:
@@ -66,20 +73,25 @@ def _load_v73(path, var):
         return a.T if a.ndim >= 2 else a.squeeze()
 
 
-def _resolve_mat(path):
-    """Accept an ALI_Result.mat file or a directory containing one (also under analysis/)."""
+def _resolve(path):
+    """``("results", dir)`` for a pyali output directory (``signals.h5`` present, searched directly
+    then under ``analysis/``), else ``("mat", file)`` for the legacy ``ALI_Result.mat`` -- given as
+    the file itself or as a directory holding one and no ``signals.h5``."""
     if os.path.isfile(path):
-        return path
-    for cand in (os.path.join(path, "ALI_Result.mat"),
-                 os.path.join(path, "analysis", "ALI_Result.mat")):
-        if os.path.isfile(cand):
-            return cand
-    raise FileNotFoundError(f"No ALI_Result.mat found at or under {path!r}")
+        if path.endswith(".mat"):
+            return "mat", path
+        return "results", os.path.dirname(os.path.abspath(path))
+    for d in (path, os.path.join(path, "analysis")):
+        if os.path.isfile(os.path.join(d, "signals.h5")):
+            return "results", d
+    for d in (path, os.path.join(path, "analysis")):
+        if os.path.isfile(os.path.join(d, "ALI_Result.mat")):
+            return "mat", os.path.join(d, "ALI_Result.mat")
+    raise FileNotFoundError(f"No signals.h5 or ALI_Result.mat found at or under {path!r}")
 
 
-def load_result(path):
-    """Return (cell_traces [N,T], footprint_center [N,2]=row,col) from an ALI_Result.mat."""
-    mat = _resolve_mat(path)
+def _load_legacy_mat(mat):
+    """(cell_traces [N,T], footprint_center [N,2]=row,col) from an archived ``ALI_Result.mat``."""
     ct = _load_v73(mat, "cell_traces").astype(np.float64)
     fc = _load_v73(mat, "footprint_center").astype(np.float64)
     if ct.shape[0] != fc.shape[0]:          # ensure [N,T] and [N,2] agree on N
@@ -87,7 +99,20 @@ def load_result(path):
             ct = ct.T
     if fc.shape[1] != 2 and fc.shape[0] == 2:
         fc = fc.T
-    return ct, fc, mat
+    return ct, fc
+
+
+def load_result(path):
+    """Return ``(cell_traces [N,T] float64, footprint_center [N,2]=row,col, source)``.
+
+    ``source`` is the results directory, or the ``.mat`` file on the legacy path."""
+    kind, src = _resolve(path)
+    if kind == "mat":
+        ct, fc = _load_legacy_mat(src)
+        return ct, fc, src
+    from pyali.results import load_results
+    r = load_results(src)
+    return r.traces.astype(np.float64), np.asarray(r.centers, np.float64), src
 
 
 # =========================================================================================
@@ -223,8 +248,8 @@ def write_csv(path, pairs, ma, mb, pdiag, dists):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("a", help="run A: ALI_Result.mat or its (analysis) directory")
-    ap.add_argument("b", help="run B: ALI_Result.mat or its directory (the reference/baseline)")
+    ap.add_argument("a", help="run A: pyali output directory (or legacy ALI_Result.mat)")
+    ap.add_argument("b", help="run B: output directory (the reference/baseline), or legacy .mat")
     ap.add_argument("--out", default="snr_report", help="output directory")
     ap.add_argument("--fps", type=float, default=800.0)
     ap.add_argument("--hp", type=float, default=20.0, help="high-pass cutoff (Hz)")

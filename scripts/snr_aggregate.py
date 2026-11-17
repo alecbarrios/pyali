@@ -131,7 +131,7 @@ def fov_summary(cells, metas):
     for meta in metas:
         dir_name = meta.get("dir_name")
         g = groups.get(dir_name, empty)
-        ana = meta.get("analysis", {})
+        ana = meta.get("params") or meta.get("analysis", {})     # params = schema 2; analysis = archive
         r = {"dir_name": dir_name}
         for k in FOV_FIELDS:
             if k != "dir_name":

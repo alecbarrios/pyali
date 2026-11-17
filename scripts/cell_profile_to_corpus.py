@@ -13,9 +13,13 @@ No plate / well / batch / timestamp metadata comes with them. This script re-sha
 into the layout every post-hoc SNR stage already consumes, so **none of those stages change**::
 
     <out_root>/<ID>/<ID>_fovNN/
-        ALI_Result.mat        cell_traces (N, T), footprint_center (N, 2)
-        ALI_Int_Result.mat    reference_image (H, W)
+        cells.parquet / .csv  one row per cell; x_px, y_px = COM; region_id = n_spikes = 0
+        spikes.parquet        empty (the file carries no spike times)
+        signals.h5            /traces/raw (N, T); footprints empty (no footprints in the file);
+                              /images/reference = reference_image_base[:, :, FOV]
         fov_metadata.json     day = plate = well = <ID>; burst = FOV index; analysis.fps
+
+(the pyali layout, see :mod:`pyali.results`; it replaced ``ALI_Result.mat`` / ``ALI_Int_Result.mat``)
 
 with the whole perturbation standing in for one day / plate / well and the FOV index playing the
 part of ``burst`` (acquisition order). ``dir_name`` carries the ID because
@@ -66,8 +70,9 @@ import numpy as np
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
-from pyali.io import save_mat_v73                                        # noqa: E402
 from pyali.metadata import write_metadata                                # noqa: E402
+from pyali.metadata import Identity                                                  # noqa: E402
+from pyali.results import SparseFootprints, make_cells, pack_spikes, write_results   # noqa: E402
 
 _ID = re.compile(r"cell_profile_([A-Za-z0-9-]+)\.mat$")
 
@@ -109,12 +114,28 @@ def convert(path, out_root, fps, bit, invert=True, source_uri=None):
             out_dir = os.path.join(out_root, pid, dir_name)
             os.makedirs(out_dir, exist_ok=True)
             ct = np.ascontiguousarray(traces[sel]) if sel.size else np.zeros((0, T), np.float32)
-            save_mat_v73(os.path.join(out_dir, "ALI_Result.mat"),
-                         cell_traces=ct, footprint_center=com[sel])
+            n = int(sel.size)
+            # The file carries no footprints and no spike times: every cell gets an empty
+            # footprint, the spikes table is empty, and region_id / n_spikes are 0.
+            empty_fp = SparseFootprints(values=np.zeros(0, np.float32), pixel=np.zeros(0, np.uint32),
+                                        offsets=np.zeros(n + 1, np.uint32), height=H, width=W)
             # HDF5 stores MATLAB's (H, W, n) as (n, W, H); transpose recovers the image as MATLAB
             # would show it (row, col).
-            save_mat_v73(os.path.join(out_dir, "ALI_Int_Result.mat"),
-                         reference_image=np.asarray(ref[k - 1]).T)
+            # No footprints -> no weighted brightness (NaN) and a NaN brightness reference;
+            # the perturbation id stands in for experiment/well, the FOV number is k.
+            ident = Identity(experiment_id=str(pid), plate=int(plate_num or 0), well=str(pid),
+                             fov=int(k))
+            write_results(out_dir,
+                          cells_df=make_cells(com[sel], np.zeros(n, int), np.zeros(n, int),
+                                              ["spiking"] * n, np.full(n, np.nan, np.float32),
+                                              ident),
+                          traces=ct, footprints=empty_fp,
+                          spikes_df=pack_spikes(np.zeros((0, 4)), np.zeros((0, 3)), [], [], []),
+                          images=dict(reference=np.asarray(ref[k - 1]).T,
+                                      binary_map=np.zeros((H, W), np.uint8),
+                                      brightness_reference=np.full((H, W), np.nan, np.float32)),
+                          attrs=dict(fps=float(fps), profile="cell_profile_mat",
+                                     n_ap_detected=0, n_ap_localized=0))
             meta = dict(
                 dir_name=dir_name, day=pid, timestamp=None, time_of_day=None,
                 plate=pid, plate_num=plate_num, well=pid,

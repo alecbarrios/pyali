@@ -18,6 +18,7 @@ import pytest
 
 from pyali.params import Params
 from pyali.pipeline import process_fov
+from pyali.results import load_results
 
 
 def _params_for(crop_dir):
@@ -26,10 +27,10 @@ def _params_for(crop_dir):
     return Params.profile_443screen2(nrow=meta["size"], ncol=meta["size"]), meta
 
 
-def _run(crop_dir, p, **overrides):
+def _run(crop_dir, p, out_dir=None, **overrides):
     q = dataclasses.replace(p, **overrides)
     t0 = time.time()
-    out = process_fov(crop_dir, out_dir=None, p=q, save=False, verbose=False)
+    out = process_fov(crop_dir, out_dir=out_dir, p=q, save=out_dir is not None, verbose=False)
     return out, round(time.time() - t0, 1)
 
 
@@ -54,12 +55,13 @@ def _record(metrics):
 
 
 @pytest.fixture(scope="module")
-def real(real_fov_dir):
+def real(real_fov_dir, tmp_path_factory):
     p, meta = _params_for(real_fov_dir)
-    out, seconds = _run(real_fov_dir, p)
+    out_dir = str(tmp_path_factory.mktemp("real_cells"))
+    out, seconds = _run(real_fov_dir, p, out_dir=out_dir)
     m = _metrics(out, seconds, meta, "cells")
     _record(m)
-    return dict(out=out, p=p, meta=meta, metrics=m, dir=real_fov_dir)
+    return dict(out=out, p=p, meta=meta, metrics=m, dir=real_fov_dir, out_dir=out_dir)
 
 
 @pytest.fixture(scope="module")
@@ -94,11 +96,31 @@ def test_real_patch_local_filter_is_bit_identical(real):
         assert np.array_equal(np.asarray(ref[key]), np.asarray(alt[key])), key
 
 
-def test_real_dark_crop_runs_with_few_or_no_regions(real_dark_dir):
+def test_real_dark_crop_runs_with_few_or_no_regions(real_dark_dir, tmp_path):
     p, meta = _params_for(real_dark_dir)
-    out, seconds = _run(real_dark_dir, p)
+    out_dir = str(tmp_path / "dark")
+    out, seconds = _run(real_dark_dir, p, out_dir=out_dir)
     m = _metrics(out, seconds, meta, "dark")
     _record(m)
     ct = np.asarray(out["cell_traces"])
     assert np.asarray(out["footprint"]).shape[2] == ct.shape[0]
     assert np.isfinite(ct).all()
+    r = load_results(out_dir)
+    assert np.array_equal(r.traces, ct.astype(np.float32))
+    assert r.footprints.n() == ct.shape[0] and len(r.cells) == ct.shape[0]
+
+
+def test_real_written_results_round_trip(real):
+    out, out_dir = real["out"], real["out_dir"]
+    for legacy in ("ALI_Result.mat", "ALI_Int_Result.mat"):
+        assert not os.path.exists(os.path.join(out_dir, legacy)), legacy
+    r = load_results(out_dir)
+    assert np.array_equal(r.traces, np.asarray(out["cell_traces"]).astype(np.float32))
+    # values are stored float32 (exact for float32-computed FOVs)
+    assert np.array_equal(r.footprints.dense(), np.asarray(out["footprint"]).astype(np.float32))
+    fc = np.asarray(out["footprint_center"], float).reshape(-1, 2)
+    assert np.array_equal(r.centers, fc.astype(np.float32).astype(np.float64))
+    assert len(r.spikes) == len(np.asarray(out["COMs"]).reshape(-1, 3))
+    assert r.attrs["n_ap_detected"] == len(out["APs"])
+    sizes = {n: os.path.getsize(os.path.join(out_dir, n)) for n in sorted(os.listdir(out_dir))}
+    print("\n[real] output sizes", json.dumps(sizes))

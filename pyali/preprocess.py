@@ -283,3 +283,36 @@ def clip_saturation(movie, threshold=25000.0):
     """Zero out pixels above ``threshold`` (saturated), in place."""
     movie[movie > threshold] = 0.0
     return movie
+
+
+# --------------------------------------------------------------------------- #
+# Brightness reference (per-cell weighted brightness)
+# --------------------------------------------------------------------------- #
+def brightness_reference(movie, n_frames=300, radius=50):
+    """Background-corrected mean image in raw units, for per-cell brightness.
+
+    ``mean(movie[:n_frames])`` minus its grey opening with an exact Euclidean disk of
+    ``radius`` px, which removes illumination-scale structure (anything wider than the disk)
+    and keeps cells. Call it on the **raw** movie, before the in-place background subtraction
+    and motion correction, so the values stay in acquisition units. ``movie`` is not modified.
+
+    Parameters
+    ----------
+    movie : (T, H, W) array
+    n_frames : int
+        Leading frames averaged (clipped to ``T``).
+    radius : int
+        Opening disk radius in px; must exceed the cell size.
+
+    Returns
+    -------
+    (H, W) float32
+    """
+    from scipy import ndimage
+    T = movie.shape[0]
+    ref = np.asarray(movie[:min(int(n_frames), T)]).mean(axis=0, dtype=np.float64)
+    r = int(radius)
+    yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+    disk = (xx ** 2 + yy ** 2) <= r * r
+    bkg = ndimage.grey_opening(ref, footprint=disk, mode="nearest")
+    return (ref - bkg).astype(np.float32)

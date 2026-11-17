@@ -18,14 +18,22 @@ in detected-spike amplitude (the distortion check: a legitimate denoiser leaves 
 
 Usage
 -----
-    python snr_postproc_demo.py PY_DIR_OR_MAT [--fps 800] [--hp 20] [--notch 60,120,180]
+    python snr_postproc_demo.py PYALI_OUT_DIR [--fps 800] [--hp 20] [--notch 60,120,180]
                                 [--out postproc_demo]
+
+``PYALI_OUT_DIR`` is a pyali output directory (``signals.h5`` + ``cells.parquet``, searched
+directly then under ``analysis/``) or the path of its ``signals.h5``.
 """
 import argparse
 import os
+import sys
 
 import numpy as np
 from scipy.signal import butter, filtfilt, iirnotch, find_peaks
+
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _REPO not in sys.path:
+    sys.path.insert(0, _REPO)                                           # so `import pyali` works
 
 try:
     import matplotlib
@@ -36,17 +44,14 @@ except Exception:
     HAVE_MPL = False
 
 
-def _load(path, var):
-    import h5py
-    if os.path.isdir(path):
-        for c in (os.path.join(path, "ALI_Result.mat"),
-                  os.path.join(path, "analysis", "ALI_Result.mat")):
-            if os.path.isfile(c):
-                path = c
-                break
-    with h5py.File(path, "r") as f:
-        a = np.array(f[var])
-        return (a.T if a.ndim >= 2 else a.squeeze()), path
+def _load(path):
+    """``(cell_traces [N, T] float64, results_dir)`` via :func:`pyali.results.load_results`."""
+    from pyali.results import load_results
+    if os.path.isdir(path) and not os.path.isfile(os.path.join(path, "signals.h5")) \
+            and os.path.isfile(os.path.join(path, "analysis", "signals.h5")):
+        path = os.path.join(path, "analysis")
+    r = load_results(path)
+    return r.traces.astype(np.float64), (path if os.path.isdir(path) else os.path.dirname(path))
 
 
 def highpass(x, cutoff, fs, order=4):
@@ -95,10 +100,7 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     freqs = [float(f) for f in args.notch.split(",") if f.strip()]
 
-    ct, path = _load(args.py, "cell_traces")
-    ct = ct.astype(np.float64)
-    if ct.shape[0] > ct.shape[1]:            # ensure [N, T]
-        ct = ct.T
+    ct, path = _load(args.py)
     N, T = ct.shape
     print(f"[postproc] {path}\n[postproc] {N} cells x {T} frames, fps={args.fps}")
 

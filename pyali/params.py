@@ -18,6 +18,11 @@ class Params:
     fps: float = 800.0                       # frame rate (Hz)
     truncate_last: int = 10                  # trailing frames to drop
 
+    # per-cell brightness: mean of the first frames of the RAW movie minus an exact-disk grey
+    # opening (removes illumination-scale structure, keeps cells); see preprocess.brightness_reference
+    brightness_frames: int = 300
+    brightness_radius: int = 50              # px; must exceed the cell size
+
     # movie dtype (memory): on-disk sample dtype and in-RAM working dtype
     read_dtype: str = "uint16"               # "uint16" (6GP002 16-bit) | "uint8" (443screen2 8-bit)
     compute_dtype: str = "float64"           # "float64" (faithful) | "float32" (~halves peak RAM)

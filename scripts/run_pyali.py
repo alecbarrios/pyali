@@ -7,7 +7,7 @@ Frame dimensions (nrow, ncol) are auto-detected from the sidecar + pixel correla
 you pass ``--nrow``/``--ncol``.
 
 Outputs are written to an ``analysis`` folder inside the FOV directory (or ``--out``):
-    ALI_Int_Result.mat, ALI_Result.mat
+    cells.parquet, cells.csv, spikes.parquet, signals.h5, fov_metadata.json   (pyali/results.py)
 and, with ``--figures``, the presentation result figures:
     detected_regions.png, coms.png, cell_traces.png, center_of_cell_regions.png,
     and cell_traces.html (interactive; zoom/pan and click a legend entry to isolate a trace)
@@ -124,6 +124,16 @@ def main(argv=None):
                     help="keep.csv to join per-FOV metadata against (authoritative plate/well)")
     ap.add_argument("--day", default=None,
                     help="acquisition day for the metadata sidecar (default: parent dir name)")
+    ap.add_argument("--experiment-id", default=None,
+                    help="experiment id in fov_id/cell_id (default: the batch token in the dir name)")
+    ap.add_argument("--plate", type=int, default=None,
+                    help="plate number (default: the P-N token; pass it for relabelled days, "
+                         "e.g. 20260715 'P-1' folders are plate 5)")
+    ap.add_argument("--well", default=None, help="well, e.g. A2 (default: the W-A2 token)")
+    ap.add_argument("--fov", type=int, default=None,
+                    help="FOV number in fov_id (default: the burstN token)")
+    ap.add_argument("--fov-index", type=int, default=0,
+                    help="1-based position of this FOV in a corpus run (default 0 = unknown)")
     ap.add_argument("--max-region-bbox-frac", type=float, default=None,
                     help="reject segmentation regions whose bounding box exceeds this fraction "
                          "of the frame (default 0.01; pass 0 to disable the guard)")
@@ -209,10 +219,16 @@ def main(argv=None):
             print(f"[pyali] WARNING: no keep.csv row for {dir_name}; metadata will come from "
                   f"the directory name alone")
 
-    process_fov(a.fov_dir, out_dir=out_dir, p=p, save=True, verbose=True, make_figures=a.figures,
-                keep_row=keep_row, profile=name, day=a.day)
+    from pyali.metadata import identity_from_dir_name
+    identity = identity_from_dir_name(a.fov_dir, experiment_id=a.experiment_id, plate=a.plate,
+                                      well=a.well, fov=a.fov, fov_index=a.fov_index)
+    print(f"[pyali] identity: {identity.fov_id} (plate {identity.plate}, well {identity.well!r}, "
+          f"fov {identity.fov}, batch {identity.batch!r})")
 
-    print(f"\n[pyali] wrote ALI_Int_Result.mat, ALI_Result.mat" +
+    process_fov(a.fov_dir, out_dir=out_dir, p=p, save=True, verbose=True, make_figures=a.figures,
+                keep_row=keep_row, profile=name, day=a.day, identity=identity)
+
+    print(f"\n[pyali] wrote cells.parquet, cells.csv, spikes.parquet, signals.h5, fov_metadata.json" +
           (" + result figures (detected_regions/coms/cell_traces/center_of_cell_regions .png "
            "and interactive cell_traces.html)" if a.figures else "") + f" to:\n  {out_dir}")
     return 0

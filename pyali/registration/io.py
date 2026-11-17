@@ -4,8 +4,9 @@ Voltage side (per FOV): a raw-mean anatomical reference, the absolute microscope
 and — only when needed — the pyali per-cell footprints/traces. SBS side: the JF608 anchor tiles,
 the reconciled cell masks, per-tile stage metadata, and the ``sbs_info ⟕ cells`` genotype table.
 
-Note this is ``pyali.registration.io`` — distinct from ``pyali.io`` (the movie/.mat reader), which
-is pulled in lazily via ``from ..io import open_bin_memmap``.
+Note this is ``pyali.registration.io`` — distinct from ``pyali.io`` (the movie reader), which is
+pulled in lazily via ``from ..io import open_bin_memmap``, and from ``pyali.results`` (the per-FOV
+results loader).
 
 Conventions: image arrays are ``[H, W]``; points are ``(row, col)`` here on the SBS/voltage image
 side and converted to geometric ``(x, y)`` only inside ``coordinates``. Heavy libraries
@@ -98,12 +99,32 @@ def read_voltage_reference(fov_dir, p: Params = None) -> dict:
     )
 
 
-def read_voltage_fov(fov_dir, plate, well, fov, p: Params = None) -> dict:
+def read_voltage_cells(results_dir, fps) -> dict:
+    """pyali's per-cell fields from a written FOV output directory (:mod:`pyali.results`)::
+
+        footprint  (nrow, ncol, N) float64   # rebuilt dense from the sparse footprints
+        center_rc  (N, 2) float64            # (row, col), 0-indexed
+        traces     (N, T) float64,
+        snr        {noise_sigma, snr_median, spectral_hf_snr: (N,) float64; n_spikes: (N,) int}
+    """
+    from ..metrics import per_cell_snr
+    from ..results import load_results
+
+    r = load_results(results_dir)
+    traces = r.traces.astype(np.float64)
+    return dict(footprint=r.footprints.dense(),
+                center_rc=np.asarray(r.centers, float) - 1.0,     # 1-indexed (row,col) -> 0-indexed
+                traces=traces, snr=per_cell_snr(traces, fps))
+
+
+def read_voltage_fov(fov_dir, plate, well, fov, p: Params = None, results_dir=None) -> dict:
     """FULL voltage load — the light fields plus pyali's per-cell footprints/traces.
 
-    HEAVY: ``process_fov`` runs the extraction pipeline and holds the full movie in RAM. Only the
-    assignment step needs the per-cell fields, so most of the pipeline uses
-    :func:`read_voltage_reference` instead. Returns::
+    With ``results_dir`` (a FOV output directory written by ``process_fov``) the per-cell fields
+    are loaded from disk via :func:`read_voltage_cells`. Without it, HEAVY: ``process_fov`` runs
+    the extraction pipeline and holds the full movie in RAM. Only the assignment step needs the
+    per-cell fields, so most of the pipeline uses :func:`read_voltage_reference` instead.
+    Returns::
 
         plate, well, fov,
         reference  (nrow, ncol) float32,   stage_xy (2,) float64,
@@ -113,19 +134,19 @@ def read_voltage_fov(fov_dir, plate, well, fov, p: Params = None) -> dict:
         snr        {noise_sigma, snr_median, spectral_hf_snr: (N,) float64; n_spikes: (N,) int}
     """
     p = p or Params()
-    from ..pipeline import process_fov
-    from ..metrics import per_cell_snr
+    if results_dir is not None:
+        cells = read_voltage_cells(results_dir, p.fps)
+    else:
+        from ..pipeline import process_fov
+        from ..metrics import per_cell_snr
 
-    res = process_fov(fov_dir, save=False, p=p)
-    snr = per_cell_snr(res["cell_traces"], p.fps)
+        res = process_fov(fov_dir, save=False, p=p)
+        cells = dict(footprint=res["footprint"],
+                     center_rc=np.asarray(res["footprint_center"], float) - 1.0,
+                     traces=res["cell_traces"], snr=per_cell_snr(res["cell_traces"], p.fps))
     light = read_voltage_reference(fov_dir, p)
-    return dict(
-        plate=plate, well=well, fov=fov,
-        reference=light["reference"], stage_xy=light["stage_xy"],
-        footprint=res["footprint"],
-        center_rc=np.asarray(res["footprint_center"], float) - 1.0,   # 1-indexed (row,col) -> 0-indexed
-        traces=res["cell_traces"], snr=snr,
-    )
+    return dict(plate=plate, well=well, fov=fov,
+                reference=light["reference"], stage_xy=light["stage_xy"], **cells)
 
 
 # --------------------------------------------------------------------------- #

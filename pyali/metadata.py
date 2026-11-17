@@ -28,6 +28,7 @@ plate format, and the condition tokens.
 import json
 import os
 import re
+from dataclasses import dataclass, asdict
 
 BATCHES = {"6GP002", "443GP", "443screen1", "443screen2"}
 BATCH_ALIAS = {"443GP": "443screen1"}          # June dirs say 443GP; same batch
@@ -118,7 +119,73 @@ def parse_dir_name(dir_name):
     return out
 
 
-def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, extras=None):
+# --------------------------------------------------------------------------- #
+# FOV / cell identity
+# --------------------------------------------------------------------------- #
+@dataclass
+class Identity:
+    """Where a FOV sits in the experiment; the source of every ``fov_id`` / ``cell_id``.
+
+    ``fov_id = <experiment_id>_P<plate:02d>_<well>_F<fov:03d>`` and
+    ``cell_id = <fov_id>_C<local_cell_id:04d>``. ``fov`` is the burst number when derived from a
+    directory name; ``fov_index`` is the FOV's 1-based position in a corpus run (0 = unknown; an
+    inventory-driven run fills it). ``batch`` is the cell-line batch token (``443-1`` / ``443-2``).
+    """
+    experiment_id: str
+    plate: int
+    well: str
+    fov: int
+    fov_index: int = 0
+    batch: str = ""
+
+    @property
+    def fov_id(self):
+        return f"{self.experiment_id}_P{int(self.plate):02d}_{self.well}_F{int(self.fov):03d}"
+
+    def cell_id(self, local_cell_id):
+        return f"{self.fov_id}_C{int(local_cell_id):04d}"
+
+    def as_dict(self):
+        d = asdict(self)
+        d["fov_id"] = self.fov_id
+        return d
+
+
+def identity_from_dir_name(fov_dir, experiment_id=None, plate=None, well=None, fov=None,
+                           fov_index=0):
+    """:class:`Identity` from a FOV directory name, with explicit overrides.
+
+    Defaults: ``experiment_id`` = the batch token (``443screen2``), ``plate`` = the digits of the
+    ``P-N`` / ``P0N`` token, ``well`` = the ``W-A2`` / ``A2`` token, ``fov`` = the ``burstN`` token.
+    Anything the name lacks becomes ``"unknown"`` / ``0`` / ``""`` rather than an error, so an
+    arbitrary directory (a synthetic test FOV) still gets a well-formed id. Pass ``plate`` for the
+    relabelled days (20260715 ``P-1`` folders are plate 5).
+    """
+    d = parse_dir_name(os.path.basename(os.path.normpath(fov_dir)))
+    if plate is None:
+        digits = re.sub(r"\D", "", d["plate"] or "")
+        plate = int(digits) if digits else 0
+    if well is None:
+        well = d["well"] or ""
+    if fov is None:
+        fov = d["burst"] if d["burst"] is not None else 0
+    if experiment_id is None:
+        experiment_id = d["batch_id"] or "unknown"
+    return Identity(experiment_id=str(experiment_id), plate=int(plate), well=str(well),
+                    fov=int(fov), fov_index=int(fov_index), batch=d.get("cell_line") or "")
+
+
+def _jsonable(v):
+    """Tuples -> lists (recursively) so ``Params`` fields serialize as JSON arrays."""
+    if isinstance(v, (tuple, list)):
+        return [_jsonable(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _jsonable(x) for k, x in v.items()}
+    return v
+
+
+def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, extras=None,
+                 identity=None, timing=None):
     """Full metadata record for one FOV, ready to write beside its analysis outputs.
 
     Parameters
@@ -132,17 +199,27 @@ def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, ex
         The FOV's ``keep.csv`` row. **Authoritative for plate/well** — it already applies the
         multi-well rule — and supplies bit depth, dimensions and frame count.
     params : Params, optional
-        Records the settings the FOV was actually analysed with, so results stay interpretable.
+        Every field is recorded under ``params`` so results stay interpretable.
     profile : str, optional
         Profile name, e.g. ``443screen2``.
     extras : dict, optional
-        Merged in last (run id, code commit, timings, ...).
+        Merged in last (run id, counts, ...).
+    identity : Identity, optional
+        Recorded under ``identity`` (plus a top-level ``fov_id``).
+    timing : dict, optional
+        Per-stage wall seconds, recorded under ``timing_s``.
     """
     dir_name = os.path.basename(os.path.normpath(fov_dir))
     parsed = parse_dir_name(dir_name)
     meta = dict(parsed)
     meta["fov_dir"] = fov_dir
     meta["day"] = day or os.path.basename(os.path.dirname(os.path.normpath(fov_dir)))
+    if identity is not None:
+        meta["identity"] = identity.as_dict()
+        meta["fov_id"] = identity.fov_id
+    meta["profile"] = profile
+    from .results import git_sha
+    meta["pyali_git"] = git_sha()
 
     if keep_row:
         # keep.csv wins for well (it applies the multi-well rule); its burst column is populated
@@ -169,27 +246,17 @@ def fov_metadata(fov_dir, day=None, keep_row=None, params=None, profile=None, ex
             meta["day"] = keep_row["day"]
 
     if params is not None:
-        meta["analysis"] = dict(
-            profile=profile, nrow=params.nrow, ncol=params.ncol, fps=params.fps,
-            read_dtype=params.read_dtype, compute_dtype=params.compute_dtype,
-            bkg_ranges=[list(r) for r in params.bkg_ranges],
-            std_ranges=[list(r) for r in params.std_ranges],
-            sharpen_k=params.sharpen_k, seg_threshold=params.seg_threshold,
-            seg_threshold_mult=getattr(params, "seg_threshold_mult", None),
-            seg_neighborhood=list(getattr(params, "seg_neighborhood", None) or []) or None,
-            seg_region_size=params.seg_region_size,
-            max_region_bbox_frac=getattr(params, "max_region_bbox_frac", None),
-            threshold_factor=params.threshold_factor,
-            patch_local_filter=getattr(params, "patch_local_filter", True),
-            whiten_traces=getattr(params, "whiten_traces", False))
+        meta["params"] = _jsonable(asdict(params))          # every field, not a hand-picked subset
+    if timing:
+        meta["timing_s"] = {k: round(float(v), 3) for k, v in timing.items()}
     if extras:
         meta.update(extras)
     return meta
 
 
 def write_metadata(out_dir, meta, name="fov_metadata.json"):
-    """Write ``meta`` into ``out_dir`` — the same directory as ``ALI_Result.mat``, so metadata
-    and results sit at identical depth and aggregation downstream is a single glob."""
+    """Write ``meta`` into ``out_dir`` — the same directory as ``signals.h5`` / ``cells.parquet``,
+    so metadata and results sit at identical depth and aggregation downstream is a single glob."""
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
     with open(path, "w") as f:

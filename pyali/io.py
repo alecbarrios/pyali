@@ -1,6 +1,11 @@
-"""I/O: read the raw camera movie and read/write ``.mat`` (HDF5 v7.3) files.
+"""I/O: read the raw camera movie, and read/write ``.mat`` (HDF5 v7.3) files.
 
 Movie convention: ``[T, H, W]`` float64, row-major C-order.
+
+The ``.mat`` helpers (:func:`load_v73`, :func:`save_mat_v73`, :mod:`pyali._h5read`) are kept
+for the archived ``ALI_Result.mat`` corpus and for MATLAB-side files (``output_data.mat``,
+``cell_profile_*.mat``, ``sta_cells.mat``); the pipeline itself writes its results through
+:mod:`pyali.results` (``signals.h5`` + parquet tables).
 """
 import numpy as np
 
@@ -81,13 +86,13 @@ def load_v73(path, var=None):
 
 
 def save_mat_v73(path, compression="gzip", compression_opts=4, **arrays):
-    """Write arrays to a ``.mat`` (HDF5 v7.3) file.
+    """Write arrays to a ``.mat`` (HDF5 v7.3) file (legacy; not used for pipeline results).
 
     Each array is stored with reversed dimension order (the ``.mat`` convention) and tagged
     with the class attribute that ``.mat`` readers expect.
 
-    Compression is on by default and matters enormously here: ``footprint`` is a dense
-    ``(H, W, N)`` array in which each of the N planes is an 11x11 window in a field of zeros —
+    Compression is on by default and mattered enormously for the old ``ALI_Result.mat``:
+    ``footprint`` was a dense ``(H, W, N)`` array in which each plane is an 11x11 window in a field of zeros —
     0.019% non-zero — so an 800x800 FOV with 587 cells is 3.0 GB uncompressed. Chunking one
     plane per chunk and gzipping takes that to **3.6 MB (827x)**, and the round trip is
     bit-exact. Left uncompressed the corpus would need ~30 TB of output.
