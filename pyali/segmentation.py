@@ -1,7 +1,15 @@
-"""Cell segmentation.
+"""Cell segmentation (Mini ALI V2.2 "better segmentation", reproduced faithfully).
 
-Pipeline: normalize to [0, 1] -> Gaussian smoothing -> adaptive mean threshold -> binarize
--> remove small objects -> connected-component region properties. scikit-image / scipy are
+Two masks, ANDed:
+
+* :func:`hysteresis_mask` -- *what is signal*: on the background-corrected raw-mean reference,
+  pixels >= background + 3 sigma that are 8-connected to a seed >= background + 6 sigma, where
+  background and sigma are measured per field (histogram mode, left-side MAD). Calibrated to the
+  field's noise, so an empty field yields nothing.
+* :func:`soma_watershed_mask` -- *how many somata, cut where*: the top 5% of a soma-scale
+  top-hat image, partitioned by a watershed from its local peaks with the ridge lines removed.
+
+Then one minimum-area filter and connected-component region properties. scikit-image / scipy are
 imported lazily so the module imports without them.
 
 Region properties are returned as: Centroid and PixelList as ``[col, row]`` (1-indexed);
@@ -9,98 +17,145 @@ BoundingBox as ``[x_ul, y_ul, w, h]``.
 """
 import numpy as np
 
-from .preprocess import gaussian_kernel
+from .preprocess import gaussian_matlab
+
+_EIGHT = np.ones((3, 3), bool)                  # 8-connectivity structuring element
 
 
-def adaptive_threshold_mean(image, sensitivity, neighborhood=None, multiplier=None):
-    """Locally adaptive threshold surface based on the neighborhood mean.
+# --------------------------------------------------------------------------- #
+# Noise-calibrated hysteresis mask (Mini ALI mini_ali_brightness_threshold)
+# --------------------------------------------------------------------------- #
+def hysteresis_mask(ref_corrected, mask=None, smooth_sigma=2.0, high_sigma=6.0, low_sigma=3.0,
+                    min_area=15):
+    """Foreground = pixels at least ``low_sigma`` background noise units above the background
+    that are 8-connected to a seed pixel at least ``high_sigma`` units above it.
 
-    Computes the local mean over a ``2*floor(size/16)+1`` neighborhood (replicate padding),
-    then scales it: ``T = local_mean * scale(sensitivity)``.
+    ``ref_corrected`` is the background-corrected mean reference (raw units); negatives are
+    clipped to 0 and the image is smoothed with ``smooth_sigma`` first. The background level is
+    the mode of a 256-bin histogram over the valid pixels; the noise is 1.4826 x the median
+    absolute deviation of the pixels at or below the mode (bright cells only add a right tail),
+    falling back to the MAD of all pixels when fewer than 21 pixels lie left of the mode.
 
-    Parameters
-    ----------
-    image : (H, W) float array
-    sensitivity : float in [0, 1)
-        MATLAB-style sensitivity; see :func:`_threshold_scale`.
-    neighborhood : (int, int), optional
-        Local-mean window; defaults to ``2*floor(size/16)+1`` per axis. This sets the spatial
-        scale of "local": a window much larger than a cell makes the threshold nearly global,
-        which merges neighbouring cells.
-    multiplier : float, optional
-        Use this multiplier directly and ignore ``sensitivity``.
+    Returns ``(BW, info)`` with ``info`` = ``bg_center, sigma_bg, th_high, th_low, n_seed, n_low``.
+    """
+    from skimage.morphology import remove_small_objects
+    from scipy import ndimage
 
-    Returns
-    -------
-    (H, W) ndarray
-        Per-pixel threshold surface.
+    I = np.maximum(np.asarray(ref_corrected, np.float64), 0.0)
+    Iseg = gaussian_matlab(I, smooth_sigma).astype(np.float32)
+    valid = np.isfinite(Iseg) if mask is None else (np.asarray(mask, bool) & np.isfinite(Iseg))
+    x = Iseg[valid]
+    info = dict(bg_center=float("nan"), sigma_bg=float("nan"), th_high=float("nan"),
+                th_low=float("nan"), n_seed=0, n_low=0)
+    if x.size == 0:
+        return np.zeros(Iseg.shape, bool), info
+
+    counts, edges = np.histogram(x, bins=256)
+    i = int(np.argmax(counts))
+    bg = 0.5 * (edges[i] + edges[i + 1])
+    left = x[x <= bg]
+    if left.size > 20:
+        sigma = 1.4826 * float(np.median(np.abs(left - bg)))
+    else:
+        sigma = 1.4826 * float(np.median(np.abs(x - np.median(x))))
+    sigma = max(sigma, float(np.finfo(np.float32).eps))
+    th_high = bg + high_sigma * sigma
+    th_low = bg + low_sigma * sigma
+
+    seed = valid & (Iseg >= th_high)
+    low = valid & (Iseg >= th_low)
+    labels, _n = ndimage.label(low, structure=_EIGHT)          # imreconstruct(seed, low): keep
+    keep = np.unique(labels[seed])                             # low components holding a seed
+    keep = keep[keep > 0]
+    BW = np.isin(labels, keep) if keep.size else np.zeros(Iseg.shape, bool)
+    BW = remove_small_objects(BW, int(min_area), connectivity=2)
+    info.update(bg_center=float(bg), sigma_bg=float(sigma), th_high=float(th_high),
+                th_low=float(th_low), n_seed=int(seed.sum()), n_low=int(low.sum()))
+    return BW, info
+
+
+# --------------------------------------------------------------------------- #
+# Soma watershed mask (Mini ALI main script, "watershed of neuron soma")
+# --------------------------------------------------------------------------- #
+def soma_watershed_mask(ref_raw, tophat_radius=3, background_radius=50, bg_sigma=20.0,
+                        percentile=95.0, close_radius=2, h=0.03):
+    """Soma-scale mask split into one basin per local peak.
+
+    On the raw mean reference: Gaussian sigma 1; top-hat with the MATLAB ``N=4`` octagon of
+    ``tophat_radius`` (keeps structures narrower than the element, i.e. somata); minus the
+    Gaussian(``bg_sigma``) of its ``background_radius`` octagon opening; min-max scaled; the top
+    ``100 - percentile`` percent of pixels (MATLAB ``prctile``), area-open 8, closed with the
+    exact ``close_radius`` disk. Markers are the h-maxima (``h``) over the whole image; the
+    watershed floods from every marker over a flat surface across the whole frame (the original
+    ``imimposemin`` with -inf collapses the distance transform, so split lines fall midway
+    between markers), ridge lines are removed, pixels outside the mask are cleared, area-open 2.
     """
     from scipy import ndimage
-    I = np.asarray(image, dtype=np.float64)
-    if neighborhood is None:
-        neighborhood = tuple(int(2 * (s // 16) + 1) for s in I.shape)  # 2*floor(size/16)+1
-    local_mean = ndimage.uniform_filter(I, size=neighborhood, mode="nearest")  # replicate padding
-    m = _threshold_scale(sensitivity) if multiplier is None else float(multiplier)
-    return local_mean * m
+    from skimage.morphology import h_maxima, remove_small_objects
+    from skimage.segmentation import watershed
+    from .utils import matlab_disk
+
+    I = gaussian_matlab(np.asarray(ref_raw, np.float64), 1.0)
+    I_soma = I - ndimage.grey_opening(I, footprint=matlab_disk(tophat_radius), mode="nearest")
+    I_bg = gaussian_matlab(ndimage.grey_opening(I_soma, footprint=matlab_disk(background_radius),
+                                                mode="nearest"), bg_sigma)
+    I_corr = I_soma - I_bg
+    span = float(I_corr.max() - I_corr.min())
+    I_corr = (I_corr - I_corr.min()) / span if span > 0 else np.zeros_like(I_corr)   # mat2gray
+    if span == 0:
+        return np.zeros(I_corr.shape, bool)
+    th = float(np.percentile(I_corr, percentile, method="hazen"))                     # MATLAB prctile
+    BW = I_corr > th
+    BW = remove_small_objects(BW, 8, connectivity=2)
+    BW = ndimage.binary_closing(BW, structure=matlab_disk(close_radius))
+    markers = h_maxima(I_corr, float(h), footprint=_EIGHT)                             # imextendedmax
+    marker_labels, n_markers = ndimage.label(markers, structure=_EIGHT)
+    if n_markers == 0:
+        return np.zeros(I_corr.shape, bool)
+    L = watershed(np.zeros(I_corr.shape, np.float64), markers=marker_labels, connectivity=2,
+                  watershed_line=True)                                                 # flat flood, all markers
+    L[~BW] = 0
+    return remove_small_objects(L > 0, 2, connectivity=2)
 
 
-def _threshold_scale(sensitivity):
-    """Multiplier applied to the local mean, from a sensitivity in [0, 1).
-
-    Higher sensitivity => lower threshold => more foreground, matching MATLAB ``adaptthresh``.
-    Calibrated so the pipeline's historical sensitivity of 0.10 returns **exactly 1.5** — the
-    value the previous implementation returned for every input, so defaults are unchanged.
-
-    Raising the multiplier is the knob that separates touching cells: a higher bar shrinks each
-    blob and pulls clumps apart at the necks. Lowering it fuses them.
-    """
-    s = float(np.clip(sensitivity, 0.0, 0.99))
-    return 1.5 * (1.0 - s) / 0.9
-
-
-def cell_segmentation(image, threshold=0.90, gauss_size=0.1, region_size=10,
-                      threshold_mult=None, neighborhood=None):
-    """Segment cells from a grayscale image.
+# --------------------------------------------------------------------------- #
+# Combined segmentation
+# --------------------------------------------------------------------------- #
+def cell_segmentation(ref_raw, ref_corrected, p, mask=None):
+    """Segment cells: ``hysteresis_mask(ref_corrected) & soma_watershed_mask(ref_raw)``, then one
+    minimum-area filter (``p.seg_min_area``; the original has none and keeps 1-px fragments).
 
     Parameters
     ----------
-    image : (H, W) float array
-        Sharpened reference image.
-    threshold : float
-        Brightness percentile (higher keeps fewer/brighter pixels); the adaptive-threshold
-        sensitivity is ``1 - threshold``. The default 0.90 gives a multiplier of 1.5.
-    gauss_size : float
-        Gaussian smoothing width. NB: at the default 0.1 the 3x3 kernel is a delta function
-        (centre 1.0, off-centre ~1e-22), i.e. no smoothing. *Increasing* it blurs cells
-        together, so it is not a knob for splitting clumps.
-    region_size : int
-        Minimum connected-component size (pixels) to keep.
-    threshold_mult : float, optional
-        Local-mean multiplier, bypassing ``threshold``. Higher separates touching cells.
-    neighborhood : (int, int), optional
-        Local-mean window for the adaptive threshold.
+    ref_raw : (H, W) float array
+        Mean of the first frames of the raw movie (:func:`pyali.preprocess.raw_mean_reference`).
+    ref_corrected : (H, W) float array
+        ``ref_raw`` minus its large-scale background (:func:`pyali.preprocess.large_scale_background`).
+    p : Params
+        ``seg_smooth_sigma, seg_high_sigma, seg_low_sigma, seg_min_area, ws_tophat_radius,
+        background_radius, ws_bg_sigma, ws_percentile, ws_close_radius, ws_h``.
+    mask : (H, W) bool, optional
+        Valid-pixel mask (a well mask); ``None`` = the whole frame.
 
     Returns
     -------
-    (regions, binary_map, spatial_footprints)
+    (regions, binary_map, spatial_footprints, info)
         ``regions`` : list of dicts (Area, Centroid, BoundingBox, PixelList);
         ``binary_map`` : (H, W) bool;
-        ``spatial_footprints`` : list of (Ni, 2) int arrays of ``[col, row]`` (1-indexed).
+        ``spatial_footprints`` : list of (Ni, 2) arrays of ``[col, row]`` (1-indexed);
+        ``info`` : the hysteresis calibration plus the pixel count of each mask.
     """
-    from scipy import ndimage
     from skimage.morphology import remove_small_objects
 
-    I = np.asarray(image, dtype=np.float64)
-    I_adj = (I - I.min()) / (I.max() - I.min())                    # normalize to [0, 1]
-    I_filt = ndimage.correlate(I_adj, gaussian_kernel(gauss_size), mode="nearest")  # smoothing
-    T = adaptive_threshold_mean(I_filt, 1.0 - threshold, neighborhood,   # adaptive mean threshold
-                                multiplier=threshold_mult)
-    BW = I_adj > T                                                 # binarize
-    BW = remove_small_objects(BW, region_size, connectivity=2)     # drop small objects (8-conn)
-
+    BW_int, info = hysteresis_mask(ref_corrected, mask, p.seg_smooth_sigma, p.seg_high_sigma,
+                                   p.seg_low_sigma, p.seg_min_area)
+    BW_ws = soma_watershed_mask(ref_raw, p.ws_tophat_radius, p.background_radius, p.ws_bg_sigma,
+                                p.ws_percentile, p.ws_close_radius, p.ws_h)
+    BW = remove_small_objects(BW_int & BW_ws, int(p.seg_min_area), connectivity=2)
     regions = _regionprops(BW)
-    spatial_footprints = [r["PixelList"] for r in regions]
-    return regions, BW, spatial_footprints
+    info.update(n_px_intensity=int(BW_int.sum()), n_px_watershed=int(BW_ws.sum()),
+                n_px_final=int(BW.sum()))
+    return regions, BW, [r["PixelList"] for r in regions], info
 
 
 def drop_oversized_regions(regions, binary_map, max_bbox_frac):

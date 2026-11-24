@@ -18,20 +18,19 @@ class Params:
     fps: float = 800.0                       # frame rate (Hz)
     truncate_last: int = 10                  # trailing frames to drop
 
-    # per-cell brightness: mean of the first frames of the RAW movie minus an exact-disk grey
-    # opening (removes illumination-scale structure, keeps cells); see preprocess.brightness_reference
-    brightness_frames: int = 300
-    brightness_radius: int = 50              # px; must exceed the cell size
+    # raw-unit reference and its large-scale background (segmentation input and the x in
+    # weighted_brightness): mean of the first `reference_frames` RAW frames minus a mask-aware
+    # exact-disk opening (radius > cell size) smoothed by a normalized Gaussian
+    reference_frames: int = 300
+    background_radius: int = 50              # px; also the soma watershed's large opening
+    background_sigma: float = 40.0           # px; 0 = opening only
 
     # movie dtype (memory): on-disk sample dtype and in-RAM working dtype
     read_dtype: str = "uint16"               # "uint16" (6GP002 16-bit) | "uint8" (443screen2 8-bit)
     compute_dtype: str = "float64"           # "float64" (faithful) | "float32" (~halves peak RAM)
 
-    # sharpening
+    # time-varying movie background (preprocess.adaptive_background): opening radius
     disk_radius: int = 15
-    gauss_sigma: float = 1.75
-    lap_alpha: float = 0.2
-    sharpen_k: float = 3.0                   # was 2.25; raised with the seg sweep below
 
     # background + baseline frame ranges (1-indexed inclusive; set to your acquisition protocol)
     bkg_ranges: list = field(default_factory=lambda: [(1, 750), (4100, 4200), (6100, 6350)])
@@ -56,20 +55,16 @@ class Params:
                                              #   (Mini ALI V2.2 minimal interval; was 15 with
                                              #   a rule that dropped every member of a burst)
 
-    # segmentation
-    seg_threshold: float = 0.90
-    seg_gauss: float = 0.1
-    seg_region_size: int = 10
-    seg_threshold_mult: Optional[float] = None   # local-mean multiplier; None => from seg_threshold
-                                                 #   (0.90 -> 1.5). Raise it to split touching
-                                                 #   cells, lower it to fuse them.
-    seg_neighborhood: Optional[tuple] = (51, 51)  # adaptive-threshold window. The old
-                                                 #   shape-derived default (101x101 at
-                                                 #   800x800, 39x151 at 312x1200) is far
-                                                 #   wider than a cell (~6 px), so touching
-                                                 #   cells share one local-mean plateau and
-                                                 #   fuse. 51x51 splits them: +4% regions at
-                                                 #   97% of median area. None => shape default.
+    # segmentation = hysteresis_mask(reference_corrected) & soma_watershed_mask(reference_raw)
+    seg_smooth_sigma: float = 2.0            # Gaussian on the corrected reference before thresholding
+    seg_high_sigma: float = 6.0              # seeds: background + 6 sigma_bg
+    seg_low_sigma: float = 3.0               # growth: background + 3 sigma_bg (8-connected to a seed)
+    seg_min_area: int = 15                   # px; applied to the hysteresis mask and after the AND
+    ws_tophat_radius: int = 3                # soma-scale top-hat (MATLAB N=4 octagon)
+    ws_bg_sigma: float = 20.0                # Gaussian on the top-hat's large opening
+    ws_percentile: float = 95.0              # the top 5% of the soma image is the watershed mask
+    ws_close_radius: int = 2                 # exact-disk closing of that mask
+    ws_h: float = 0.03                       # h-maxima depth for the watershed markers
     max_region_bbox_frac: Optional[float] = 0.01   # reject regions whose BOUNDING BOX exceeds this
                                                    #   fraction of the frame -- the un-illuminated
                                                    #   inter-well band on a well's first/last
@@ -160,8 +155,9 @@ class Params:
           * ``threshold_factor=3.0`` is user-chosen for consistency with the QC spike threshold
             (k=3 sigma). NB: the MATLAB 8-bit script uses 4.5 and the 6GP002 pyali default is 3.25,
             so this is more permissive than either -- confirm during validation.
-          * sharpening / segmentation / clustering params are kept at the 6GP002-tuned defaults and
-            should be re-checked on real 443screen2 FOVs (see the pipeline validation step).
+          * segmentation follows Mini ALI V2.2 (hysteresis 6/3 sigma on the background-corrected
+            reference, AND a soma watershed; dataclass defaults); clustering params are kept at
+            the 6GP002-tuned defaults and should be re-checked on real 443screen2 FOVs.
           * ``min_peak_interval=25``, ``com_radius=6.0`` and ``com_n_pixels=25`` (dataclass
             defaults) follow Mini ALI V2.2: the largest AP within a 25-frame window is kept, and
             the COM is grown over up to 25 in-mask pixels within 6 px of the seed (Cycle A).

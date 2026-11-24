@@ -1,4 +1,5 @@
-"""Preprocessing: reference/correlation image, sharpening, background subtraction, motion.
+"""Preprocessing: reference/correlation image, large-scale background, time-varying background
+subtraction, motion correction.
 
 All 2-D images are ``[H, W]``; movie frame stacks are ``[T, H, W]``. scipy / scikit-image
 are imported lazily inside the functions that need them, so this module imports even when
@@ -6,7 +7,7 @@ those packages are absent (the reference/correlation image needs only NumPy).
 """
 import numpy as np
 
-from .utils import fspecial_laplacian, strel_disk, round_half_away_from_zero
+from .utils import strel_disk, round_half_away_from_zero
 
 
 # --------------------------------------------------------------------------- #
@@ -100,43 +101,6 @@ def gaussian_kernel(sigma):
     xx, yy = np.meshgrid(ax, ax)
     k = np.exp(-(xx ** 2 + yy ** 2) / (2.0 * sigma ** 2))
     return k / k.sum()
-
-
-def sharpen(reference_image, disk_radius=15, sigma=1.75, lap_alpha=0.2, k=2.25):
-    """Sharpen the reference image via a Laplacian-of-Gaussian unsharp mask.
-
-    Chain: morphological-opening background ``bkg`` -> ``I2 = image - bkg`` -> Gaussian blur ->
-    Laplacian -> normalized LoG -> ``sharpened = I2 - k * LoG_normalized``.
-
-    Parameters
-    ----------
-    reference_image : (H, W) float array
-    disk_radius : int
-        Radius of the opening structuring element.
-    sigma : float
-        Gaussian blur width.
-    lap_alpha : float
-        Laplacian shape parameter.
-    k : float
-        Sharpening strength.
-
-    Returns
-    -------
-    (bkg, I2, blurred, h_lap, LoG_image, LoG_normalized, sharpened) : tuple of (H, W) arrays
-        (``h_lap`` is the 3x3 Laplacian kernel.)
-    """
-    from scipy import ndimage
-
-    se = strel_disk(disk_radius)                                    # octagonal disk
-    bkg = ndimage.grey_opening(reference_image, footprint=se, mode="reflect")
-    I2 = reference_image - bkg
-    gk = gaussian_kernel(sigma)
-    blurred = ndimage.correlate(I2, gk, mode="nearest")             # Gaussian blur, replicate edges
-    h_lap = fspecial_laplacian(lap_alpha)
-    LoG_image = ndimage.correlate(blurred, h_lap, mode="nearest")   # Laplacian, replicate edges
-    LoG_normalized = LoG_image / np.max(np.abs(LoG_image)) * np.std(I2, ddof=1)  # sample std (N-1)
-    sharpened = I2 - k * LoG_normalized
-    return bkg, I2, blurred, h_lap, LoG_image, LoG_normalized, sharpened
 
 
 # --------------------------------------------------------------------------- #
@@ -286,33 +250,68 @@ def clip_saturation(movie, threshold=25000.0):
 
 
 # --------------------------------------------------------------------------- #
-# Brightness reference (per-cell weighted brightness)
+# MATLAB-style Gaussian (imgaussfilt): kernel 2*ceil(2*sigma)+1, replicate padding, separable
 # --------------------------------------------------------------------------- #
-def brightness_reference(movie, n_frames=300, radius=50):
-    """Background-corrected mean image in raw units, for per-cell brightness.
-
-    ``mean(movie[:n_frames])`` minus its grey opening with an exact Euclidean disk of
-    ``radius`` px, which removes illumination-scale structure (anything wider than the disk)
-    and keeps cells. Call it on the **raw** movie, before the in-place background subtraction
-    and motion correction, so the values stay in acquisition units. ``movie`` is not modified.
-
-    Parameters
-    ----------
-    movie : (T, H, W) array
-    n_frames : int
-        Leading frames averaged (clipped to ``T``).
-    radius : int
-        Opening disk radius in px; must exceed the cell size.
-
-    Returns
-    -------
-    (H, W) float32
-    """
+def gaussian_matlab(image, sigma):
+    """``imgaussfilt(image, sigma)``: separable Gaussian with a ``2*ceil(2*sigma)+1`` kernel,
+    normalized to sum 1, replicate ("nearest") padding. Float64 output."""
     from scipy import ndimage
+    half = int(np.ceil(2.0 * float(sigma)))
+    x = np.arange(-half, half + 1, dtype=np.float64)
+    g = np.exp(-(x * x) / (2.0 * float(sigma) ** 2))
+    g /= g.sum()
+    out = ndimage.correlate1d(np.asarray(image, np.float64), g, axis=0, mode="nearest")
+    return ndimage.correlate1d(out, g, axis=1, mode="nearest")
+
+
+# --------------------------------------------------------------------------- #
+# Large-scale, mask-aware background (the Mini ALI bgMap) and the raw mean reference
+# --------------------------------------------------------------------------- #
+def masked_grey_opening(image, footprint, mask):
+    """Flat grey opening in which only ``mask`` pixels contribute: the erosion sees masked-out
+    pixels as +inf (they can never be a local minimum) and the dilation sees them as -inf.
+    Masked-out output pixels are NaN. Any non-finite result inside the mask falls back to the
+    input value."""
+    from scipy import ndimage
+    img = np.asarray(image, np.float64)
+    mask = np.asarray(mask, bool)
+    out = np.full(img.shape, np.nan)
+    if not mask.any():
+        return out
+    eroded = ndimage.grey_erosion(np.where(mask, img, np.inf), footprint=footprint, mode="nearest")
+    dilated = ndimage.grey_dilation(np.where(mask, eroded, -np.inf), footprint=footprint, mode="nearest")
+    out[mask] = dilated[mask]
+    bad = mask & ~np.isfinite(out)
+    out[bad] = img[bad]
+    return out
+
+
+def large_scale_background(image, radius=50, sigma=40.0, mask=None, min_weight=1e-6):
+    """Illumination-scale background of a reference image: mask-aware grey opening with an
+    exact disk of ``radius`` px, then a normalized Gaussian of ``sigma`` px
+    (``G(bg * mask) / max(G(mask), min_weight)``, so only valid pixels are averaged).
+    NaN outside ``mask``. ``mask=None`` means every finite pixel. Float32 output.
+
+    The opening removes everything narrower than the disk (cells), keeping only the slowly
+    varying illumination; the Gaussian smooths the opening's blockiness. The exact-disk opening
+    costs ~15 s on an 800x800 image."""
+    from .utils import exact_disk
+    img = np.asarray(image, np.float64)
+    valid = np.isfinite(img) if mask is None else (np.asarray(mask, bool) & np.isfinite(img))
+    opened = masked_grey_opening(img, exact_disk(radius), valid)
+    if sigma and sigma > 0:
+        num = gaussian_matlab(np.where(valid, opened, 0.0), sigma)
+        den = gaussian_matlab(valid.astype(np.float64), sigma)
+        bg = num / np.maximum(den, float(min_weight))
+    else:
+        bg = opened
+    bg = np.where(valid, bg, np.nan)
+    return bg.astype(np.float32)
+
+
+def raw_mean_reference(movie, n_frames=300):
+    """Mean of the first ``n_frames`` frames (clipped to ``T``) of the **raw** movie, in
+    acquisition units; float64 ``(H, W)``. ``movie`` is not modified."""
     T = movie.shape[0]
-    ref = np.asarray(movie[:min(int(n_frames), T)]).mean(axis=0, dtype=np.float64)
-    r = int(radius)
-    yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
-    disk = (xx ** 2 + yy ** 2) <= r * r
-    bkg = ndimage.grey_opening(ref, footprint=disk, mode="nearest")
-    return (ref - bkg).astype(np.float32)
+    return np.asarray(movie[:min(int(n_frames), T)]).mean(axis=0, dtype=np.float64)
+

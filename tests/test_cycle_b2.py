@@ -125,33 +125,6 @@ def _blob(H, W, r, c, sigma):
     return np.exp(-((rr - r) ** 2 + (cc - c) ** 2) / (2.0 * sigma ** 2))
 
 
-def test_brightness_reference_flat_movie_is_zero():
-    from pyali.preprocess import brightness_reference
-    movie = np.full((40, 32, 32), 17.0, np.float32)
-    ref = brightness_reference(movie, n_frames=300, radius=5)
-    assert ref.shape == (32, 32) and ref.dtype == np.float32
-    assert np.abs(ref).max() < 1e-5
-
-
-def test_brightness_reference_removes_gradient_keeps_blob_and_uses_first_frames():
-    from pyali.preprocess import brightness_reference
-    H = W = 64
-    rr, cc = np.mgrid[:H, :W]
-    gradient = 100.0 + 0.5 * cc + 0.25 * rr                   # smooth illumination
-    blob = 40.0 * _blob(H, W, 30, 30, 2.0)                     # a cell-sized bright spot
-    frame = (gradient + blob).astype(np.float32)
-    movie = np.repeat(frame[None], 20, axis=0)
-    movie[10:] += 1000.0                                        # frames beyond n_frames must be ignored
-    ref = brightness_reference(movie, n_frames=10, radius=8)
-    peak = ref[30, 30]
-    assert abs(peak - 40.0) < 0.05 * 40.0                       # blob retained within 5%
-    # background pixels, excluding the border band where any opening of a ramp undershoots
-    # by slope * radius (nearest padding); that band is the price of the operator, not a bug
-    interior = (rr >= 8) & (rr < H - 8) & (cc >= 8) & (cc < W - 8)
-    far = ref[(np.hypot(rr - 30, cc - 30) > 12) & interior]
-    assert np.abs(far).max() < 0.01 * 40.0                      # gradient removed
-
-
 # --------------------------------------------------------------------------- #
 # weighted brightness
 # --------------------------------------------------------------------------- #
@@ -221,10 +194,10 @@ def test_pipeline_writes_identity_source_brightness_and_metadata(synthetic_fov, 
     with open(os.path.join(out_dir, "fov_metadata.json")) as f:
         meta = json.load(f)
     assert meta["fov_id"] == "exp_P05_A2_F012" and meta["identity"]["batch"] == "443-1"
-    assert meta["params"]["brightness_radius"] == data["params"].brightness_radius
+    assert meta["params"]["background_radius"] == data["params"].background_radius
     assert meta["params"]["min_peak_interval"] == data["params"].min_peak_interval
     assert sum(meta["n_cells_by_source"].values()) == N == meta["n_cells"]
-    for stage in ("load", "brightness_reference", "extract_footprints", "trace_extraction",
+    for stage in ("load", "background", "segmentation", "extract_footprints", "trace_extraction",
                   "write", "total"):
         assert stage in meta["timing_s"] and meta["timing_s"][stage] >= 0
     assert len(meta["pyali_git"]) in (0, 40)
@@ -271,9 +244,3 @@ def test_cli_identity_flags_reach_the_written_cells(tmp_path, monkeypatch):
     del pd, pipeline
 
 
-def test_brightness_reference_leaves_movie_untouched():
-    from pyali.preprocess import brightness_reference
-    movie = np.random.default_rng(1).random((12, 16, 16)).astype(np.float32)
-    before = movie.copy()
-    brightness_reference(movie, n_frames=5, radius=3)
-    assert np.array_equal(movie, before)

@@ -2,9 +2,11 @@
 
 A voltage-imaging waveform-extraction pipeline. Given a raw movie of a field of view, pyali:
 
-1. builds a reference image (mean weighted by local temporal correlation),
+1. builds a raw-unit mean reference and removes its illumination-scale background (mask-aware
+   opening + normalized Gaussian), plus a correlation-weighted reference for QC,
 2. subtracts a non-uniform, time-varying background and corrects rigid motion,
-3. segments cells,
+3. segments cells: a noise-calibrated hysteresis mask (seeds at background + 6 sigma grown to
+   + 3 sigma, both measured per field) ANDed with a soma watershed that splits touching somata,
 4. detects action potentials per region,
 5. extracts per-cell spatial footprints (center-of-mass + clustering), and
 6. recovers per-cell temporal traces via the spatial pseudoinverse.
@@ -48,8 +50,8 @@ the only writer and loader of these files):
 - `signals.h5` — `/traces/raw` float32 `[T, N]` on disk (gzip; MATLAB/Octave read it as
   `[N, T]`), `/footprints/{values,pixel,offsets}` (sparse COO per cell, C-order pixel index
   `row * W + col`), `/images/{reference,binary_map,brightness_reference}` (the last is the raw-
-  unit mean of the first 300 frames minus a radius-50 grey opening, the `x` in
-  `weighted_brightness`), and attributes `height`, `width`, `n_frames`, `fps`, `fov_id`,
+  unit mean of the first 300 frames minus its large-scale background: the segmentation input and
+  the `x` in `weighted_brightness`), and attributes `height`, `width`, `n_frames`, `fps`, `fov_id`,
   `pyali_git`, `schema_version`
 - `fov_metadata.json` — acquisition metadata, `identity`, every `Params` field under `params`,
   per-stage wall seconds under `timing_s`, cell counts by `source`, the git commit
