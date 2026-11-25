@@ -315,3 +315,17 @@ def raw_mean_reference(movie, n_frames=300):
     T = movie.shape[0]
     return np.asarray(movie[:min(int(n_frames), T)]).mean(axis=0, dtype=np.float64)
 
+
+def focus_score(image, sigma=1.0):
+    """Focus QC for a mean image: variance of the Laplacian of the Gaussian(``sigma``)-smoothed
+    image, divided by the squared mean intensity so it is independent of exposure. Sharp
+    800x800 fields of this preparation score ~1e-3 to 3.5e-3; a defocused field scores ~1e-4 or
+    less (P-4 W-A2 burst45: 9e-5, with its sharp neighbours at 1.7e-3 to 3.5e-3). Compare
+    within an acquisition; the absolute scale depends on magnification and cell density."""
+    from scipy import ndimage
+    img = np.asarray(image, np.float64)
+    if img.size == 0 or not np.isfinite(img).all():
+        return float("nan")
+    lap = ndimage.laplace(ndimage.gaussian_filter(img, float(sigma)))
+    return float(lap.var() / max(img.mean(), 1e-9) ** 2)
+

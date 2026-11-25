@@ -15,7 +15,7 @@ import run_corpus as rc                                                    # noq
 
 COLS = ["run_id", "fov_name", "day", "plate", "plate_token", "well", "batch", "burst", "src_dir",
         "bin_bytes", "bytes_per_frame", "frames_in_file", "frames_requested", "include",
-        "exclude_reason"]
+        "exclude_reason", "focus"]
 
 
 def _inventory(path, rows):
@@ -130,7 +130,7 @@ if mode == "hog":
     time.sleep(8)
 if mode != "nomarker":
     open(os.path.join(out, "cells.parquet"), "wb").write(b"x")
-json.dump(dict(n_cells=7, n_cells_by_source=dict(spiking=5, no_ap=2), n_regions_kept=9),
+json.dump(dict(n_cells=7, n_cells_by_source=dict(spiking=5, no_ap=2), n_regions_kept=9, focus_score=0.0021),
           open(os.path.join(out, "fov_metadata.json"), "w"))
 print("argv", sys.argv[1:])
 '''
@@ -182,6 +182,7 @@ def test_run_one_ok_path_uploads_verifies_and_deletes_local(tmp_path, monkeypatc
     rec = rc.run_one(_one_row(tmp_path), cfg)
     assert rec["ok"] is True and rec["rc"] == 0 and rec["n_cells"] == 7
     assert rec["n_cells_by_source"] == dict(spiking=5, no_ap=2) and rec["n_regions"] == 9
+    assert rec["focus_score"] == 0.0021 and any("focus 2.10e-03" in line for line in cfg.lines)
     assert rec["dest"].startswith("s3://b/AB/pyali-x/Plate_4/Well_A2/16")
     local = os.path.join(cfg.analysis_dir, "Plate_4", "Well_A2", rec["fov_name"])
     assert not os.path.exists(local)                                   # deleted after read-back

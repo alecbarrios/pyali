@@ -143,6 +143,33 @@ def test_build_inventory_writes_sorted_csv_with_columns_and_well_filter(tmp_path
     assert "P4_A2" in printed and "include=3" in printed and "P4_C3" in printed
 
 
+def test_build_inventory_focus_column(tmp_path, capsys):
+    """--focus-dims fills the focus QC column from the first 300 frames of each included movie
+    (blank for excluded rows and without the flag)."""
+    root = str(tmp_path)
+    nrow = ncol = 8
+    bpf = nrow * ncol
+    good = _fov(root, "20260716", "163532_P-4_W-A2_443-1_443screen2_DIV35__burst1",
+                n_bytes=bpf * 300, target=300, bpf=bpf)
+    # write a sharp pattern into the frames so the score is non-zero
+    import numpy as np
+    frames = np.zeros((300, nrow, ncol), np.uint8)
+    frames[:, 2:6, 2:6] = 200
+    frames.tofile(os.path.join(good, "frames1.bin"))
+    _fov(root, "20260716", "163547_P-4_W-A2_443-1_443screen2_DIV35__burst2", n_bytes=0)
+    out = str(tmp_path / "inv.csv")
+    rows = bi.build_inventory([root], out, "x", focus_dims=(nrow, ncol))
+    assert rows[0]["focus"] != "" and float(rows[0]["focus"]) > 0
+    assert rows[1]["focus"] == ""                                      # excluded: not scored
+    with open(out) as f:
+        hdr = f.readline().strip().split(",")
+    assert hdr[-1] == "focus"
+    rows_noflag = bi.build_inventory([root], out, "x")
+    assert all(r["focus"] == "" for r in rows_noflag)
+    bi.main(["--root", root, "--out", out, "--experiment-id", "x", "--focus-dims", str(nrow), str(ncol)])
+    assert "[inventory] focus: median" in capsys.readouterr().out
+
+
 def test_build_inventory_reports_exclusions(tmp_path, capsys):
     root = str(tmp_path)
     _fov(root, "20260716", "163532_P-4_W-A2_443-1_443screen2_DIV35__burst1")

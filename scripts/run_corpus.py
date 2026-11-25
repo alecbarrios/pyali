@@ -224,9 +224,13 @@ def run_one(r, cfg):
             rec["n_cells"] = meta.get("n_cells")
             rec["n_cells_by_source"] = meta.get("n_cells_by_source")
             rec["n_regions"] = meta.get("n_regions_kept")
+            rec["focus_score"] = meta.get("focus_score")             # QC: ~1e-4 or less = defocused
         except (OSError, ValueError):
             pass
+        fs = rec.get("focus_score")
         cfg.log(f"{tag}: processed in {rec['process_s']}s, peak {rec['peak_rss_gb']} GB, "
+                f"{rec.get('n_cells')} cells, focus {fs:.2e}" if isinstance(fs, (int, float)) else
+                f"{tag}: processed in {rec['process_s']}s, peak {rec['peak_rss_gb']} GB, "
                 f"{rec.get('n_cells')} cells")
 
         t2 = time.perf_counter()
