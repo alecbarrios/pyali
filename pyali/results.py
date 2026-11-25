@@ -15,7 +15,8 @@ Layout of one FOV output directory (schema version 2)::
                          /footprints/offsets  uint32  [N+1]   cell k owns values[offsets[k]:offsets[k+1]]
                          /images/reference    float32 [H, W]  correlation-weighted reference
                          /images/binary_map   uint8   [H, W]  segmentation mask
-                         /images/brightness_reference  float32 [H, W]  raw-unit mean minus opening,
+                         /images/brightness_reference  float32 [H, W]  raw-unit mean minus its
+                                              large-scale background: the segmentation input and
                                               the x in weighted_brightness
                          attrs: height, width, n_frames, fps, pyali_git, schema_version, ...
     fov_metadata.json    written separately by :mod:`pyali.metadata`
@@ -110,7 +111,7 @@ class SparseFootprints:
 def weighted_brightness(sp, ref):
     """Per-cell footprint-weighted brightness: ``sum(w * x) / sum(w)`` over each cell's
     footprint pixels, with ``w`` the footprint values and ``x`` the ``(H, W)`` brightness
-    reference (see :func:`pyali.preprocess.brightness_reference`). Pixels with ``w <= 0`` or a
+    reference (raw mean minus :func:`pyali.preprocess.large_scale_background`). Pixels with ``w <= 0`` or a
     non-finite ``w``/``x`` are ignored; a cell with no usable pixel gets ``NaN``.
 
     Returns ``(N,)`` float32.

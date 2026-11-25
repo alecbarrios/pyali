@@ -173,10 +173,10 @@ def test_constant_movie_reaches_the_zero_cell_path(tmp_path):
     assert r.attrs["n_frames"] == T and r.attrs["n_ap_detected"] == 0
 
 
-@pytest.mark.xfail(strict=False, reason="candidate finding: a noise-free blank movie with only a "
-                   "smooth gradient and bleaching segments into several regions near the frame "
-                   "border (pilot ledger: blank-movie regions)")
 def test_drifting_blank_movie_has_no_regions(tmp_path):
+    """A noise-free blank movie with a smooth gradient and bleaching yields no regions: the
+    hysteresis threshold is calibrated to the field's own noise, and the large-scale background
+    removes the gradient. (Before Cycle C1 the adaptive-mean threshold segmented the border.)"""
     data = make_movie(seed=1, blank=True, noise=False, drift=True)
     write_fov(tmp_path, data["movie"])
     out = run(tmp_path, data["params"])
@@ -296,7 +296,7 @@ def test_written_results_round_trip(fov):
     assert r.attrs["fps"] == fov["params"].fps and r.attrs["schema_version"] == 2
     assert np.array_equal(r.images["reference"], np.asarray(out["reference_image"], np.float32))
     assert np.array_equal(r.images["binary_map"], np.asarray(out["binary_map"], np.uint8))
-    assert np.array_equal(r.images["brightness_reference"], out["brightness_reference"])
+    assert np.array_equal(r.images["brightness_reference"], out["reference_corrected"])
     # Cycle B2 columns
     ident = out["identity"]
     assert r.cells["source"].tolist() == out["source_of_footprint"]

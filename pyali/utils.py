@@ -65,6 +65,33 @@ def strel_disk(radius=15):
     return (np.abs(x) + np.abs(y)) <= b
 
 
+def exact_disk(radius):
+    """Euclidean disk ``x^2 + y^2 <= r^2`` on a ``(2r+1)^2`` grid (MATLAB ``strel('disk', r, 0)``)."""
+    r = int(radius)
+    y, x = np.ogrid[-r:r + 1, -r:r + 1]
+    return (x * x + y * y) <= r * r
+
+
+def matlab_disk(radius):
+    """MATLAB ``strel('disk', r)`` with its default ``N = 4`` periodic-line approximation.
+
+    ``r < 3`` is the exact disk. Otherwise the neighbourhood is the filled octagon from four
+    periodic lines (0, 45, 90, 135 deg): with ``k = 2r / (cot(pi/8) + 1/sin(pi/8))``,
+    ``a = round(k)`` and ``c = round(k cos 45)``, it is ``{|x|, |y| <= a + 2c, |x| + |y| <= 2a + 2c}``.
+    Checks: ``r=3`` -> 7x7 with row widths 3,5,7,7,7,5,3; ``r=5`` -> 9x9 with 5,7,9,9,9,9,9,7,5.
+    """
+    r = float(radius)
+    if r < 3:
+        return exact_disk(int(r))
+    theta = np.pi / 8.0
+    k = 2.0 * r / (1.0 / np.tan(theta) + 1.0 / np.sin(theta))
+    a = int(np.round(k))
+    c = int(np.round(k * np.cos(np.pi / 4.0)))
+    R = a + 2 * c
+    y, x = np.ogrid[-R:R + 1, -R:R + 1]
+    return (np.abs(x) + np.abs(y)) <= (2 * a + 2 * c)
+
+
 def dog_kernel(sigma1=1.0, sigma2=3.0, width=19):
     """Difference-of-Gaussians kernel, zero-summed via area normalization.
 

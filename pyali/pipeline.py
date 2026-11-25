@@ -55,21 +55,20 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     T = movie.shape[0]
     toc("load", t0)
 
-    # ---- reference + correlation image, sharpening chain (preprocess) ----
+    # ---- reference images (preprocess) ----
     log("reference + correlation image ...")
     t0 = tic()
     reference_image, corr_image = preprocess.reference_and_correlation_image(movie[:p.n_ref])
     toc("reference", t0)
-    # brightness reference in raw units: must precede the in-place background/motion steps
-    log("brightness reference ...")
+    # Raw-unit mean reference and its illumination background: must precede the in-place
+    # background/motion steps. reference_corrected drives segmentation and per-cell brightness.
+    log("large-scale background ...")
     t0 = tic()
-    brightness_ref = preprocess.brightness_reference(movie, p.brightness_frames, p.brightness_radius)
-    toc("brightness_reference", t0)
-    log("sharpening ...")
-    t0 = tic()
-    *_chain, sharpened = preprocess.sharpen(                 # the intermediate images were only
-        reference_image, p.disk_radius, p.gauss_sigma, p.lap_alpha, p.sharpen_k)   # ever debug output
-    toc("sharpen", t0)
+    reference_raw = preprocess.raw_mean_reference(movie, p.reference_frames)
+    background_map = preprocess.large_scale_background(reference_raw, p.background_radius,
+                                                       p.background_sigma)
+    reference_corrected = (reference_raw - background_map).astype(np.float32)
+    toc("background", t0)
 
     # ---- adaptive background, motion correction, clip (preprocess) ----
     log("adaptive background subtraction ...")
@@ -86,9 +85,11 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     # ---- segmentation ----
     log("segmentation ...")
     t0 = tic()
-    regions, binary_map, spatial_footprints = segmentation.cell_segmentation(
-        sharpened, p.seg_threshold, p.seg_gauss, p.seg_region_size,
-        getattr(p, "seg_threshold_mult", None), getattr(p, "seg_neighborhood", None))
+    regions, binary_map, spatial_footprints, seg_info = segmentation.cell_segmentation(
+        reference_raw, reference_corrected, p)
+    log(f"hysteresis: background {seg_info['bg_center']:.2f}, sigma {seg_info['sigma_bg']:.2f}, "
+        f"thresholds {seg_info['th_low']:.2f} / {seg_info['th_high']:.2f}; mask px intensity "
+        f"{seg_info['n_px_intensity']}, watershed {seg_info['n_px_watershed']}, final {seg_info['n_px_final']}")
     regions, binary_map, dropped = segmentation.drop_oversized_regions(
         regions, binary_map, getattr(p, "max_region_bbox_frac", None))
     if dropped:                                    # rebuild: extract_footprints indexes these by
@@ -139,7 +140,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     N = footprint.shape[2]
     n_spikes = np.bincount(spike_cell_row[spike_cell_row >= 0], minlength=N)
     sparse_fp = results.SparseFootprints.from_dense(footprint)
-    brightness = results.weighted_brightness(sparse_fp, brightness_ref)
+    brightness = results.weighted_brightness(sparse_fp, reference_corrected)
     n_cells_by_source = {s: int(source_of_footprint.count(s)) for s in results.SOURCES}
     log("done.")
 
@@ -153,7 +154,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             spikes_df=results.pack_spikes(APs, COMs, spike_cell_row, region_of_spike,
                                           region_of_ap),
             images=dict(reference=reference_image, binary_map=binary_map,
-                        brightness_reference=brightness_ref),
+                        brightness_reference=reference_corrected),
             attrs=dict(fps=p.fps, profile=profile, fov_id=identity.fov_id,
                        n_ap_detected=len(APs), n_ap_localized=len(COMs)))
         toc("write", t0)
@@ -165,6 +166,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             fov_dir, day=day, params=p, profile=profile,
             identity=identity, timing=timing,
             extras=dict(n_regions_kept=len(regions), n_regions_dropped=len(dropped),
+                        segmentation=seg_info,
                         n_cells=int(cell_traces.shape[0]), n_cells_by_source=n_cells_by_source,
                         n_ap_detected=int(len(APs)), n_ap_localized=int(len(COMs)),
                         n_frames_analyzed=int(T))))
@@ -176,13 +178,15 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         save_result_figures(out_dir, reference_image, regions, binary_map, COMs,
                             footprint_center, cell_traces, fps=p.fps, footprint=footprint)
 
-    return dict(reference_image=reference_image, corr_image=corr_image, sharpened=sharpened,
+    return dict(reference_image=reference_image, corr_image=corr_image,
+                reference_raw=reference_raw, reference_corrected=reference_corrected,
+                background_map=background_map, seg_info=seg_info,
                 regions=regions, binary_map=binary_map, footprint=footprint,
                 footprint_center=footprint_center, cell_traces=cell_traces, APs=APs, COMs=COMs,
                 region_of_footprint=region_of_footprint, region_of_ap=region_of_ap,
                 region_of_spike=region_of_spike, spike_cell_row=spike_cell_row,
                 source_of_footprint=source_of_footprint, brightness=brightness,
-                brightness_reference=brightness_ref, identity=identity, timing=timing)
+                identity=identity, timing=timing)
 
 
 def run_folder(root_path, p=Params()):
