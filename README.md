@@ -7,7 +7,9 @@ A voltage-imaging waveform-extraction pipeline. Given a raw movie of a field of 
 2. subtracts a non-uniform, time-varying background and corrects rigid motion,
 3. segments cells: a noise-calibrated hysteresis mask (seeds at background + 6 sigma grown to
    + 3 sigma, both measured per field) ANDed with a soma watershed that splits touching somata,
-4. detects action potentials per region,
+4. detects action potentials per region: a 32-frame median of the region's raw trace gives the
+   detection signal, thresholded at 4 x its mean absolute deviation (about 3.2 sigma), keeping
+   the largest peak within any 25-frame window,
 5. extracts per-cell spatial footprints (center-of-mass + clustering), and
 6. recovers per-cell temporal traces via the spatial pseudoinverse.
 

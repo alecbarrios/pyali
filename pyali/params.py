@@ -45,12 +45,14 @@ class Params:
                                              #   filtering the ~98% of pixels no region reads.
                                              #   Forced off when whiten_traces needs the global
                                              #   array. False = the old global-filter path.
-    dog_sigma1: float = 1.0
-    dog_sigma2: float = 3.0
-    dog_width: int = 19
 
-    # AP detection
-    threshold_factor: float = 3.25
+    # AP detection (Mini ALI V2.2 mini_ali_patch_detect_spike_times): the region trace is
+    # medfilt1-filtered with `detect_median_window` frames (spikes positive), `detect_edge_frames`
+    # are zeroed at each end, and the threshold is `threshold_factor` x the mean absolute
+    # deviation of the whole detection signal (MATLAB mad, ~0.8 sigma; 4 x mad ~ 3.2 sigma)
+    detect_median_window: int = 32           # 4 x the 8-frame per-pixel window
+    detect_edge_frames: int = 16             # round(8/2) x 4
+    threshold_factor: float = 4.0            # x mean absolute deviation (was 3.25 x a stimulus-off std)
     min_peak_interval: int = 25              # frames; keep the largest AP within this window
                                              #   (Mini ALI V2.2 minimal interval; was 15 with
                                              #   a rule that dropped every member of a burst)
@@ -152,9 +154,10 @@ class Params:
           * ``compute_dtype='float32'`` halves peak RAM (~43 GB vs ~86 GB) so an 800x800x8399 movie
             fits; the 8-bit source is represented losslessly by float32.
           * ``saturation_clip=None`` -- the 8-bit MATLAB miniALI (V1.3) does not clip saturation.
-          * ``threshold_factor=3.0`` is user-chosen for consistency with the QC spike threshold
-            (k=3 sigma). NB: the MATLAB 8-bit script uses 4.5 and the 6GP002 pyali default is 3.25,
-            so this is more permissive than either -- confirm during validation.
+          * AP detection follows Mini ALI V2.2 (dataclass defaults): 32-frame median on the
+            region trace, 16 edge frames zeroed, threshold 4 x the mean absolute deviation of
+            the detection signal (~3.2 sigma). The earlier 3.0 x stimulus-off std override and
+            the 8-frame per-pixel detection trace (which attenuated 2-4 frame spikes) are gone.
           * segmentation follows Mini ALI V2.2 (hysteresis 6/3 sigma on the background-corrected
             reference, AND a soma watershed; dataclass defaults); clustering params are kept at
             the 6GP002-tuned defaults and should be re-checked on real 443screen2 FOVs.
@@ -168,7 +171,6 @@ class Params:
             read_dtype="uint8", compute_dtype="float32",
             bkg_ranges=list(ranges), std_ranges=list(ranges),
             saturation_clip=None,
-            threshold_factor=3.0,
         )
         base.update(overrides)
         return cls(**base)

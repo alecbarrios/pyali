@@ -104,89 +104,86 @@ def build_selection_map(pixel_list, height, width):
 # --------------------------------------------------------------------------- #
 # AP detection helpers
 # --------------------------------------------------------------------------- #
-def apply_dog_gain(trace, dog):
-    """Scale a 1-D trace by the DOG kernel's center value (a unit gain for the normalized
-    kernel). Used only to shape the noise estimate below."""
-    return trace * dog[len(dog) // 2]
+def median_filter_1d(x, n):
+    """MATLAB ``medfilt1(x, n)`` with its default zero padding: output ``k`` is the median of
+    ``x[k - nb : k + na]`` with ``nb = na = (n-1)/2`` for odd ``n`` and ``nb = n/2, na = n/2 - 1``
+    for even ``n``; samples beyond the ends count as zeros. Even windows take the mean of the two
+    middle values. Float64, same length as ``x``."""
+    from numpy.lib.stride_tricks import sliding_window_view
+    x = np.asarray(x, np.float64).ravel()
+    n = int(n)
+    if n < 1:
+        raise ValueError(f"window must be >= 1, got {n}")
+    nb, na = ((n - 1) // 2, (n - 1) // 2) if n % 2 else (n // 2, n // 2 - 1)
+    xp = np.concatenate([np.zeros(nb), x, np.zeros(na)])
+    return np.median(sliding_window_view(xp, n), axis=1)
 
 
-def forward_rolling_min_subtract(trace, look=5):
-    """Subtract, from each sample, the minimum of the next ``look`` samples.
-
-    ``out[i] = trace[i] - min(trace[i+1 : i+1+look])``; the last sample is left at 0.
-    """
-    n = len(trace)
-    out = np.zeros(n)
-    for i in range(n - 1):
-        hi = min(i + look, n - 1)
-        out[i] = trace[i] - np.min(trace[i + 1:hi + 1])
-    return out
+def mean_abs_dev(x):
+    """MATLAB/Octave ``mad(x)`` with the default flag 0: the mean absolute deviation about the
+    mean (about 0.8 sigma for Gaussian noise). Not the robust median variant."""
+    x = np.asarray(x, np.float64).ravel()
+    return float(np.mean(np.abs(x - x.mean()))) if x.size else 0.0
 
 
 # --------------------------------------------------------------------------- #
-# Per-region AP detection
+# Per-region AP detection (Mini ALI mini_ali_patch_detect_spike_times)
 # --------------------------------------------------------------------------- #
-def detect_region_aps(patch_movie, selection_map_patch, origin0, dog, std_frames,
-                      threshold_factor=3.25, filter_window=8):
-    """Detect action potentials in one region's filtered patch movie.
+def detect_region_aps(patch_raw, selection_map_patch, pm, origin0, median_window=32,
+                      edge_frames=16, threshold_factor=4.0):
+    """Detect action potentials in one region from its raw patch's mean trace.
+
+    The region trace is the sum of the in-mask pixels divided by the patch area, from the
+    background-subtracted, motion-corrected movie patch (motion is already removed from the
+    movie, so the original's per-trace gradient regression has no counterpart here). The
+    detection signal is ``medfilt1(trace, median_window) - trace`` (spikes positive), with
+    ``edge_frames`` zeroed at each end; the noise is the mean absolute deviation of that whole
+    signal (MATLAB ``mad``, flag 0, ~0.8 sigma), the threshold ``threshold_factor`` times it;
+    peaks are the local maxima of the thresholded signal (MATLAB ``findpeaks`` rule). No peak
+    refinement, no extra end skips: with 16 zeroed edge frames there is nothing to skip.
 
     Parameters
     ----------
-    patch_movie : (T, Hp, Wp) float array (from :func:`temporal_filter`)
+    patch_raw : (T, Hp, Wp) float array
+        The movie patch (not temporally filtered).
     selection_map_patch : (Hp, Wp) array
         Region mask cropped to the patch.
+    pm : (T, Hp, Wp) float array
+        The per-pixel temporally filtered patch (:func:`temporal_filter_patch`), used only for
+        the coarse pixel of each spike (the brightest in-mask pixel of its frame; informational,
+        :func:`com_via_svd` re-finds the maximum).
     origin0 : (row0, col0)
         0-indexed patch top-left corner.
-    dog : (K,) array
-        DOG kernel for the noise-estimate gain.
-    std_frames : array of int
-        0-indexed baseline frame indices for the noise std.
-    threshold_factor : float
-    filter_window : int
+    median_window, edge_frames, threshold_factor : see ``Params``.
 
     Returns
     -------
     (region_AP, diag)
-        ``region_AP`` : (k, 4) = ``[row, col, frame, amplitude]`` (0-indexed, pre-dedup); the
-        pixel is the brightest *in-mask* pixel of the refined frame (Mini ALI's coarse
-        location), informational only — :func:`com_via_svd` re-finds the maximum;
-        ``diag`` : dict of intermediate traces/thresholds.
+        ``region_AP`` : (k, 4) = ``[row, col, frame, amplitude]`` (0-indexed, pre-dedup), the
+        amplitude being the detection signal at the peak; ``diag`` : ``trace, dF, sigma,
+        threshold``.
     """
-    pm = np.array(patch_movie, dtype=np.float64, copy=True)
-    T = pm.shape[0]
-    half = int(round_half_away_from_zero(filter_window / 2))   # round(8/2) = 4
-    pm[:half] = 0.0                                            # zero first/last filter_window/2 frames
-    pm[T - half:] = 0.0
-
-    trace = np.nanmean(pm * selection_map_patch[None], axis=(1, 2))     # spatial mean incl. zeros
-    dog_filtered = apply_dog_gain(trace, dog)
-    dog_filtered = forward_rolling_min_subtract(dog_filtered, look=5)
-    std_noise = np.nanstd(dog_filtered[std_frames], ddof=1)             # sample std (N-1)
-    threshold = threshold_factor * std_noise
-
-    thr = trace.copy()
-    thr[thr < threshold] = 0.0
-    peaks, pk = findpeaks(thr)                                          # amplitudes + 0-based idx
-    peak_time = pk.astype(float).copy()                                # refined below (diag)
+    mask = np.asarray(selection_map_patch) > 0
+    T = patch_raw.shape[0]
+    trace = np.asarray(patch_raw)[:, mask].sum(axis=1, dtype=np.float64) / float(mask.size)
+    dF = median_filter_1d(trace, median_window) - trace
+    e = min(int(edge_frames), T)
+    dF[:e] = 0.0
+    dF[max(0, T - e):] = 0.0
+    sigma = mean_abs_dev(dF)
+    threshold = float(threshold_factor) * sigma
+    thr = np.where(dF >= threshold, dF, 0.0) if threshold > 0 else np.zeros_like(dF)
+    peaks, pk = findpeaks(thr)
 
     region_AP = []
-    for f in range(len(pk)):
-        t0 = int(pk[f])
-        if t0 <= 2 or t0 >= T - 4:                                     # skip peaks near the ends
-            continue
-        shift = int(np.argmax(thr[t0 - 3:t0 + 3])) - 3                 # refine within [t0-3, t0+2]
-        t0r = t0 + shift
-        peak_time[f] = t0r
-        frame = pm[t0r] * selection_map_patch                          # coarse location inside the mask
+    for amp, t in zip(peaks, pk):
+        frame = np.asarray(pm[int(t)]) * mask                            # coarse location inside the mask
         pv = frame.max()
-        fi = int(np.argmax(frame.ravel(order="F") == pv))             # first occurrence, column-major
+        fi = int(np.argmax(frame.ravel(order="F") == pv))               # first occurrence, column-major
         px0, py0 = np.unravel_index(fi, frame.shape, order="F")
-        region_AP.append([px0 + origin0[0], py0 + origin0[1], t0r, peaks[f]])
-
+        region_AP.append([px0 + origin0[0], py0 + origin0[1], int(t), float(amp)])
     region_AP = np.array(region_AP, dtype=np.float64).reshape(-1, 4)
-    diag = dict(patch_traces=trace, dog_filtered_patch_traces=dog_filtered,
-                std_noise=std_noise, threshold=threshold, peaks=peaks, peak_time=peak_time)
-    return region_AP, diag
+    return region_AP, dict(trace=trace, dF=dF, sigma=sigma, threshold=threshold)
 
 
 def dedup_close_peaks(region_AP, min_interval=25):
@@ -416,7 +413,7 @@ def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_ro
 SOURCES = ("spiking", "no_ap", "no_com", "all_noise")     # cells.source vocabulary
 
 
-def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, std_frames, p,
+def extract_footprints(movie, filtered_movie, regions, spatial_footprints, p,
                        height, width, verbose=False):
     """Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.
 
@@ -429,8 +426,6 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
         global array is both a full extra copy of the movie and mostly wasted work. The two
         paths are bit-identical — the filter is per-pixel along time.
     regions, spatial_footprints : from :func:`pyali.segmentation.cell_segmentation`
-    dog : (K,) DOG kernel
-    std_frames : array of int (0-indexed baseline frames)
     p : Params
     height, width : int
     verbose : bool
@@ -486,8 +481,9 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, dog, 
         pm[T - half:] = 0.0
         pm_max = pm.max(axis=0)
 
-        region_AP, _diag = detect_region_aps(pm, sel_patch, origin0, dog, std_frames,
-                                             p.threshold_factor, fw)
+        region_AP, _diag = detect_region_aps(movie[:, r0:r1, c0:c1], sel_patch, pm, origin0,
+                                             p.detect_median_window, p.detect_edge_frames,
+                                             p.threshold_factor)
         region_AP = dedup_close_peaks(region_AP, p.min_peak_interval)
         if len(region_AP) == 0:
             _fallback(sel_full, sel_patch, pm_max, region, c, "no_ap"); continue
