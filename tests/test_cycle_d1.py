@@ -107,6 +107,39 @@ def test_detector_32_frame_median_does_not_attenuate_a_short_spike():
     assert ap.shape[0] == 1 and ap[0, 2] in (400, 401, 402)
 
 
+# --------------------------------------------------------------------------- #
+# svd_denoise_frames
+# --------------------------------------------------------------------------- #
+def test_svd_denoise_frames_shapes_rank_cap_and_exact_below_rank():
+    from pyali.extract import svd_denoise_frames
+    rng = np.random.default_rng(3)
+    T, Hp, Wp = 50, 9, 11
+    pm = rng.normal(size=(T, Hp, Wp))
+    times = np.array([5, 17, 23, 40])
+    out = svd_denoise_frames(pm, times, rank=10)
+    assert out.shape == (Hp, Wp, 4)
+    assert np.allclose(out, np.transpose(pm[times], (1, 2, 0)))          # 4 spikes <= rank 10: exact
+    assert svd_denoise_frames(pm, [], rank=10).shape == (Hp, Wp, 0)
+
+
+def test_svd_denoise_frames_truncates_to_rank():
+    from pyali.extract import svd_denoise_frames
+    rng = np.random.default_rng(4)
+    T, Hp, Wp, n = 400, 8, 8, 60
+    # frames = 2 spatial patterns x random loadings + small noise -> rank-2 structure
+    a, b = rng.normal(size=(Hp, Wp)), rng.normal(size=(Hp, Wp))
+    pm = (rng.normal(size=(T, 1, 1)) * a + rng.normal(size=(T, 1, 1)) * b
+          + 0.01 * rng.normal(size=(T, Hp, Wp)))
+    times = np.sort(rng.choice(T, n, replace=False))
+    out = svd_denoise_frames(pm, times, rank=2)
+    X = out.reshape(Hp * Wp, n)
+    assert np.linalg.matrix_rank(X, tol=1e-8) == 2
+    raw = np.transpose(pm[times], (1, 2, 0))
+    assert np.abs(out - raw).max() < 0.1 and np.abs(out - raw).mean() < 0.02   # only the noise is removed
+    # no probe-pixel trick: a patch narrower than 10 px works
+    assert svd_denoise_frames(pm[:, :5, :6], times[:7], rank=10).shape == (5, 6, 7)
+
+
 def test_mean_abs_dev_is_the_mean_deviation_about_the_mean():
     rng = np.random.default_rng(0)
     x = rng.normal(5.0, 2.0, size=200_000)

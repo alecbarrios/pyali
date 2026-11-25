@@ -223,38 +223,34 @@ def dedup_close_peaks(region_AP, min_interval=25):
 # --------------------------------------------------------------------------- #
 # Center of mass via SVD + region growing
 # --------------------------------------------------------------------------- #
-def svd_denoise_ap_stack(patch_movie, times, rank=15):
-    """Build a 7-frame (+/-3) stack per AP, low-rank denoise it, and keep the center frames.
+def svd_denoise_frames(patch_movie, times, rank=10):
+    """Low-rank denoise the AP frames: one filtered frame per spike (Mini ALI
+    ``mini_ali_SVD_denoise`` with ``svds(pixels x spikes, rank)``).
 
     Parameters
     ----------
     patch_movie : (T, Hp, Wp) float array
+        The per-pixel temporally filtered patch (spikes positive).
     times : array of int
         0-indexed AP frames.
     rank : int
-        Truncation rank (capped at the number of stacked frames).
+        Truncation rank, capped at the number of spikes (a region with ``<= rank`` spikes is
+        reconstructed exactly, i.e. not denoised, as in the original).
 
     Returns
     -------
-    (recon, centers)
-        ``recon`` : (Hp, Wp, 7*nAP) rank-truncated reconstruction;
-        ``centers`` : (Hp, Wp, nAP) denoised center frame of each AP.
+    (Hp, Wp, nAP) float64: the rank-truncated reconstruction of each spike's frame.
     """
+    times = np.asarray(times, int)
     Hp, Wp = patch_movie.shape[1:]
     nAP = len(times)
-    stack = np.zeros((Hp, Wp, 7 * nAP))
-    for i, t in enumerate(times):
-        stack[:, :, 7 * i:7 * i + 7] = np.transpose(patch_movie[t - 3:t + 4], (1, 2, 0))
-    X = stack.reshape(Hp * Wp, 7 * nAP, order="F")             # pixels x frames
+    if nAP == 0:
+        return np.zeros((Hp, Wp, 0))
+    X = np.asarray(patch_movie[times], np.float64).reshape(nAP, Hp * Wp).T   # pixels x spikes
     U, s, Vt = np.linalg.svd(X, full_matrices=False)
-    k = min(rank, X.shape[1])                                  # rank capped at the number of frames
-    recon = ((U[:, :k] * s[:k]) @ Vt[:k]).reshape(Hp, Wp, 7 * nAP, order="F")
-    sa = recon.copy()
-    for i in range(nAP):                                       # zero all but the center frame
-        drop = list(range(7 * i, 7 * i + 3)) + list(range(7 * i + 4, 7 * i + 7))
-        sa[:, :, drop] = 0.0
-    keep = ~((sa[-1, -1, :] == 0) & (sa[9, 9, :] == 0))       # drop the zeroed frames (probe pixels)
-    return recon, sa[:, :, keep]
+    k = min(int(rank), nAP)
+    recon = (U[:, :k] * s[:k]) @ Vt[:k]                                        # pixels x spikes
+    return recon.T.reshape(nAP, Hp, Wp).transpose(1, 2, 0)
 
 
 def region_grow_brightest(current, radius=6.0, n_pixels=25):
@@ -344,7 +340,7 @@ def com_via_svd(patch_movie, times, patch_rows, patch_cols, sel_patch, rank=15, 
     than ``times`` — even empty. ``patch_rows``/``patch_cols`` are the 1-indexed absolute patch
     coordinates and the returned ``[row, col]`` are 1-indexed absolute.
     """
-    _recon, centers = svd_denoise_ap_stack(patch_movie, times, rank)
+    centers = svd_denoise_frames(patch_movie, times, rank)
     Hp, Wp = sel_patch.shape
     r_off, c_off = int(patch_rows[0]), int(patch_cols[0])
     coms = []

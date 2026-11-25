@@ -76,7 +76,7 @@ class Params:
 
     # COM + clustering + footprints
     patch_size: tuple = (27, 27)
-    svd_rank: int = 15
+    svd_rank: int = 10                       # one filtered frame per spike, svds rank (Mini ALI nsvd)
     com_radius: float = 6.0                  # px from the seed for the COM region growing
     com_n_pixels: int = 25                   #   (Mini ALI V2.2 fine_radius_px / fine_npix;
                                              #   were 8.5 / 50)
