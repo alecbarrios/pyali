@@ -59,7 +59,7 @@ class Params:
     seg_smooth_sigma: float = 2.0            # Gaussian on the corrected reference before thresholding
     seg_high_sigma: float = 6.0              # seeds: background + 6 sigma_bg
     seg_low_sigma: float = 3.0               # growth: background + 3 sigma_bg (8-connected to a seed)
-    seg_min_area: int = 15                   # px; applied to the hysteresis mask and after the AND
+    seg_min_area: int = 15                   # px; the hysteresis mask's floor only (nothing after the AND)
     ws_tophat_radius: int = 3                # soma-scale top-hat (MATLAB N=4 octagon)
     ws_bg_sigma: float = 20.0                # Gaussian on the top-hat's large opening
     ws_percentile: float = 95.0              # the top 5% of the soma image is the watershed mask

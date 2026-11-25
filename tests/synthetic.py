@@ -31,13 +31,16 @@ def synthetic_params(H=96, W=96, **overrides):
 
     ``max_region_bbox_frac`` is raised from 0.01 to 0.05 because a 6-px cell's bounding box is
     already ~1% of a 96x96 frame and would be rejected by the production guard, which is tuned
-    for 800x800 frames.
+    for 800x800 frames. For the same reason the large-scale background is scaled to the frame:
+    the production radius-50 opening disk is larger than a 96-px frame and would degenerate to
+    the global minimum (``background_radius`` 10, ``background_sigma`` / ``ws_bg_sigma`` 8).
     """
     base = dict(nrow=H, ncol=W, n_ref=600, fps=800.0, truncate_last=10,
                 read_dtype="uint16", compute_dtype="float64",
                 bkg_ranges=[(1, 100), (380, 440), (740, 800)],
                 std_ranges=[(1, 100), (380, 440), (740, 800)],
-                saturation_clip=None, max_region_bbox_frac=0.05)
+                saturation_clip=None, max_region_bbox_frac=0.05,
+                background_radius=10, background_sigma=8.0, ws_bg_sigma=8.0)
     base.update(overrides)
     return Params(**base)
 

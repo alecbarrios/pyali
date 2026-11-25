@@ -273,7 +273,6 @@ def test_cell_segmentation_one_region_per_soma_with_info():
               "n_px_intensity", "n_px_watershed", "n_px_final"):
         assert k in info
     assert info["n_px_final"] == BW.sum() <= min(info["n_px_intensity"], info["n_px_watershed"])
-    assert all(r["Area"] >= p.seg_min_area for r in regions)
 
 
 def test_cell_segmentation_touching_somata_are_two_regions():

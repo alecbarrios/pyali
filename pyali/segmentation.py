@@ -9,8 +9,8 @@ Two masks, ANDed:
 * :func:`soma_watershed_mask` -- *how many somata, cut where*: the top 5% of a soma-scale
   top-hat image, partitioned by a watershed from its local peaks with the ridge lines removed.
 
-Then one minimum-area filter and connected-component region properties. scikit-image / scipy are
-imported lazily so the module imports without them.
+Then connected-component region properties, with no further filtering (soma cores are small).
+scikit-image / scipy are imported lazily so the module imports without them.
 
 Region properties are returned as: Centroid and PixelList as ``[col, row]`` (1-indexed);
 BoundingBox as ``[x_ul, y_ul, w, h]``.
@@ -122,8 +122,11 @@ def soma_watershed_mask(ref_raw, tophat_radius=3, background_radius=50, bg_sigma
 # Combined segmentation
 # --------------------------------------------------------------------------- #
 def cell_segmentation(ref_raw, ref_corrected, p, mask=None):
-    """Segment cells: ``hysteresis_mask(ref_corrected) & soma_watershed_mask(ref_raw)``, then one
-    minimum-area filter (``p.seg_min_area``; the original has none and keeps 1-px fragments).
+    """Segment cells: ``hysteresis_mask(ref_corrected) & soma_watershed_mask(ref_raw)``.
+
+    Nothing is filtered after the AND: the soma cores the watershed keeps are small (median
+    ~20 px, tenth percentile ~6 px at 800x800), and a minimum area there deletes real cells
+    (on one field 281 of 711 Octave cells sat on sub-15-px regions).
 
     Parameters
     ----------
@@ -145,13 +148,11 @@ def cell_segmentation(ref_raw, ref_corrected, p, mask=None):
         ``spatial_footprints`` : list of (Ni, 2) arrays of ``[col, row]`` (1-indexed);
         ``info`` : the hysteresis calibration plus the pixel count of each mask.
     """
-    from skimage.morphology import remove_small_objects
-
     BW_int, info = hysteresis_mask(ref_corrected, mask, p.seg_smooth_sigma, p.seg_high_sigma,
                                    p.seg_low_sigma, p.seg_min_area)
     BW_ws = soma_watershed_mask(ref_raw, p.ws_tophat_radius, p.background_radius, p.ws_bg_sigma,
                                 p.ws_percentile, p.ws_close_radius, p.ws_h)
-    BW = remove_small_objects(BW_int & BW_ws, int(p.seg_min_area), connectivity=2)
+    BW = BW_int & BW_ws            # no filter after the AND: soma cores are small (median ~20 px)
     regions = _regionprops(BW)
     info.update(n_px_intensity=int(BW_int.sum()), n_px_watershed=int(BW_ws.sum()),
                 n_px_final=int(BW.sum()))
