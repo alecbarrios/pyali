@@ -102,7 +102,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             f"({extract.resolve_workers(getattr(p, 'region_workers', 1))} worker(s)) ...")
         with meter.stage("extract_footprints"):
             (APs, COMs, footprints, footprint_center, region_of_footprint, region_of_ap,
-             region_of_spike, spike_cell_row, source_of_footprint) = extract.extract_footprints(
+             region_of_spike, spike_cell_row, source_of_footprint,
+             spike_info) = extract.extract_footprints(
                 movie, regions, spatial_footprints, p, H, W, verbose=verbose,
                 workers=getattr(p, "region_workers", 1))
 
@@ -141,7 +142,9 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                                                 source_of_footprint, brightness, identity),
                     traces=cell_traces, footprints=sparse_fp,
                     spikes_df=results.pack_spikes(APs, COMs, spike_cell_row, region_of_spike,
-                                                  region_of_ap),
+                                                  region_of_ap, peak_df=spike_info["peak_df"],
+                                                  kept=spike_info["kept"],
+                                                  cluster=spike_info["cluster"]),
                     images=dict(reference=reference_image, binary_map=binary_map,
                                 brightness_reference=reference_corrected),
                     attrs=dict(fps=p.fps, profile=profile, fov_id=identity.fov_id, focus_score=focus,
@@ -164,6 +167,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                         motion_shift_max_px=[float(np.abs(shift[0]).max()), float(np.abs(shift[1]).max())],
                         n_cells=int(cell_traces.shape[0]), n_cells_by_source=n_cells_by_source,
                         n_ap_detected=int(len(APs)), n_ap_localized=int(len(COMs)),
+                        **{k: spike_info[k] for k in ("n_spikes_before_merge", "n_spikes_after_merge",
+                                                      "n_spikes_clustered", "n_clusters")},
                         n_frames_analyzed=int(T))))
 
     if make_figures and out_dir:
@@ -179,7 +184,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                 footprint_center=footprint_center, cell_traces=cell_traces, APs=APs, COMs=COMs,
                 region_of_footprint=region_of_footprint, region_of_ap=region_of_ap,
                 region_of_spike=region_of_spike, spike_cell_row=spike_cell_row,
-                source_of_footprint=source_of_footprint, brightness=brightness,
+                source_of_footprint=source_of_footprint, spike_info=spike_info,
+                brightness=brightness,
                 shift=shift, identity=identity, timing=timing, telemetry=telemetry)
 
 

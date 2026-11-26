@@ -98,23 +98,16 @@ def test_source_no_com_when_every_centroid_is_rejected(synthetic_fov, monkeypatc
     assert "no_com" in expected
 
 
-def test_source_all_noise_when_dbscan_rejects_everything(synthetic_fov, monkeypatch):
+def test_source_unclustered_when_no_spike_reaches_a_density_cluster(synthetic_fov):
+    import dataclasses
     d, data = synthetic_fov
-    import sklearn.cluster
-
-    class _NoiseDBSCAN:
-        def __init__(self, *a, **k):
-            pass
-
-        def fit_predict(self, X):
-            return -np.ones(len(X), int)
-
-    monkeypatch.setattr(sklearn.cluster, "DBSCAN", _NoiseDBSCAN)
-    out = _run(d, data["params"])
+    p = dataclasses.replace(data["params"], ali_cluster_threshold=1e9)    # no cluster can form
+    out = _run(d, p)
     src = out["source_of_footprint"]
-    assert len(src) == len(out["regions"])
-    assert set(src) <= {"all_noise", "no_ap", "no_com"} and "all_noise" in src
+    assert len(src) == len(out["regions"])                               # one fallback per region
+    assert set(src) <= {"unclustered", "no_ap", "no_com"} and "unclustered" in src
     assert (out["spike_cell_row"] == -1).all()
+    assert out["spike_info"]["n_clusters"] == 0 and not out["spike_info"]["cluster"].any()
 
 
 # --------------------------------------------------------------------------- #

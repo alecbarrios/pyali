@@ -10,5 +10,5 @@ Convention: arrays are row-major C-order; movies are ``[T, H, W]``.
 
 __version__ = "0.1.0"
 
-from . import (utils, io, preprocess, movie, segmentation, extract, traces, params,  # noqa: F401
+from . import (utils, io, preprocess, movie, segmentation, extract, assign, traces, params,  # noqa: F401
                results, telemetry, pipeline)

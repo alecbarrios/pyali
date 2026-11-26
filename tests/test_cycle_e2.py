@@ -132,21 +132,23 @@ def test_corrected_patch_pieces_equal_patch(dtype, clip):
 
 
 # --------------------------------------------------------------------------- #
-# 3-4. process_region / extract_footprints == the pre-E2 loop; pool == inline
+# 3-4. the region pass reproduces the pre-E2 detection and localization; pool == inline
 # --------------------------------------------------------------------------- #
 import dataclasses                                                          # noqa: E402
 
 
 def _assert_same_extraction(a, b):
-    APs, COMs, fp, ctr, rof, roa, ros, scr, src = a
-    APs2, COMs2, fp2, ctr2, rof2, roa2, ros2, scr2, src2 = b
-    assert np.array_equal(APs, APs2) and np.array_equal(COMs, COMs2)
+    """Every output of two extract_footprints runs identical (incl. spike_info)."""
+    for x, y in zip(a[:2], b[:2]):
+        assert np.array_equal(x, y)
+    fp, fp2 = a[2], b[2]
     assert np.array_equal(fp.pixel, fp2.pixel) and np.array_equal(fp.offsets, fp2.offsets)
     assert np.array_equal(fp.values, fp2.values) and fp.values.dtype == fp2.values.dtype
-    assert np.array_equal(ctr, ctr2)
-    for x, y in ((rof, rof2), (roa, roa2), (ros, ros2), (scr, scr2)):
+    for x, y in zip(a[3:8], b[3:8]):
         assert np.array_equal(x, y)
-    assert list(src) == list(src2)
+    assert list(a[8]) == list(b[8])
+    for k, v in a[9].items():
+        assert np.array_equal(v, b[9][k]), k
 
 
 def _fake_region(r0, c0, h, w):
@@ -175,41 +177,48 @@ def synth(tmp_path_factory):
     return dict(p=p, cm=cm, regions=regions, spf=[r["PixelList"] for r in regions], out=out)
 
 
-def test_extract_footprints_matches_reference_inline_and_pooled(synth):
+def test_region_pass_reproduces_pre_e2_detection_and_localization(synth):
+    """Spike detection and COMs are unchanged by the field-wide assignment (only what happens to
+    the spikes afterwards differs from the per-region loop)."""
     p, cm, regions, spf = synth["p"], synth["cm"], synth["regions"], synth["spf"]
     H, W = p.nrow, p.ncol
-    expect = ref.extract_footprints(cm, regions, spf, p, H, W)
-    assert len(expect[0]) > 0 and expect[2].n() > 0                       # spikes and cells exist
-    _assert_same_extraction(expect, ex.extract_footprints(cm, regions, spf, p, H, W, workers=1))
-    _assert_same_extraction(expect, ex.extract_footprints(cm, regions, spf, p, H, W, workers=3))
-    # and the pipeline itself (which now runs this code) produced the same footprints
-    assert np.array_equal(synth["out"]["footprints"].values, expect[2].values)
+    # the old loop also needs the retired DBSCAN parameters
+    q = type("Q", (), {**{k: getattr(p, k) for k in p.__dataclass_fields__},
+                       "dbscan_eps": 1.5, "dbscan_min_pts": 3})()
+    expect = ref.extract_footprints(cm, regions, spf, q, H, W)
+    got = ex.extract_footprints(cm, regions, spf, p, H, W, workers=1)
+    assert np.array_equal(got[0], expect[0])                              # APs
+    assert np.array_equal(got[1], expect[1])                              # COMs (pre-merge)
+    assert np.array_equal(got[5], expect[5]) and np.array_equal(got[6], expect[6])
+    assert len(got[1]) > 0 and got[2].n() > 0
 
 
-def test_dense_movie_path_matches_reference(synth):
-    p, regions, spf = synth["p"], synth["regions"], synth["spf"]
-    dense = synth["cm"].materialize(np.float32)
-    expect = ref.extract_footprints(dense, regions, spf, p, p.nrow, p.ncol)
-    _assert_same_extraction(expect, ex.extract_footprints(dense, regions, spf, p, p.nrow, p.ncol))
+def test_extract_footprints_pool_equals_inline_for_lazy_and_dense_movies(synth):
+    p, cm, regions, spf = synth["p"], synth["cm"], synth["regions"], synth["spf"]
+    H, W = p.nrow, p.ncol
+    inline = ex.extract_footprints(cm, regions, spf, p, H, W, workers=1)
+    _assert_same_extraction(inline, ex.extract_footprints(cm, regions, spf, p, H, W, workers=3))
+    dense = cm.materialize(np.float32)
+    _assert_same_extraction(ex.extract_footprints(dense, regions, spf, p, H, W, workers=1),
+                            ex.extract_footprints(dense, regions, spf, p, H, W, workers=2))
+    # and the pipeline itself ran this code
+    assert np.array_equal(synth["out"]["footprints"].values, inline[2].values)
 
 
-def test_fallback_paths_match_reference(synth):
+def test_no_ap_fallback_and_unclustered_inline_and_pooled(synth):
     p, cm = synth["p"], synth["cm"]
     H, W = p.nrow, p.ncol
-    # all_noise everywhere: DBSCAN can never form a cluster
-    q = dataclasses.replace(p, dbscan_min_pts=10 ** 6)
-    regions, spf = synth["regions"], synth["spf"]
-    expect = ref.extract_footprints(cm, regions, spf, q, H, W)
-    assert set(expect[8]) == {"all_noise"}
-    _assert_same_extraction(expect, ex.extract_footprints(cm, regions, spf, q, H, W, workers=2))
-    # no_ap: a region over a constant patch of a dense movie has a flat trace
     dense = cm.materialize(np.float32)
-    dense[:, 80:96, 80:96] = 7.0
-    extra = regions + [_fake_region(84, 84, 6, 5)]
-    expect = ref.extract_footprints(dense, extra, [r["PixelList"] for r in extra], p, H, W)
-    assert expect[8][-1] == "no_ap"
-    _assert_same_extraction(expect, ex.extract_footprints(dense, extra, [r["PixelList"] for r in extra],
-                                                          p, H, W, workers=2))
+    dense[:, 80:96, 80:96] = 7.0                                          # a flat patch: no peaks
+    extra = synth["regions"] + [_fake_region(84, 84, 6, 5)]
+    spf = [r["PixelList"] for r in extra]
+    a = ex.extract_footprints(dense, extra, spf, p, H, W, workers=1)
+    assert a[8][-1] == "no_ap" and a[4][-1] == len(extra) - 1
+    _assert_same_extraction(a, ex.extract_footprints(dense, extra, spf, p, H, W, workers=2))
+    q = dataclasses.replace(p, ali_cluster_threshold=1e9)                  # nothing clusters
+    b = ex.extract_footprints(cm, synth["regions"], synth["spf"], q, H, W, workers=2)
+    assert set(b[8]) <= {"unclustered", "no_ap", "no_com"} and "unclustered" in b[8]
+    assert len(b[8]) == len(synth["regions"])
 
 
 def test_worker_errors_propagate_and_empty_inputs(synth):
@@ -221,6 +230,7 @@ def test_worker_errors_propagate_and_empty_inputs(synth):
     assert ex._POOL_CONTEXT is None                                         # cleaned up after an error
     out = ex.extract_footprints(cm, [], [], p, p.nrow, p.ncol, workers=4)
     assert out[0].shape == (0, 4) and out[2].n() == 0 and out[8] == []
+    assert out[9]["n_spikes_before_merge"] == 0
     assert ex.resolve_workers(None) >= 1 and ex.resolve_workers(0) == ex.resolve_workers(None)
     assert ex.resolve_workers(3) == 3
 

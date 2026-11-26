@@ -149,3 +149,65 @@ def test_ali_clustering_matches_octave_on_its_own_spikes(well, fov):
     assert np.mean(mapped == oc) >= 0.998
     full = assign.ali_clustering(C[:, :2], 4, 800, 800, 0.15, flood_margin=None)[0]
     assert np.array_equal(full, lab)                         # the restricted flood changes nothing here
+
+
+# --------------------------------------------------------------------------- #
+# 3. temporal separation of two cells that share one segmentation region
+# --------------------------------------------------------------------------- #
+def _trace_spikes(trace, fps=800.0, k=4.0):
+    """Spike frames of a trace: 20 Hz high-pass, peaks above k robust sigma (as the SNR metric)."""
+    from scipy.signal import find_peaks
+    from pyali.metrics import highpass, robust_sigma
+    x = highpass(np.asarray(trace, float), 20.0, fps)
+    pk, _ = find_peaks(x, height=k * robust_sigma(x), distance=8)
+    return pk
+
+
+def test_two_cells_in_one_region_are_separated_in_time(tmp_path):
+    """Two cells 4 px apart share one segmentation region and fire in alternation. The field-wide
+    density clustering gives each its own cluster, footprint and trace; the pre-D2 per-region loop
+    lumps both spike trains into one cell (asserted too, as the regression this fixes)."""
+    import dataclasses
+    from pyali import traces as tr
+    from pyali.movie import corrected_movie
+    from pyali.pipeline import process_fov
+    from tests import reference_extract as ref
+    from tests.synthetic import make_movie, spike_recall_precision, write_fov
+    a_times = np.arange(60, 760, 60)                     # 12 spikes each, 30 frames apart overall
+    b_times = a_times + 30
+    cells = [(40, 40), (40, 44)]
+    data = make_movie(seed=5, cells=cells, spike_times=[a_times, b_times], cell_amp=900.0,
+                      spike_frac=0.3)
+    write_fov(tmp_path, data["movie"])
+    p = data["params"]
+    out = process_fov(str(tmp_path), out_dir=None, p=p, save=False, verbose=False)
+    lab = np.zeros((96, 96), int)
+    for i, r in enumerate(out["regions"]):
+        lab[r["PixelList"][:, 1].astype(int) - 1, r["PixelList"][:, 0].astype(int) - 1] = i + 1
+    assert lab[40, 40] > 0 and lab[40, 40] == lab[40, 44]                    # one region for both
+
+    def score(centres1, traces):
+        c0 = np.asarray(centres1, float) - 1.0
+        res = []
+        for (r, c), own, other in ((cells[0], a_times, b_times), (cells[1], b_times, a_times)):
+            k = int(np.argmin(np.hypot(c0[:, 0] - r, c0[:, 1] - c)))
+            pk = _trace_spikes(traces[k]) - 1                                # kernel peaks a frame late
+            res.append((k, spike_recall_precision(pk, own, tol=2)[0],
+                        spike_recall_precision(pk, other, tol=2)[0]))
+        return res
+
+    new = score(out["footprint_center"], np.asarray(out["cell_traces"]))
+    assert new[0][0] != new[1][0]                                            # two cells
+    for k, rec_own, rec_other in new:
+        assert out["source_of_footprint"][k] == "spiking"
+        assert rec_own >= 0.9 and rec_other <= 0.1, new
+    # the pre-D2 loop on the same regions: one cell carrying both trains
+    raw = np.asarray(data["movie"]).astype("<u2")
+    cm, _ = corrected_movie(raw, p, n_frames=raw.shape[0] - p.truncate_last)
+    q = type("Q", (), {**{k: getattr(p, k) for k in p.__dataclass_fields__},
+                       "dbscan_eps": 1.5, "dbscan_min_pts": 3})()
+    o = ref.extract_footprints(cm, out["regions"], [r["PixelList"] for r in out["regions"]], q,
+                               p.nrow, p.ncol)
+    old = score(o[3], tr.extract_cell_traces(cm, o[2], p))
+    assert old[0][0] == old[1][0] and old[0][2] >= 0.8, old                 # lumped
+    assert dataclasses.is_dataclass(p)

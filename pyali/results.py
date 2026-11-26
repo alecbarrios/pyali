@@ -1,13 +1,15 @@
 """Per-FOV results: the only writer and the only loader of pyali's on-disk outputs.
 
-Layout of one FOV output directory (schema version 2)::
+Layout of one FOV output directory (schema version 3)::
 
     cells.parquet        one row per cell: cell_id, experiment_id, plate, well, fov, fov_id,
                          fov_index, local_cell_id, trace_row, x_px, y_px, region_id, n_spikes,
-                         source (spiking | no_ap | no_com | all_noise), weighted_brightness
+                         source (spiking | no_ap | no_com | unclustered), weighted_brightness
     cells.csv            the same table, for eyeballing
     spikes.parquet       one row per localized AP: region_id, frame (0-based), row, col (COM,
-                         1-indexed), amplitude, cell_row (-1 = not assigned to a cell)
+                         1-indexed), amplitude, cell_row (-1 = not assigned to a cell), peak_df
+                         (coarse dF used to resolve same-frame duplicates), kept (survived the
+                         same-frame merge), cluster (spike-density cluster, 0 = none)
     signals.h5           /traces/raw          float32 [T, N] on disk (MATLAB reads it as [N, T]);
                                               chunks (min(2048, T), min(256, N)), gzip 4
                          /footprints/values   float32 [nnz]   sparse COO over all cells
@@ -26,7 +28,7 @@ Layout of one FOV output directory (schema version 2)::
 values, ``x`` = ``/images/brightness_reference``); NaN when the cell has no positive weight.
 
 ``/traces/raw`` is byte-compatible with the Octave corpus's ``signals.h5``. Trace polarity is
-pyali's (spikes positive). Footprints are stored sparse because each cell's plane is an 11x11
+pyali's (spikes positive). Footprints are stored sparse because each cell's plane is a small
 window in a field of zeros; :meth:`SparseFootprints.dense` rebuilds the old ``(H, W, N)`` array
 for the one consumer that needs it (registration).
 """
@@ -34,7 +36,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 CELLS_FILE = "cells.parquet"
 CELLS_CSV = "cells.csv"
@@ -47,10 +49,11 @@ CELLS_DTYPES = {"cell_id": "object", "experiment_id": "object", "plate": "uint16
                 "local_cell_id": "uint16", "trace_row": "uint32", "x_px": "float32",
                 "y_px": "float32", "region_id": "uint32", "n_spikes": "uint32",
                 "source": "object", "weighted_brightness": "float32"}
-SOURCES = ("spiking", "no_ap", "no_com", "all_noise")
+SOURCES = ("spiking", "no_ap", "no_com", "unclustered")
 IMAGE_KEYS = ("reference", "binary_map", "brightness_reference")
 SPIKES_DTYPES = {"region_id": "uint32", "frame": "uint32", "row": "float32", "col": "float32",
-                 "amplitude": "float32", "cell_row": "int32"}
+                 "amplitude": "float32", "cell_row": "int32", "peak_df": "float32", "kept": "bool",
+                 "cluster": "int32"}
 
 
 # --------------------------------------------------------------------------- #
@@ -230,9 +233,11 @@ def make_cells(centers, region_id, n_spikes, source, brightness, identity):
                              source=source, weighted_brightness=brightness), CELLS_DTYPES)
 
 
-def pack_spikes(APs, COMs, spike_cell_row, region_of_spike, region_of_ap):
+def pack_spikes(APs, COMs, spike_cell_row, region_of_spike, region_of_ap, peak_df=None,
+                kept=None, cluster=None):
     """The ``spikes`` table: one row per localized spike (a ``COMs`` row), with the amplitude of
-    the AP it came from joined by ``(region, frame)``.
+    the AP it came from joined by ``(region, frame)``; ``peak_df`` / ``kept`` / ``cluster``
+    default to NaN / True / 0 when not given.
 
     ``APs`` ``(nAP, 4) = [row, col, frame, amplitude]`` with ``region_of_ap`` ``(nAP,)``;
     ``COMs`` ``(nCOM, 3) = [row, col, frame]`` with ``region_of_spike`` and ``spike_cell_row``
@@ -252,8 +257,16 @@ def pack_spikes(APs, COMs, spike_cell_row, region_of_spike, region_of_ap):
     amp_of = {(int(r), int(f)): a for r, f, a in zip(region_of_ap, APs[:, 2], APs[:, 3])}
     amplitude = np.array([amp_of.get((int(r), int(f)), np.nan)
                           for r, f in zip(region_of_spike, COMs[:, 2])], np.float32)
+    m = len(COMs)
+    peak_df = np.full(m, np.nan) if peak_df is None else np.asarray(peak_df, float).reshape(-1)
+    kept = np.ones(m, bool) if kept is None else np.asarray(kept, bool).reshape(-1)
+    cluster = np.zeros(m, int) if cluster is None else np.asarray(cluster, int).reshape(-1)
+    if not (len(peak_df) == len(kept) == len(cluster) == m):
+        raise ValueError(f"spikes: {m} COMs but peak_df / kept / cluster of lengths "
+                         f"{len(peak_df)} / {len(kept)} / {len(cluster)}")
     return _typed_frame(dict(region_id=region_of_spike, frame=COMs[:, 2], row=COMs[:, 0],
-                             col=COMs[:, 1], amplitude=amplitude, cell_row=spike_cell_row),
+                             col=COMs[:, 1], amplitude=amplitude, cell_row=spike_cell_row,
+                             peak_df=peak_df, kept=kept, cluster=cluster),
                         SPIKES_DTYPES)
 
 

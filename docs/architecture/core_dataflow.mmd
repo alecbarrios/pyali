@@ -45,13 +45,13 @@ flowchart TD
   pyali_extract_extract_footprints -->|footprints| pyali_traces_extract_cell_traces
   pyali_movie_CorrectedMovie -->|movie (T, H, W)| pyali_traces_extract_cell_traces
   pyali_traces_noise_map_on_union -.->|noise_map| pyali_traces_extract_cell_traces
-  pyali_extract_extract_footprints -.->|APs, COMs, footprint_center,<br/>+5 more| pyali_results_write_results
+  pyali_extract_extract_footprints -.->|APs, COMs, footprint_center,<br/>+6 more| pyali_results_write_results
   pyali_preprocess_focus_score -.->|focus| pyali_results_write_results
   pyali_preprocess_reference_and_correlation_image -.->|reference_image (H, W)| pyali_results_write_results
   pyali_results_weighted_brightness -.->|brightness| pyali_results_write_results
   pyali_segmentation_drop_oversized_regions -.->|binary_map (H, W)| pyali_results_write_results
   pyali_traces_extract_cell_traces -.->|cell_traces| pyali_results_write_results
-  pyali_extract_extract_footprints -.->|APs (nAP, 4)<br/>COMs (nCOM, 3)| pyali_metadata_write_metadata
+  pyali_extract_extract_footprints -.->|APs (nAP, 4)<br/>COMs (nCOM, 3)<br/>spike_info| pyali_metadata_write_metadata
   pyali_movie_estimate_shift -.->|shift| pyali_metadata_write_metadata
   pyali_preprocess_focus_score -.->|focus| pyali_metadata_write_metadata
   pyali_segmentation_cell_segmentation -.->|seg_info| pyali_metadata_write_metadata

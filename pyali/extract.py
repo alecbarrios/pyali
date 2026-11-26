@@ -1,5 +1,6 @@
-"""Waveform extraction: temporal filter, per-region AP detection, centers of mass and spatial
-footprints (per-cell traces are solved in :mod:`pyali.traces`).
+"""Waveform extraction: per-region AP detection and centers of mass, field-wide spike assignment
+(:mod:`pyali.assign`), per-cluster spatial footprints (per-cell traces are solved in
+:mod:`pyali.traces`).
 
 Movies are ``[T, H, W]``; patch movies ``[T, Hp, Wp]``. Frame/pixel indices in
 ``region_AP`` are 0-based.
@@ -400,39 +401,6 @@ def region_fallback_footprint(selection_map, selection_map_patch, patch_movie_ma
     return fp
 
 
-def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_rows, patch_cols,
-                       height, width):
-    """Per-cluster footprints: mean of each cluster's AP frames, negatives clipped to zero, masked
-    to an 11x11 window around the brightest in-selection pixel.
-
-    ``cluster_times`` = list of arrays of 0-indexed frames per cluster. Returns
-    ``(planes, centers)`` — each plane ``[H, W]``; each center ``[row, col]`` (1-indexed).
-    """
-    r0, c0 = patch_rows[0], patch_cols[0]                                  # 1-indexed origin
-    planes, centers = [], []
-    for times in cluster_times:
-        raw = patch_movie[np.asarray(times, int)].mean(axis=0)            # [Hp, Wp]
-        raw = np.maximum(raw, 0.0)                 # footprint(footprint<0)=0 (run_miniali_fov.m:486):
-        #   a negative weight would subtract neighbour signal with the wrong sign in the pinv
-        masked = raw * selection_map_patch
-        mx = masked.max()
-        fi = int(np.argmax(masked.ravel(order="F") == mx))               # first, column-major
-        pkx, pky = np.unravel_index(fi, masked.shape, order="F")
-        peakx, peaky = pkx + r0, pky + c0                                 # absolute (1-indexed)
-        sel = np.zeros((height, width))
-        sel[max(peakx - 1 - 5, 0):min(peakx - 1 + 6, height),            # 11x11 window (0-indexed)
-            max(peaky - 1 - 5, 0):min(peaky - 1 + 6, width)] = 1.0
-        plane = np.zeros((height, width))
-        rr = patch_rows - 1
-        cc = patch_cols - 1
-        plane[np.ix_(rr, cc)] = raw * sel[np.ix_(rr, cc)]
-        planes.append(plane)
-        centers.append([peakx, peaky])
-    return planes, centers
-
-
-SOURCES = ("spiking", "no_ap", "no_com", "all_noise")     # cells.source vocabulary
-
 
 # --------------------------------------------------------------------------- #
 # Per-region work: reads only what it uses, returns a self-contained result
@@ -520,27 +488,27 @@ def _sparse_plane(plane):
     return nz.astype(np.uint32), flat[nz]
 
 
+SOURCES = ("spiking", "no_ap", "no_com", "unclustered")   # cells.source vocabulary
+
+
+# --------------------------------------------------------------------------- #
+# Pass 1: per region, spikes only (detection -> dedup -> centres of mass)
+# --------------------------------------------------------------------------- #
 @dataclass
-class RegionResult:
-    """Everything one region contributes, with cell rows local to the region (``-1`` = none)."""
+class RegionSpikes:
+    """One region's detected APs and localized spikes."""
     aps: np.ndarray                     # (k, 4) [row, col, frame, amplitude], after dedup
-    coms: np.ndarray                    # (m, 3) [row, col, frame]
-    spike_rows: np.ndarray              # (m,) local footprint row of each COM, or -1
-    planes: list                        # [(pixel uint32, values float64)] in footprint order
-    centers: list                       # [[row, col]] per footprint (1-indexed)
-    sources: list                       # SOURCES entry per footprint
+    coms: np.ndarray                    # (m, 4) [row, col, frame, peak_df], 1-indexed row/col
+    reason: str                         # "spiking" (m > 0), "no_ap" or "no_com"
 
 
-def process_region(movie, region, pixel_list, p, height, width):
-    """AP detection -> centers of mass -> DBSCAN clustering -> footprints for one region.
+def region_spikes(movie, region, pixel_list, p, height, width):
+    """AP detection and sub-pixel localization for one region (pure; runs in a worker or inline).
 
-    Pure: depends only on its arguments and returns a :class:`RegionResult`, so regions can run
-    in any order or in parallel. Reads the region trace from the in-mask pixels and the filtered
-    patch only at the detected peak frames (their 8-frame neighbourhoods); the full filtered
-    patch is built only when the region falls back to its max-projection footprint.
+    Reads the region trace from the in-mask pixels and the filtered patch only at the detected
+    peak frames. Each localized spike carries ``peak_df``, the largest in-mask value of its
+    filtered frame (the coarse spike amplitude Mini ALI keeps when merging duplicates).
     """
-    from sklearn.cluster import DBSCAN
-
     fw = p.filter_window
     half = int(round_half_away_from_zero(fw / 2))
     patch_rows, patch_cols, origin0 = compute_patch(region["Centroid"], region["BoundingBox"],
@@ -551,161 +519,245 @@ def process_region(movie, region, pixel_list, p, height, width):
     c0, c1 = patch_cols[0] - 1, patch_cols[-1]
     src = region_source(movie, r0, r1, c0, c1)
     mask = np.asarray(sel_patch) > 0
-
-    aps = np.zeros((0, 4))
-    coms = np.zeros((0, 3))
-    spike_rows = np.zeros(0, dtype=np.int64)
-
-    def fallback(reason):
-        plane = region_fallback_footprint(sel_full, sel_patch, _full_filtered_max(src, fw, half),
-                                          height, width)
-        return RegionResult(aps, coms, spike_rows, [_sparse_plane(plane)],
-                            [region_center_rowcol(region)], [reason])
+    none4 = np.zeros((0, 4))
 
     trace = region_trace(src.columns(mask), mask.size)
     peaks, pk, _diag = detect_peaks(trace, p.detect_median_window, p.detect_edge_frames,
                                     p.threshold_factor)
     if len(pk) == 0:
-        return fallback("no_ap")
+        return RegionSpikes(none4, none4, "no_ap")
     pm = filtered_frames(src, pk, fw, half)
     region_AP = dedup_close_peaks(coarse_ap_pixels(pm, peaks, pk, mask, origin0),
                                   p.min_peak_interval)
     if len(region_AP) == 0:
-        return fallback("no_ap")
-    aps = region_AP
-
-    region_COMs = com_via_svd(pm, region_AP[:, 2].astype(int), patch_rows, patch_cols,
-                              sel_patch, p.svd_rank, p.com_radius, p.com_n_pixels)
-    if len(region_COMs) == 0:
-        return fallback("no_com")
-    coms = region_COMs
-    labels = DBSCAN(eps=p.dbscan_eps, min_samples=p.dbscan_min_pts).fit_predict(region_COMs[:, :2])
-    if np.all(labels == -1):
-        spike_rows = np.full(len(region_COMs), -1, dtype=np.int64)
-        return fallback("all_noise")
-
-    # cluster k (in label order, skipping empty labels) becomes the next footprint
-    kept = [k for k in range(labels.max() + 1) if np.any(labels == k)]
-    cluster_times = [region_COMs[labels == k, 2].astype(int) for k in kept]
-    pl, ce = cluster_footprints(pm, cluster_times, sel_patch, patch_rows, patch_cols,
-                                height, width)
-    row_of_label = {k: i for i, k in enumerate(kept)}
-    spike_rows = np.array([row_of_label.get(int(lab), -1) for lab in labels], dtype=np.int64)
-    return RegionResult(aps, coms, spike_rows, [_sparse_plane(pl_) for pl_ in pl],
-                        [list(c) for c in ce], ["spiking"] * len(pl))
+        return RegionSpikes(none4, none4, "no_ap")
+    coms = com_via_svd(pm, region_AP[:, 2].astype(int), patch_rows, patch_cols,
+                       sel_patch, p.svd_rank, p.com_radius, p.com_n_pixels)
+    if len(coms) == 0:
+        return RegionSpikes(region_AP, none4, "no_com")
+    peak_df = np.array([float(np.asarray(pm[int(t)])[mask].max()) for t in coms[:, 2]])
+    return RegionSpikes(region_AP, np.column_stack([coms, peak_df]), "spiking")
 
 
 # --------------------------------------------------------------------------- #
-# The region loop: sequential or a fork process pool, assembled in region order
+# Pass 2: per cluster, the footprint from the cluster's own spike frames
 # --------------------------------------------------------------------------- #
-_POOL_CONTEXT = None                   # (movie, regions, spatial_footprints, p, H, W) for workers
+def cluster_footprint(movie, rc, frames, p, height, width):
+    """Footprint of one spike cluster (Mini ALI's per-cluster loop): the mean of the filtered
+    frames at the cluster's spikes over a ``(2r+1)^2`` window (``r = p.footprint_radius_px``)
+    centred on the rounded mean spike COM, negatives clipped to zero.
+
+    ``rc`` (k, 2) 1-indexed spike COMs and ``frames`` (k,) 0-based frames, in the cluster's
+    spike order. Returns ``((pixel, values), centre)`` with the window's nonzero pixels in C
+    order and ``centre`` = the mean COM ``[row, col]`` (1-indexed).
+    """
+    fw = p.filter_window
+    half = int(round_half_away_from_zero(fw / 2))
+    r = int(p.footprint_radius_px)
+    rc = np.asarray(rc, dtype=np.float64).reshape(-1, 2)
+    frames = np.asarray(frames, dtype=np.int64).ravel()
+    centre = rc.mean(axis=0)
+    cr = round_half_away_from_zero(centre).astype(int)            # 1-indexed
+    r0, r1 = max(cr[0] - r, 1) - 1, min(cr[0] + r, height)        # 0-indexed half-open
+    c0, c1 = max(cr[1] - r, 1) - 1, min(cr[1] + r, width)
+    src = region_source(movie, r0, r1, c0, c1)
+    stack = filtered_frames(src, frames, fw, half)[frames]        # (k, hp, wp), spike order
+    fp = stack.mean(axis=0)
+    fp[fp < 0] = 0
+    rows, cols = np.nonzero(fp)
+    pixel = ((rows + r0) * width + (cols + c0)).astype(np.uint32)
+    return (pixel, fp[rows, cols].astype(np.float64)), [float(centre[0]), float(centre[1])]
+
+
+# --------------------------------------------------------------------------- #
+# Pass 3: per region without a cluster, the max-projection fallback footprint
+# --------------------------------------------------------------------------- #
+def region_fallback(movie, region, pixel_list, p, height, width):
+    """The region's max-projection footprint over the whole filtered patch and its centre, for
+    regions that end up in no spike cluster."""
+    fw = p.filter_window
+    half = int(round_half_away_from_zero(fw / 2))
+    patch_rows, patch_cols, _ = compute_patch(region["Centroid"], region["BoundingBox"],
+                                              p.patch_size, height, width)
+    sel_full = build_selection_map(pixel_list, height, width)
+    sel_patch = sel_full[np.ix_(patch_rows - 1, patch_cols - 1)]
+    src = region_source(movie, patch_rows[0] - 1, patch_rows[-1], patch_cols[0] - 1, patch_cols[-1])
+    plane = region_fallback_footprint(sel_full, sel_patch, _full_filtered_max(src, fw, half),
+                                      height, width)
+    return _sparse_plane(plane), region_center_rowcol(region)
+
+
+# --------------------------------------------------------------------------- #
+# Tasks: inline or a fork process pool, results in order
+# --------------------------------------------------------------------------- #
+_POOL_CONTEXT = None                   # (fn, shared args) inherited by forked workers
 
 
 def _pool_init():
     from threadpoolctl import threadpool_limits
-    threadpool_limits(limits=1)        # one region per process: no nested BLAS threads
+    threadpool_limits(limits=1)        # one task per process: no nested BLAS threads
 
 
-def _pool_task(c):
-    movie, regions, spatial_footprints, p, height, width = _POOL_CONTEXT
-    return process_region(movie, regions[c], spatial_footprints[c], p, height, width)
+def _pool_task(item):
+    fn, shared = _POOL_CONTEXT
+    return fn(*shared, item)
 
 
 def resolve_workers(workers):
-    """``workers`` for :func:`extract_footprints`: ``None`` or ``0`` -> ``os.cpu_count()``."""
+    """``workers`` for :func:`run_tasks`: ``None`` or ``0`` -> ``os.cpu_count()``."""
     import os
     return int(workers) if workers else (os.cpu_count() or 1)
 
 
-def iter_region_results(movie, regions, spatial_footprints, p, height, width, workers=1):
-    """Yield ``(c, RegionResult)`` in region order, computed inline (``workers == 1``) or by a
-    fork-based process pool: the movie and the other inputs are inherited copy-on-write, so
-    nothing large is pickled; results come back in order (``imap``)."""
-    n = len(regions)
-    workers = max(1, min(resolve_workers(workers), n))
+def run_tasks(fn, items, shared, workers=1):
+    """Yield ``fn(*shared, item)`` for each item, in order: inline (``workers == 1``) or from a
+    fork-based process pool, where ``shared`` (the movie, regions, params) is inherited
+    copy-on-write and only the small ``items`` and results are pickled."""
+    items = list(items)
+    n = len(items)
+    workers = max(1, min(resolve_workers(workers), n)) if n else 1
     if workers == 1:
-        for c in range(n):
-            yield c, process_region(movie, regions[c], spatial_footprints[c], p, height, width)
+        for it in items:
+            yield fn(*shared, it)
         return
     import multiprocessing as mp
     global _POOL_CONTEXT
-    _POOL_CONTEXT = (movie, regions, spatial_footprints, p, height, width)
+    _POOL_CONTEXT = (fn, tuple(shared))
     try:
         with mp.get_context("fork").Pool(workers, initializer=_pool_init) as pool:
-            chunk = max(1, n // (workers * 8))
-            for c, res in enumerate(pool.imap(_pool_task, range(n), chunksize=chunk)):
-                yield c, res
+            yield from pool.imap(_pool_task, items, chunksize=max(1, n // (workers * 8)))
     finally:
         _POOL_CONTEXT = None
 
 
+def _region_spikes_task(movie, regions, spatial_footprints, p, height, width, c):
+    return region_spikes(movie, regions[c], spatial_footprints[c], p, height, width)
+
+
+def _cluster_task(movie, p, height, width, item):
+    rc, frames = item
+    return cluster_footprint(movie, rc, frames, p, height, width)
+
+
+def _fallback_task(movie, regions, spatial_footprints, p, height, width, c):
+    return region_fallback(movie, regions[c], spatial_footprints[c], p, height, width)
+
+
+# --------------------------------------------------------------------------- #
+# The extraction: spikes per region -> field-wide merge and clustering -> footprints
+# --------------------------------------------------------------------------- #
 def extract_footprints(movie, regions, spatial_footprints, p, height, width, verbose=False,
                        workers=1):
-    """Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.
+    """Spikes per region, assigned to cells across the whole field, and one footprint per cell.
+
+    1. Per region (parallel): AP detection, dedup, sub-pixel centres of mass (:func:`region_spikes`).
+    2. Field-wide: same-frame spikes within ``p.spike_merge_distance_px`` merged, keeping the
+       largest ``peak_df`` (:func:`pyali.assign.merge_close_spikes_keep_max`); the survivors
+       clustered by spike density (:func:`pyali.assign.ali_clustering`). Cells packed into one
+       segmentation region separate here when their spike COM clouds form separate density peaks.
+    3. Per cluster (parallel): footprint from the cluster's own spike frames (:func:`cluster_footprint`).
+    4. Regions none of whose spikes reached a cluster keep a max-projection footprint (parallel):
+       ``no_ap`` (no AP), ``no_com`` (no valid centre), ``unclustered`` (spikes, but none -- after
+       following merged spikes to their survivor -- in any cluster).
 
     Parameters
     ----------
     movie : :class:`pyali.movie.CorrectedMovie` or a dense (T, H, W) float array
-        Read per region through :func:`region_source` (in-mask pixels for the trace, peak-frame
-        neighbourhoods for the filtered patch).
     regions, spatial_footprints : from :func:`pyali.segmentation.cell_segmentation`
     p : Params
     height, width : int
     verbose : bool
     workers : int
-        Region processes (1 = inline; ``None``/0 = all CPUs). Each region is a pure
-        :func:`process_region` task, so the output does not depend on ``workers``.
+        Processes for the per-region and per-cluster tasks (1 = inline; ``None``/0 = all CPUs).
+        The output does not depend on it.
 
     Returns
     -------
     (APs, COMs, footprints, footprint_center, region_of_footprint, region_of_ap,
-     region_of_spike, spike_cell_row, source_of_footprint)
-        ``APs`` : (nAP, 4) = ``[row, col, frame, amplitude]`` (0-indexed);
-        ``COMs`` : (nCOM, 3) = ``[row, col, frame]`` (1-indexed row/col) -- ``nCOM <= nAP``
-        because :func:`com_via_svd` drops APs whose centroid is undefined or off-mask;
-        ``footprints`` : :class:`pyali.results.SparseFootprints` (N cells, float64 values, packed
-        as each region's planes arrive, so no ``(H, W, N)`` stack exists);
-        ``footprint_center`` : (N, 2) = ``[row, col]``;
-        ``region_of_footprint`` : (N,) int, the segmentation region each footprint came from;
-        ``region_of_ap`` : (nAP,) int, the region of each ``APs`` row;
-        ``region_of_spike`` : (nCOM,) int, the region of each ``COMs`` row;
-        ``spike_cell_row`` : (nCOM,) int, the footprint row (0-based) each localized spike was
-        clustered into, or -1 (DBSCAN noise, or a region that fell back to one footprint);
-        ``source_of_footprint`` : list of str, one of :data:`SOURCES` per footprint --
-        ``spiking`` for a DBSCAN cluster's footprint, else why the region fell back to one
-        footprint: ``no_ap`` (no AP detected), ``no_com`` (no centroid survived the mask), or
-        ``all_noise`` (every centroid was DBSCAN noise).
+     region_of_spike, spike_cell_row, source_of_footprint, spike_info)
+        ``APs`` : (nAP, 4) ``[row, col, frame, amplitude]`` (0-indexed), every region's APs;
+        ``COMs`` : (nCOM, 3) ``[row, col, frame]`` (1-indexed row/col), every localized spike in
+        region order (before the merge);
+        ``footprints`` : :class:`pyali.results.SparseFootprints`, cluster cells (in cluster label
+        order) then fallback cells (in region order);
+        ``footprint_center`` : (N, 2) ``[row, col]`` -- a cluster cell's mean spike COM;
+        ``region_of_footprint`` : (N,) int -- the region most of a cluster's spikes came from;
+        ``region_of_ap`` / ``region_of_spike`` : region of each ``APs`` / ``COMs`` row;
+        ``spike_cell_row`` : (nCOM,) footprint row of each spike, -1 when merged away, unclustered
+        or in a fallback region;
+        ``source_of_footprint`` : list of :data:`SOURCES` entries;
+        ``spike_info`` : dict of per-spike arrays ``peak_df``, ``kept`` (survived the merge),
+        ``cluster`` (density-cluster label, 0 = none) and counts ``n_spikes_before_merge``,
+        ``n_spikes_after_merge``, ``n_spikes_clustered``, ``n_clusters``.
     """
-    APs, COMs, centers = [], [], []
-    footprints = SparseBuilder(height, width)
-    region_of_footprint, region_of_ap, region_of_spike, spike_cell_row = [], [], [], []
-    source_of_footprint = []
+    from . import assign
     n = len(regions)
-    for c, res in iter_region_results(movie, regions, spatial_footprints, p, height, width,
-                                      workers):
-        if verbose and (c % 100 == 0 or c == n - 1):
+    shared_regions = (movie, regions, spatial_footprints, p, height, width)
+
+    # ---- 1. per-region spikes ----
+    per_region = []
+    for c, res in enumerate(run_tasks(_region_spikes_task, range(n), shared_regions, workers)):
+        if verbose and (c % 200 == 0 or c == n - 1):
             print(f"[pyali]   region {c + 1}/{n}", flush=True)
-        if len(res.aps):
-            APs.append(res.aps)
-            region_of_ap.extend([c] * len(res.aps))
-        if len(res.coms):
-            COMs.append(res.coms)
-            region_of_spike.extend([c] * len(res.coms))
-        offset = footprints.n()
-        spike_cell_row.extend(int(r) + offset if r >= 0 else -1 for r in res.spike_rows)
-        for pix, vals in res.planes:
-            footprints.add_sparse(pix, vals)
-        centers.extend(res.centers)
-        region_of_footprint.extend([c] * len(res.planes))
-        source_of_footprint.extend(res.sources)
+        per_region.append(res)
+    APs = [r.aps for r in per_region if len(r.aps)]
+    region_of_ap = np.concatenate([[c] * len(r.aps) for c, r in enumerate(per_region)] + [[]]).astype(int)
+    S = np.vstack([r.coms for r in per_region if len(r.coms)] or [np.zeros((0, 4))])
+    region_of_spike = np.concatenate([[c] * len(r.coms) for c, r in enumerate(per_region)] + [[]]).astype(int)
+
+    # ---- 2. field-wide merge and density clustering ----
+    survivor, kept_order = assign.merge_close_spikes_keep_max(S, p.spike_merge_distance_px)
+    kept = survivor == np.arange(len(S))
+    cluster = np.zeros(len(S), dtype=int)
+    if len(kept_order):
+        labels, _, _, _ = assign.ali_clustering(S[kept_order, :2], p.ali_cluster_factor, height,
+                                                width, p.ali_cluster_threshold, p.ali_flood_margin)
+        cluster[kept_order] = labels
+    labels_kept = cluster[kept_order]
+    cluster_ids = np.unique(labels_kept[labels_kept > 0])
+    members_of = [kept_order[labels_kept == L] for L in cluster_ids]       # merged (time) order
+    if verbose:
+        print(f"[pyali]   spikes: {len(S)} localized, {int(kept.sum())} after the same-frame merge, "
+              f"{int((labels_kept > 0).sum())} in {len(cluster_ids)} density clusters", flush=True)
+
+    # ---- 3. per-cluster footprints ----
+    footprints = SparseBuilder(height, width)
+    centers, region_of_footprint, source_of_footprint = [], [], []
+    spike_cell_row = np.full(len(S), -1, dtype=int)
+    items = [(S[m, :2], S[m, 2].astype(int)) for m in members_of]
+    for k, ((pix, vals), centre) in enumerate(run_tasks(_cluster_task, items,
+                                                        (movie, p, height, width), workers)):
+        m = members_of[k]
+        footprints.add_sparse(pix, vals)
+        centers.append(centre)
+        counts = np.bincount(region_of_spike[m])
+        region_of_footprint.append(int(np.argmax(counts)))                # majority; ties -> lowest
+        source_of_footprint.append("spiking")
+        spike_cell_row[m] = k
+
+    # ---- 4. fallback footprints for regions without a cluster ----
+    in_cluster = cluster[survivor] > 0                                     # via the survivor
+    has_cluster = np.zeros(n, dtype=bool)
+    has_cluster[np.unique(region_of_spike[in_cluster])] = True
+    fallback = [c for c in range(n) if not has_cluster[c]]
+    reasons = [per_region[c].reason if per_region[c].reason != "spiking" else "unclustered"
+               for c in fallback]
+    for c, reason, ((pix, vals), centre) in zip(
+            fallback, reasons, run_tasks(_fallback_task, fallback, shared_regions, workers)):
+        footprints.add_sparse(pix, vals)
+        centers.append(centre)
+        region_of_footprint.append(c)
+        source_of_footprint.append(reason)
 
     footprint_center = np.array(centers, dtype=float).reshape(-1, 2)
     APs = np.vstack(APs) if APs else np.zeros((0, 4))
-    COMs = np.vstack(COMs) if COMs else np.zeros((0, 3))
-    return (APs, COMs, footprints.build(), footprint_center,
-            np.asarray(region_of_footprint, int), np.asarray(region_of_ap, int),
-            np.asarray(region_of_spike, int), np.asarray(spike_cell_row, int),
-            source_of_footprint)
+    spike_info = dict(peak_df=S[:, 3].copy(), kept=kept, cluster=cluster,
+                      n_spikes_before_merge=int(len(S)), n_spikes_after_merge=int(kept.sum()),
+                      n_spikes_clustered=int((labels_kept > 0).sum()),
+                      n_clusters=int(len(cluster_ids)))
+    return (APs, S[:, :3].copy(), footprints.build(), footprint_center,
+            np.asarray(region_of_footprint, int), region_of_ap, region_of_spike, spike_cell_row,
+            source_of_footprint, spike_info)
 
 
 def region_center_rowcol(region):

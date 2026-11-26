@@ -8,7 +8,7 @@ import numpy as np
 
 import pyali.extract as extract
 from pyali.extract import (dedup_close_peaks, detect_region_aps, region_grow_brightest,
-                           _weighted_com, com_via_svd, cluster_footprints)
+                           _weighted_com, com_via_svd, cluster_footprint)
 from pyali.pipeline import process_fov
 from tests.synthetic import make_movie, write_fov
 
@@ -232,20 +232,21 @@ def test_extract_footprints_falls_back_when_no_com_survives(tmp_path, monkeypatc
 
 
 # --------------------------------------------------------------------------- #
-# A6. cluster_footprints: negatives clipped
+# A6. cluster footprints: negatives clipped
 # --------------------------------------------------------------------------- #
-def test_cluster_footprints_have_no_negative_weights():
+def test_cluster_footprint_has_no_negative_weights():
+    from types import SimpleNamespace
     rng = np.random.default_rng(0)
-    pm = rng.normal(size=(50, 20, 20))                                # plenty of negative pixels
-    pm[10:13, 9, 9] += 20.0                                           # the cell: positive at AP frames
-    sel = np.zeros((20, 20))
-    sel[5:15, 5:15] = 1.0
-    rows, cols = np.arange(31, 51), np.arange(41, 61)
-    planes, centers = cluster_footprints(pm, [np.array([10, 11, 12])], sel, rows, cols, 80, 80)
-    assert len(planes) == 1 and planes[0].shape == (80, 80)
-    assert planes[0].min() >= 0.0
-    assert centers[0] == [9 + 31, 9 + 41]                             # center pixel unaffected
-    assert planes[0][9 + 30, 9 + 40] > 0 and np.count_nonzero(planes[0]) > 1
+    movie = rng.normal(size=(50, 80, 80)).astype(np.float32)          # plenty of negative pixels
+    movie[[20, 30, 40], 40, 50] -= 20.0                                # the cell: dips at its spikes
+    p = SimpleNamespace(filter_window=8, footprint_radius_px=6)
+    rc = np.array([[41.0, 51.0], [41.2, 50.8], [40.8, 51.2]])          # 1-indexed COMs
+    (pix, vals), centre = cluster_footprint(movie, rc, [20, 30, 40], p, 80, 80)
+    assert vals.min() > 0.0                                            # negatives clipped, zeros dropped
+    rows, cols = pix // 80, pix % 80
+    assert rows.min() >= 34 and rows.max() <= 46 and cols.min() >= 44 and cols.max() <= 56   # 13x13
+    assert np.allclose(centre, rc.mean(axis=0))
+    assert vals[(rows == 40) & (cols == 50)][0] == vals.max()          # the cell's pixel dominates
 
 
 def test_pipeline_footprints_are_non_negative(tmp_path):
