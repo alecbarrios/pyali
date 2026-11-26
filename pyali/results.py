@@ -286,9 +286,12 @@ class Results:
 
 
 def git_sha():
-    """Commit of the checked-out pyali, or ``''`` when git is unavailable."""
+    """Commit of the checked-out pyali; ``$PYALI_GIT_SHA`` when set (runs from an exported copy of
+    the tree, which has no ``.git``); ``''`` when neither is available."""
     import os
     import subprocess
+    if os.environ.get("PYALI_GIT_SHA"):
+        return os.environ["PYALI_GIT_SHA"].strip()
     try:
         out = subprocess.run(["git", "-C", os.path.dirname(os.path.abspath(__file__)),
                               "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10)

@@ -305,3 +305,11 @@ def test_write_results_stores_float64_builder_values_as_float32(tmp_path):
     assert r.footprints.values.dtype == np.float32
     assert np.array_equal(r.footprints.values, sp.values.astype(np.float32))
     assert np.array_equal(r.footprints.pixel, sp.pixel)
+
+
+def test_git_sha_env_override(monkeypatch):
+    from pyali.results import git_sha
+    monkeypatch.setenv("PYALI_GIT_SHA", "abc1234")
+    assert git_sha() == "abc1234"
+    monkeypatch.delenv("PYALI_GIT_SHA")
+    assert len(git_sha()) in (0, 40)
