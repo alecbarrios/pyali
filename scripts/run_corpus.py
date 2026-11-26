@@ -174,7 +174,10 @@ def run_one(r, cfg):
         os.makedirs(local, exist_ok=True)
         env = dict(os.environ, OMP_NUM_THREADS=str(cfg.threads), OPENBLAS_NUM_THREADS=str(cfg.threads),
                    MKL_NUM_THREADS=str(cfg.threads))
-        cmd = fov_command(cfg.python, r["src"], local, ident, cfg.profile, cfg.figures, cfg.extra)
+        extra = list(cfg.extra)
+        if "--workers" not in extra:                       # the field's CPU budget for its region pool
+            extra += ["--workers", str(cfg.threads)]
+        cmd = fov_command(cfg.python, r["src"], local, ident, cfg.profile, cfg.figures, extra)
         log_path = os.path.join(cfg.log_dir, f"{tag}.log")
         t1 = time.perf_counter()
         with open(log_path, "w") as lf:
@@ -205,6 +208,7 @@ def run_one(r, cfg):
             rec["timing_s"] = meta.get("timing_s")                   # per-stage wall seconds
             rec["stage_peak_gb"] = {k: v.get("peak") for k, v in (meta.get("memory_gb") or {}).items()}
             rec["process_peak_gb"] = meta.get("peak_rss_gb")         # in-process sampler (peak_rss_gb = watchdog)
+            rec["peak_mem_gb"] = meta.get("peak_mem_gb")             # incl. the region worker pool (PSS)
         except (OSError, ValueError):
             pass
         fs = rec.get("focus_score")
@@ -291,7 +295,8 @@ def main(argv=None):
     ap.add_argument("--python", default=sys.executable, help="interpreter for run_pyali.py")
     ap.add_argument("--profile", default=None, help="run_pyali --profile (default: auto-detect)")
     ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--threads", type=int, default=4, help="BLAS/OpenMP threads per FOV process")
+    ap.add_argument("--threads", type=int, default=4,
+                    help="CPU budget per FOV: BLAS/OpenMP threads and region-loop worker processes")
     ap.add_argument("--min-avail-gb", type=float, default=25.0, help="wait to launch below this free RAM")
     ap.add_argument("--min-free-disk-gb", type=float, default=40.0, help="wait to launch below this free scratch")
     ap.add_argument("--max-fov-rss-gb", type=float, default=40.0, help="kill a FOV process above this RSS (0 = off)")

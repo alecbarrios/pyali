@@ -87,6 +87,10 @@ class Params:
     # sparse solve (pyali.traces): pinv cutoff (None = numpy's max(P, N) * eps), the per-chunk
     # gather size, and the G condition number above which the dense pseudoinverse on the pixel
     # union is used instead of the normal equations
+    # region loop (pyali.extract.extract_footprints): processes for the per-region work. 1 = inline
+    # (the library default; tests and notebooks), N = a fork pool of N workers, 0 = all CPUs.
+    # The output does not depend on it. scripts/run_pyali.py --workers sets it per field.
+    region_workers: int = 1
     trace_rcond: Optional[float] = None
     trace_chunk_bytes: int = 512 << 20
     trace_cond_limit: float = 1e12

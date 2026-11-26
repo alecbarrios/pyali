@@ -130,6 +130,9 @@ def main(argv=None):
                     help="FOV number in fov_id (default: the burstN token)")
     ap.add_argument("--fov-index", type=int, default=0,
                     help="1-based position of this FOV in a corpus run (default 0 = unknown)")
+    ap.add_argument("--workers", type=int, default=None,
+                    help="processes for the per-region loop (default: $OMP_NUM_THREADS if set, "
+                         "else all CPUs; 1 = inline). Results do not depend on it")
     ap.add_argument("--max-region-bbox-frac", type=float, default=None,
                     help="reject segmentation regions whose bounding box exceeds this fraction "
                          "of the frame (default 0.01; pass 0 to disable the guard)")
@@ -175,6 +178,8 @@ def main(argv=None):
     p = _PROFILES[name](**overrides)
     if a.max_region_bbox_frac is not None:
         p.max_region_bbox_frac = a.max_region_bbox_frac or None
+    p.region_workers = a.workers if a.workers is not None else \
+        int(os.environ.get("OMP_NUM_THREADS") or 0)          # 0 -> all CPUs
     print(f"[pyali] profile {name}: {p.nrow}x{p.ncol} {p.read_dtype} (corrected on read), "
           f"bkg/std ranges {p.bkg_ranges}, region bbox guard "
           f"{'off' if not p.max_region_bbox_frac else f'{100*p.max_region_bbox_frac:g}%'}")

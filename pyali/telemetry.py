@@ -46,6 +46,47 @@ def avail_ram_gb():
     return float("inf")
 
 
+def pss_gb(pid="self"):
+    """Proportional set size of ``pid`` in GB from ``/proc/<pid>/smaps_rollup`` (shared pages
+    split evenly among the processes mapping them); ``0.0`` when unavailable."""
+    try:
+        with open(f"/proc/{pid}/smaps_rollup") as f:
+            for line in f:
+                if line.startswith("Pss:"):
+                    return int(line.split()[1]) / 1e6
+    except (OSError, ValueError, IndexError):
+        pass
+    return 0.0
+
+
+def child_pids(pid="self"):
+    """PIDs of the direct children of ``pid`` (all its threads), from ``/proc/<pid>/task/*/children``."""
+    out = []
+    try:
+        for tid in os.listdir(f"/proc/{pid}/task"):
+            try:
+                with open(f"/proc/{pid}/task/{tid}/children") as f:
+                    out.extend(int(c) for c in f.read().split())
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return out
+
+
+def tree_pss_gb():
+    """PSS of this process plus its direct children, in GB: the physical memory a field run
+    with a worker pool actually occupies (forked workers share the parent's pages, so their RSS
+    would count the shared movie once per worker)."""
+    return pss_gb() + sum(pss_gb(c) for c in child_pids())
+
+
+def _cpu_s():
+    """CPU seconds of this process (all threads) plus its reaped children (pool workers)."""
+    t = os.times()
+    return time.process_time() + t.children_user + t.children_system
+
+
 def thread_info():
     """CPU count, ``OMP_NUM_THREADS`` and the BLAS thread pools in use (via ``threadpoolctl``
     when installed) -- the denominators for reading ``cpu_s / wall_s``."""
@@ -61,10 +102,20 @@ def thread_info():
 
 
 class StageMeter:
-    """Record wall s, CPU s and RSS (start / end / peak) per named stage of this process."""
+    """Record wall s, CPU s and RSS (start / end / peak) per named stage of this process.
 
-    def __init__(self, interval=0.25, log=None):
+    While a stage has child processes (the region worker pool), the process tree's PSS is also
+    sampled every ``tree_interval`` seconds (reading ``smaps_rollup`` costs ~15 ms per process)
+    and its peak recorded as ``tree_pss_peak``; ``cpu_s`` includes the CPU time of children
+    reaped during the stage.
+    """
+
+    def __init__(self, interval=0.25, log=None, tree_interval=2.0):
         self.interval = float(interval)
+        self.tree_interval = float(tree_interval)
+        self._tree_peak = {}
+        self._global_tree_peak = 0.0
+        self._last_tree = 0.0
         self._log = log
         self.stages = {}                                     # name -> record, in call order
         self._current = None
@@ -81,6 +132,16 @@ class StageMeter:
     def _sample(self):
         while not self._stop.wait(self.interval):
             self._observe(rss_gb())
+            now = time.perf_counter()
+            if now - self._last_tree >= self.tree_interval and child_pids():
+                self._last_tree = now
+                self._observe_tree(tree_pss_gb())
+
+    def _observe_tree(self, gb):
+        with self._lock:
+            self._global_tree_peak = max(self._global_tree_peak, gb)
+            if self._current is not None:
+                self._tree_peak[self._current] = max(self._tree_peak.get(self._current, 0.0), gb)
 
     def _observe(self, gb):
         with self._lock:
@@ -96,21 +157,23 @@ class StageMeter:
         with self._lock:
             self._current = name
             self._peak[name] = rss_start
-        t0, c0 = time.perf_counter(), time.process_time()
+        t0, c0 = time.perf_counter(), _cpu_s()
         try:
             yield
         finally:
-            wall, cpu = time.perf_counter() - t0, time.process_time() - c0
+            wall, cpu = time.perf_counter() - t0, _cpu_s() - c0
             rss_end = rss_gb()
             self._observe(rss_end)
             with self._lock:
                 peak = max(self._peak.get(name, 0.0), rss_start, rss_end)
                 self._current = None
+                tree = self._tree_peak.pop(name, None)
             self.stages[name] = dict(wall_s=wall, cpu_s=cpu, rss_start_gb=rss_start,
-                                     rss_end_gb=rss_end, rss_peak_gb=peak)
+                                     rss_end_gb=rss_end, rss_peak_gb=peak, tree_pss_peak_gb=tree)
             if self._log:
                 self._log(f"{name}: {wall:.1f} s, cpu {cpu:.0f} s ({cpu / max(wall, 1e-9):.1f}x), "
-                          f"rss {peak:.2f} GB peak, {rss_end - rss_start:+.2f} GB retained")
+                          f"rss {peak:.2f} GB peak, {rss_end - rss_start:+.2f} GB retained"
+                          + (f", process tree {tree:.2f} GB PSS peak" if tree is not None else ""))
 
     # -- lifecycle ---------------------------------------------------------- #
     def close(self):
@@ -131,15 +194,21 @@ class StageMeter:
         return time.perf_counter() - self._t0
 
     def report(self):
-        """``{timing_s, cpu_s, memory_gb, peak_rss_gb, rss_start_gb, threads}``; ``timing_s`` also
-        carries ``total`` = seconds since the meter was created."""
+        """``{timing_s, cpu_s, memory_gb, peak_rss_gb, peak_mem_gb, rss_start_gb, threads}``;
+        ``timing_s`` also carries ``total`` = seconds since the meter was created. ``peak_mem_gb``
+        is the larger of this process's RSS peak and the process tree's PSS peak -- the number to
+        budget per concurrent field."""
         timing = {k: round(v["wall_s"], 3) for k, v in self.stages.items()}
         timing["total"] = round(self.elapsed_s(), 3)
         return dict(
             timing_s=timing,
             cpu_s={k: round(v["cpu_s"], 3) for k, v in self.stages.items()},
             memory_gb={k: dict(start=round(v["rss_start_gb"], 3), end=round(v["rss_end_gb"], 3),
-                               peak=round(v["rss_peak_gb"], 3)) for k, v in self.stages.items()},
+                               peak=round(v["rss_peak_gb"], 3),
+                               **({} if v.get("tree_pss_peak_gb") is None
+                                  else dict(tree_pss_peak=round(v["tree_pss_peak_gb"], 3))))
+                       for k, v in self.stages.items()},
             peak_rss_gb=round(self._global_peak, 3),
+            peak_mem_gb=round(max(self._global_peak, self._global_tree_peak), 3),
             rss_start_gb=round(self._rss0, 3),
             threads=thread_info())
