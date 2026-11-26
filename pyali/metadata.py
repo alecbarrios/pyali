@@ -184,7 +184,7 @@ def _jsonable(v):
 
 
 def fov_metadata(fov_dir, day=None, params=None, profile=None, extras=None,
-                 identity=None, timing=None):
+                 identity=None, timing=None, telemetry=None):
     """Full metadata record for one FOV, ready to write beside its analysis outputs.
 
     Parameters
@@ -204,6 +204,10 @@ def fov_metadata(fov_dir, day=None, params=None, profile=None, extras=None,
         Recorded under ``identity`` (plus a top-level ``fov_id``).
     timing : dict, optional
         Per-stage wall seconds, recorded under ``timing_s``.
+    telemetry : dict, optional
+        A :meth:`pyali.telemetry.StageMeter.report`: ``timing_s`` (takes precedence over
+        ``timing``), ``cpu_s``, ``memory_gb`` (per-stage RSS start / end / peak), ``peak_rss_gb``,
+        ``rss_start_gb`` and ``threads``, all recorded under the same keys.
     """
     dir_name = os.path.basename(os.path.normpath(fov_dir))
     parsed = parse_dir_name(dir_name)
@@ -221,6 +225,10 @@ def fov_metadata(fov_dir, day=None, params=None, profile=None, extras=None,
         meta["params"] = _jsonable(asdict(params))          # every field, not a hand-picked subset
     if timing:
         meta["timing_s"] = {k: round(float(v), 3) for k, v in timing.items()}
+    if telemetry:
+        for key in ("timing_s", "cpu_s", "memory_gb", "peak_rss_gb", "rss_start_gb", "threads"):
+            if key in telemetry:
+                meta[key] = telemetry[key]
     if extras:
         meta.update(extras)
     return meta
