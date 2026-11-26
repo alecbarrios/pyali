@@ -98,11 +98,13 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             log(f"segmented {len(regions)} regions")
 
         # ---- per-region extraction (reads corrected patches on demand) ----
-        log(f"extracting footprints from {len(regions)} regions ...")
+        log(f"extracting footprints from {len(regions)} regions "
+            f"({extract.resolve_workers(getattr(p, 'region_workers', 1))} worker(s)) ...")
         with meter.stage("extract_footprints"):
             (APs, COMs, footprints, footprint_center, region_of_footprint, region_of_ap,
              region_of_spike, spike_cell_row, source_of_footprint) = extract.extract_footprints(
-                movie, regions, spatial_footprints, p, H, W, verbose=verbose)
+                movie, regions, spatial_footprints, p, H, W, verbose=verbose,
+                workers=getattr(p, "region_workers", 1))
 
         # ---- trace extraction (sparse normal equations on the footprint pixel union) ----
         noise_map = None
@@ -147,7 +149,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
 
     telemetry = meter.report()
     timing = telemetry["timing_s"]
-    log(f"total {timing['total']:.1f} s, peak rss {telemetry['peak_rss_gb']:.2f} GB")
+    log(f"total {timing['total']:.1f} s, peak rss {telemetry['peak_rss_gb']:.2f} GB, "
+        f"peak memory incl. workers {telemetry['peak_mem_gb']:.2f} GB")
     if save and out_dir:
         # Metadata lands in out_dir alongside the results, at identical depth, so a
         # downstream aggregation over the corpus is a single glob.

@@ -200,23 +200,79 @@ def findpeaks(x):
     -------
     (peak_values, peak_indices) : ndarray, ndarray
         0-based indices in ascending order.
+
+    Notes
+    -----
+    Vectorized over runs of equal values: a run that is higher than the run before it and the
+    run after it is a peak, reported at its first sample. This is the left-to-right scan's rule
+    exactly (each rising edge is examined once, a plateau is extended to its end), without the
+    per-sample Python loop; a plateau that rises into the last sample is not a peak (the scan
+    indexed past the end there).
     """
-    x = np.asarray(x, dtype=np.float64)
+    x = np.asarray(x, dtype=np.float64).ravel()
     n = x.size
-    idx = []
-    i = 1
-    while i < n - 1:
-        if x[i] > x[i - 1]:                      # rising into i
-            j = i
-            while j < n - 1 and x[j + 1] == x[j]:   # extend across a flat top
-                j += 1
-            if x[j] > x[j + 1]:                  # falls after -> peak at the left edge i
-                idx.append(i)
-            i = j + 1
-        else:
-            i += 1
-    idx = np.array(idx, dtype=int)
+    if n < 3:
+        return x[:0], np.zeros(0, dtype=int)
+    starts = np.concatenate([[0], np.flatnonzero(x[1:] != x[:-1]) + 1])   # first sample of each run
+    if starts.size < 3:
+        return x[:0], np.zeros(0, dtype=int)
+    v = x[starts]
+    mid = v[1:-1]
+    is_peak = (mid > v[:-2]) & (mid > v[2:])
+    idx = starts[1:-1][is_peak].astype(int)
     return x[idx], idx
+
+
+def movmedian_support(frames, n, window=8):
+    """Sorted unique input rows that :func:`movmedian_at` reads to evaluate the moving median of
+    :func:`movmedian_time` at output rows ``frames`` of an ``n``-row array."""
+    frames = np.asarray(frames, dtype=np.int64).ravel()
+    kb = window // 2
+    kf = window - 1 - kb
+    if frames.size == 0:
+        return frames
+    offs = np.arange(-kb, kf + 1)
+    rows = (frames[:, None] + offs[None, :]).ravel()
+    rows = rows[(rows >= 0) & (rows < n)]
+    return np.unique(rows)
+
+
+def movmedian_at(stack, rows, frames, n, window=8):
+    """:func:`movmedian_time` (axis 0) evaluated only at output rows ``frames``.
+
+    ``stack[i]`` holds input row ``rows[i]`` of the ``n``-row array (``rows`` sorted, covering
+    :func:`movmedian_support`). Interior rows of ``window == 8`` go through the same comparator
+    network on the same values and dtype, and the shrinking end windows (or any other window)
+    through the same ``np.median`` call, so each output row is bit-identical to the full filter's.
+    Returns ``(len(frames),) + stack.shape[1:]`` in ``stack``'s dtype.
+    """
+    stack = np.asarray(stack)
+    if not np.issubdtype(stack.dtype, np.floating):
+        stack = stack.astype(np.float64)
+    rows = np.asarray(rows, dtype=np.int64).ravel()
+    frames = np.asarray(frames, dtype=np.int64).ravel()
+    kb = window // 2
+    kf = window - 1 - kb
+
+    def pos(r):
+        i = np.searchsorted(rows, r)
+        if np.any(i >= rows.size) or np.any(rows[np.minimum(i, rows.size - 1)] != r):
+            raise KeyError("movmedian_at: a needed input row is missing from the stack")
+        return i
+
+    out = np.empty((frames.size,) + stack.shape[1:], dtype=stack.dtype)
+    interior = (frames >= kb) & (frames < n - kf) if window == 8 else np.zeros(frames.size, bool)
+    if interior.any():
+        f = frames[interior]
+        chans = [stack[pos(f - kb + k)] for k in range(8)]       # channel k = row t - kb + k
+        tmp = np.empty((f.size,) + stack.shape[1:], dtype=stack.dtype)
+        _median8_network(chans, tmp)
+        out[interior] = tmp
+    for j in np.flatnonzero(~interior):
+        t = int(frames[j])
+        win = np.arange(max(0, t - kb), min(n, t + kf + 1))
+        out[j] = np.median(stack[pos(win)], axis=0)
+    return out
 
 
 def uniquetol_reps(values, tol, occurrence="highest"):

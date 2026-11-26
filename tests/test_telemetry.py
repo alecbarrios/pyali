@@ -42,7 +42,10 @@ def test_stage_meter_records_wall_cpu_and_rss_peak():
     assert mb["peak"] - mb["start"] >= 0.15                       # the 200 MB allocation was seen
     assert abs(mb["peak"] - peak_inside) < 0.05
     assert rep["peak_rss_gb"] >= mb["peak"] and rep["rss_start_gb"] > 0
-    assert set(rep) == {"timing_s", "cpu_s", "memory_gb", "peak_rss_gb", "rss_start_gb", "threads"}
+    assert set(rep) == {"timing_s", "cpu_s", "memory_gb", "peak_rss_gb", "peak_mem_gb", "rss_start_gb",
+                        "threads"}
+    assert rep["peak_mem_gb"] >= rep["peak_rss_gb"]
+    assert "tree_pss_peak" not in mb                              # no children in this stage
     assert len(lines) == 2 and lines[0].startswith("a: ") and "GB peak" in lines[1]
     assert not meter._thread.is_alive()                           # closed on exit
     assert x > 0
@@ -60,3 +63,24 @@ def test_stage_meter_reuse_overwrites_and_survives_exceptions():
     meter.close()
     assert list(meter.stages) == ["s"] and meter.stages["s"]["wall_s"] >= 0
     assert meter._current is None
+
+
+def _child_work(i):
+    import time as _t
+    x = np.ones(5_000_000)                                        # 40 MB private per child
+    _t.sleep(0.6)
+    return float(x.sum()) + i
+
+
+def test_stage_meter_tree_pss_and_child_cpu_with_a_fork_pool():
+    import multiprocessing as mp
+    assert tm.child_pids() == [] and tm.pss_gb() > 0
+    with tm.StageMeter(interval=0.05, tree_interval=0.1) as meter:
+        with meter.stage("pool"):
+            with mp.get_context("fork").Pool(3) as pool:
+                pool.map(_child_work, range(3))
+    rep = meter.report()
+    mb = rep["memory_gb"]["pool"]
+    assert "tree_pss_peak" in mb and mb["tree_pss_peak"] > 0.1      # 3 x 40 MB of private pages seen
+    assert rep["peak_mem_gb"] >= mb["tree_pss_peak"]
+    assert rep["cpu_s"]["pool"] >= 0

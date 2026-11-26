@@ -226,7 +226,8 @@ def fov_metadata(fov_dir, day=None, params=None, profile=None, extras=None,
     if timing:
         meta["timing_s"] = {k: round(float(v), 3) for k, v in timing.items()}
     if telemetry:
-        for key in ("timing_s", "cpu_s", "memory_gb", "peak_rss_gb", "rss_start_gb", "threads"):
+        for key in ("timing_s", "cpu_s", "memory_gb", "peak_rss_gb", "peak_mem_gb", "rss_start_gb",
+                    "threads"):
             if key in telemetry:
                 meta[key] = telemetry[key]
     if extras:
