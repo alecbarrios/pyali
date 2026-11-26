@@ -12,7 +12,6 @@ import numpy as np
 
 from .params import Params
 from . import io, preprocess, segmentation, extract, results
-from .utils import dog_kernel
 
 
 def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make_figures=False,
@@ -112,12 +111,11 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         filtered_movie = extract.temporal_filter(movie, p.filter_window)
     else:
         filtered_movie = None
-    dog = dog_kernel(p.dog_sigma1, p.dog_sigma2, p.dog_width)
     log(f"extracting footprints from {len(regions)} regions ...")
     t0 = tic()
     (APs, COMs, footprint, footprint_center, region_of_footprint, region_of_ap,
      region_of_spike, spike_cell_row, source_of_footprint) = extract.extract_footprints(
-        movie, filtered_movie, regions, spatial_footprints, dog, p.std_frames_index(), p, H, W,
+        movie, filtered_movie, regions, spatial_footprints, p, H, W,
         verbose=verbose)
     toc("extract_footprints", t0)
     # Build the per-pixel noise map (whitened GLS only) BEFORE freeing filtered_movie.

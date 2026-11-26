@@ -3,7 +3,6 @@ peak finding, tolerance grouping)."""
 import numpy as np
 
 # np.trapz was renamed to np.trapezoid in NumPy 2.0 (trapz still works but warns).
-_trapz = np.trapezoid if hasattr(np, "trapezoid") else np.trapz
 
 
 def round_half_away_from_zero(x):
@@ -90,32 +89,6 @@ def matlab_disk(radius):
     R = a + 2 * c
     y, x = np.ogrid[-R:R + 1, -R:R + 1]
     return (np.abs(x) + np.abs(y)) <= (2 * a + 2 * c)
-
-
-def dog_kernel(sigma1=1.0, sigma2=3.0, width=19):
-    """Difference-of-Gaussians kernel, zero-summed via area normalization.
-
-    Two Gaussians centered at ``(1 + width) / 2`` are subtracted with a weight that equalizes
-    their areas, then the result is scaled so its peak (center tap) is 1.0.
-
-    Parameters
-    ----------
-    sigma1, sigma2 : float
-        Narrow and wide Gaussian widths.
-    width : int
-        Kernel length (odd).
-
-    Returns
-    -------
-    (width,) ndarray of float64
-    """
-    x = np.arange(1, width + 1, dtype=np.float64)
-    c = (1 + width) / 2.0
-    g1 = np.exp(-(x - c) ** 2 / (2.0 * sigma1 ** 2))
-    g2 = np.exp(-(x - c) ** 2 / (2.0 * sigma2 ** 2))
-    area_ratio = _trapz(g1, x) / _trapz(g2, x)
-    dog = g1 - area_ratio * g2
-    return dog / dog.max()
 
 
 # Comparator network for the median of 8. Batcher's odd-even mergesort fully sorts 8 elements in

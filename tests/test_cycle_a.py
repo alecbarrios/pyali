@@ -10,7 +10,6 @@ import pyali.extract as extract
 from pyali.extract import (dedup_close_peaks, detect_region_aps, region_grow_brightest,
                            _weighted_com, com_via_svd, cluster_footprints)
 from pyali.pipeline import process_fov
-from pyali.utils import dog_kernel
 from tests.synthetic import make_movie, write_fov
 
 
@@ -89,7 +88,8 @@ def test_coarse_location_ignores_bright_pixel_outside_mask():
     pm[50, 5, 6] = 6.0                                                # brightest in-mask pixel
     pm[50, 0, 0] = 50.0                                               # much brighter, outside
     pm[50, 11, 2] = 40.0
-    ap, _ = detect_region_aps(pm, sel, (100, 200), dog_kernel(), np.arange(10, 40), 3.25, 8)
+    # the raw patch is the negative of the filtered one here: a spike is a dip in raw intensity
+    ap, _ = detect_region_aps(-pm, sel, pm, (100, 200), 32, 16, 4.0)
     assert ap.shape == (1, 4)
     assert ap[0, 2] == 50
     assert ap[0, :2].tolist() == [105, 206]                           # [5, 6] + origin, not [0, 0]
