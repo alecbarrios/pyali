@@ -7,14 +7,17 @@ plus ``fov_metadata.json``. ``run_folder`` loops over sub-folders with per-FOV e
 Every stage runs under a :class:`pyali.telemetry.StageMeter`, so the metadata records each
 stage's wall seconds, CPU seconds and resident-memory start / end / peak.
 
-Memory note: the working movie is held as float64 (~18 GB for a 6389-frame 312x1200 movie),
-plus the filtered movie during extraction — run on a machine with adequate RAM.
+Memory: the movie stays as acquired (uint8 / uint16, e.g. 5.4 GB for 800x800x8399 8-bit) and
+the background / motion corrections are applied where pixels are read
+(:class:`pyali.movie.CorrectedMovie`); footprints are packed sparse as they are produced and
+the trace solve works on the footprint pixel union (:mod:`pyali.traces`).
 """
 import os
 import numpy as np
 
 from .params import Params
 from . import io, preprocess, segmentation, extract, traces, results
+from .movie import CorrectedMovie, estimate_shift, interp_weights
 from .telemetry import StageMeter
 
 
@@ -39,39 +42,42 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     identity = identity or identity_from_dir_name(fov_dir)
 
     with StageMeter(log=lambda m: log("  " + m)) as meter:
-        # ---- load + truncate (io) ----
+        # ---- load (io): the acquisition as recorded; the last truncate_last frames are ignored ----
         log("loading movie ...")
         with meter.stage("load"):
-            movie = io.read_bin_mov(os.path.join(fov_dir, "frames1.bin"), H, W,
-                                    read_dtype=getattr(p, "read_dtype", "uint16"),
-                                    out_dtype=getattr(p, "compute_dtype", "float64"))
-            movie = movie[:movie.shape[0] - p.truncate_last]             # drop last 10 frames
-            T = movie.shape[0]
+            raw = io.read_bin_mov(os.path.join(fov_dir, "frames1.bin"), H, W,
+                                  read_dtype=getattr(p, "read_dtype", "uint16"))
+            T = raw.shape[0] - p.truncate_last
 
-        # ---- reference images (preprocess) ----
+        # ---- reference images (preprocess), from the uncorrected frames as float32 ----
         log("reference + correlation image ...")
         with meter.stage("reference"):
-            reference_image, corr_image = preprocess.reference_and_correlation_image(movie[:p.n_ref])
-        # Raw-unit mean reference and its illumination background: must precede the in-place
-        # background/motion steps. reference_corrected drives segmentation and per-cell brightness.
+            reference_image, corr_image = preprocess.reference_and_correlation_image(
+                np.asarray(raw[:min(p.n_ref, T)], np.float32))
+        # Raw-unit mean reference and its illumination background: reference_corrected drives
+        # segmentation and per-cell brightness.
         log("large-scale background ...")
         with meter.stage("background"):
-            reference_raw = preprocess.raw_mean_reference(movie, p.reference_frames)
+            reference_raw = preprocess.raw_mean_reference(
+                np.asarray(raw[:min(p.reference_frames, T)], np.float32), p.reference_frames)
             focus = preprocess.focus_score(reference_raw)                # QC: defocused fields score ~1e-4 or less
             log(f"focus score {focus:.2e} (sharp fields of this preparation: ~1e-3 to 3.5e-3)")
             background_map = preprocess.large_scale_background(reference_raw, p.background_radius,
                                                                p.background_sigma)
             reference_corrected = (reference_raw - background_map).astype(np.float32)
 
-        # ---- adaptive background, motion correction, clip (preprocess) ----
-        log("adaptive background subtraction ...")
+        # ---- adaptive background anchors + rigid motion shift; the corrections are applied
+        #      lazily by CorrectedMovie wherever pixels are read ----
+        log("adaptive background anchors ...")
         with meter.stage("adaptive_background"):
-            movie, _samples, _anchors = preprocess.adaptive_background(movie, p.bkg_ranges, p.disk_radius)
-        log("rigid motion correction ...")
+            samples, anchors = preprocess.background_samples(raw[:T], p.bkg_ranges, p.disk_radius)
+        log("rigid motion shift ...")
         with meter.stage("motion_correct"):
-            movie, _shift, _A, _f0 = preprocess.motion_correct(movie, p.truncate_last)
-            if getattr(p, "saturation_clip", None) is not None:              # 8-bit acquisitions: None => skip
-                preprocess.clip_saturation(movie, p.saturation_clip)
+            W_interp = interp_weights(anchors, T)
+            shift, A, _f0 = estimate_shift(raw[:T], W_interp, samples, p.truncate_last)
+            movie = CorrectedMovie(raw, samples, anchors, shift, A, n_frames=T,
+                                   saturation_clip=getattr(p, "saturation_clip", None))
+            log(f"shift: |x| <= {np.abs(shift[0]).max():.2f} px, |y| <= {np.abs(shift[1]).max():.2f} px")
 
         # ---- segmentation ----
         log("segmentation ...")
@@ -91,32 +97,20 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                     f"{100 * p.max_region_bbox_frac:g}% of frame; worst {100 * worst / frame_px:.1f}%)")
             log(f"segmented {len(regions)} regions")
 
-        # ---- filters + per-region extraction ----
-        # extract_footprints only ever reads ~27x27 patches of the filtered movie, so the global
-        # array is a full extra copy of the movie for mostly wasted work. Build it only when
-        # something actually needs all of it: the whitened-GLS noise map.
-        need_global_filter = getattr(p, "whiten_traces", False) or not getattr(
-            p, "patch_local_filter", True)
-        if need_global_filter:
-            log("temporal median filter (global) ...")
-            filtered_movie = extract.temporal_filter(movie, p.filter_window)
-        else:
-            filtered_movie = None
+        # ---- per-region extraction (reads corrected patches on demand) ----
         log(f"extracting footprints from {len(regions)} regions ...")
         with meter.stage("extract_footprints"):
             (APs, COMs, footprints, footprint_center, region_of_footprint, region_of_ap,
              region_of_spike, spike_cell_row, source_of_footprint) = extract.extract_footprints(
-                movie, filtered_movie, regions, spatial_footprints, p, H, W,
-                verbose=verbose)
-        # Build the per-pixel noise map (whitened GLS only) BEFORE freeing filtered_movie.
-        noise_map = None
-        if getattr(p, "whiten_traces", False):
-            log("building per-pixel noise map for whitened GLS ...")
-            noise_map = traces.per_pixel_noise_map(filtered_movie, p.std_frames_index(),
-                                                   p.whiten_sigma_floor_pct)
-        del filtered_movie
+                movie, regions, spatial_footprints, p, H, W, verbose=verbose)
 
         # ---- trace extraction (sparse normal equations on the footprint pixel union) ----
+        noise_map = None
+        if getattr(p, "whiten_traces", False):
+            log("per-pixel noise on the footprint pixel union (whitened GLS) ...")
+            noise_map = traces.noise_map_on_union(
+                movie, traces.FootprintOperator(footprints).union, p.std_frames_index(),
+                p.filter_window, p.whiten_sigma_floor_pct)
         method = "whitened GLS" if getattr(p, "whiten_traces", False) else "pinv"
         log(f"trace extraction ({method}) for {footprints.n()} footprints ...")
         solve = {}
@@ -164,6 +158,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             extras=dict(focus_score=focus,
                         n_regions_kept=len(regions), n_regions_dropped=len(dropped),
                         segmentation=seg_info, trace_solve=solve,
+                        motion_shift_max_px=[float(np.abs(shift[0]).max()), float(np.abs(shift[1]).max())],
                         n_cells=int(cell_traces.shape[0]), n_cells_by_source=n_cells_by_source,
                         n_ap_detected=int(len(APs)), n_ap_localized=int(len(COMs)),
                         n_frames_analyzed=int(T))))
@@ -182,7 +177,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                 region_of_footprint=region_of_footprint, region_of_ap=region_of_ap,
                 region_of_spike=region_of_spike, spike_cell_row=spike_cell_row,
                 source_of_footprint=source_of_footprint, brightness=brightness,
-                identity=identity, timing=timing, telemetry=telemetry)
+                shift=shift, identity=identity, timing=timing, telemetry=telemetry)
 
 
 def run_folder(root_path, p=Params()):

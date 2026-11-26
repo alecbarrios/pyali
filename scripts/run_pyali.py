@@ -114,8 +114,6 @@ def main(argv=None):
                          "isolated footprints are whitened; overlapping ones keep the faithful pinv)")
     ap.add_argument("--read-dtype", choices=["uint16", "uint8"], default=None,
                     help="on-disk sample dtype (default: auto-detect by byte-plane test)")
-    ap.add_argument("--compute-dtype", choices=["float64", "float32"], default=None,
-                    help="in-RAM movie dtype (default: the profile's; float32 ~halves peak RAM)")
     ap.add_argument("--profile", choices=["auto"] + sorted(_PROFILES), default="auto",
                     help="acquisition profile: sets frame size, dtypes, and the background/"
                          "baseline frame ranges for that batch. 'auto' picks it from the "
@@ -174,12 +172,10 @@ def main(argv=None):
             ap.error(f"no profile for {nrow}x{ncol} {read_dtype}; known shapes are "
                      f"{sorted(_AUTO)}. Pass --profile explicitly.")
     overrides = dict(nrow=nrow, ncol=ncol, read_dtype=read_dtype)
-    if a.compute_dtype:
-        overrides["compute_dtype"] = a.compute_dtype
     p = _PROFILES[name](**overrides)
     if a.max_region_bbox_frac is not None:
         p.max_region_bbox_frac = a.max_region_bbox_frac or None
-    print(f"[pyali] profile {name}: {p.nrow}x{p.ncol} {p.read_dtype} -> {p.compute_dtype}, "
+    print(f"[pyali] profile {name}: {p.nrow}x{p.ncol} {p.read_dtype} (corrected on read), "
           f"bkg/std ranges {p.bkg_ranges}, region bbox guard "
           f"{'off' if not p.max_region_bbox_frac else f'{100*p.max_region_bbox_frac:g}%'}")
 

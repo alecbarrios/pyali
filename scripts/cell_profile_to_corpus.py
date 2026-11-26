@@ -153,7 +153,6 @@ def convert(path, out_root, fps, bit, invert=True, source_uri=None):
                 n_regions_kept=None, n_regions_dropped=None,
                 analysis=dict(profile="cell_profile_mat", fps=float(fps), nrow=int(H),
                               ncol=int(W), read_dtype="uint8" if bit.startswith("8") else None,
-                              compute_dtype="float32",
                               fps_source="user-supplied", bit_source="user-supplied",
                               extraction="MATLAB ALI pipeline (traces imported, not re-extracted)"),
             )

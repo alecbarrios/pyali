@@ -88,15 +88,6 @@ def test_real_crop_produces_cells(real):
     assert not empty, f"footprints with no nonzero pixel: {empty}"
 
 
-def test_real_patch_local_filter_is_bit_identical(real):
-    ref = real["out"]
-    alt, seconds = _run(real["dir"], real["p"], patch_local_filter=False)
-    _record(_metrics(alt, seconds, real["meta"], "cells_global_filter"))
-    assert np.array_equal(ref["footprints"].dense(), alt["footprints"].dense())
-    for key in ("footprint_center", "cell_traces"):
-        assert np.array_equal(np.asarray(ref[key]), np.asarray(alt[key])), key
-
-
 def test_real_dark_crop_runs_with_few_or_no_regions(real_dark_dir, tmp_path):
     p, meta = _params_for(real_dark_dir)
     out_dir = str(tmp_path / "dark")

@@ -13,7 +13,7 @@ import numpy as np
 _RAW_DTYPE = {"uint8": "<u1", "u1": "<u1", "uint16": "<u2", "u2": "<u2"}
 
 
-def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64"):
+def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype=None):
     """Read a raw ``frames1.bin`` movie into ``[T, H, W]``.
 
     Parameters
@@ -25,10 +25,10 @@ def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64"):
     read_dtype : str
         On-disk sample dtype: ``"uint16"`` (default; 6GP002 16-bit) or ``"uint8"``
         (443screen2 8-bit). Little-endian.
-    out_dtype : str
-        In-RAM movie dtype. ``"float64"`` (default) reproduces the historical result;
-        ``"float32"`` halves peak RAM (~21.5 GB vs ~43 GB for an 800x800x8399 movie),
-        which is required to fit a large 8-bit movie in a 62 GB box.
+    out_dtype : str, optional
+        ``None`` (default) returns the frames in their on-disk integer dtype (5.4 GB for an
+        800x800x8399 8-bit movie) for :class:`pyali.movie.CorrectedMovie`; a float dtype
+        materializes a converted copy (the historical float32 / float64 working movie).
 
     Notes
     -----
@@ -40,7 +40,7 @@ def read_bin_mov(path, nrow, ncol, read_dtype="uint16", out_dtype="float64"):
     raw = np.fromfile(path, dtype=_RAW_DTYPE.get(str(read_dtype), read_dtype))
     T = raw.size // (nrow * ncol)
     mov = raw[:T * nrow * ncol].reshape(T, nrow, ncol)   # frame, row, col
-    return mov.astype(out_dtype)
+    return mov if out_dtype is None else mov.astype(out_dtype)
 
 
 def open_bin_memmap(path, nrow, ncol, read_dtype="uint16"):

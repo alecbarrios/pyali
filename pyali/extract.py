@@ -13,53 +13,21 @@ from .utils import movmedian_time, findpeaks, round_half_away_from_zero
 # --------------------------------------------------------------------------- #
 # Temporal filter
 # --------------------------------------------------------------------------- #
-def temporal_filter(movie, window=8):
-    """Moving-median high-pass along time, sign-flipped so downward spikes become positive.
-
-    Parameters
-    ----------
-    movie : (T, H, W) float array (time = axis 0)
-    window : int
-        Moving-median window.
-
-    Returns
-    -------
-    (T, H, W) ndarray
-
-    Notes
-    -----
-    Materializes a second full-movie array. ``extract_footprints`` only ever reads ~27x27
-    patches of the result, so prefer :func:`temporal_filter_patch` there — see the
-    ``filtered_movie=None`` path.
-    """
-    # -(movie - movmedian) == movmedian - movie; computed in place to avoid an extra copy.
-    filtered = movmedian_time(movie, window, axis=0)
-    filtered -= movie
+def temporal_filter_patch(patch, window=8):
+    """Moving-median high-pass along time of one corrected patch ``(T, Hp, Wp)``, sign-flipped so
+    downward spikes become positive: ``movmedian(patch) - patch``. The filter is independent
+    per pixel, so filtering a patch equals filtering the whole movie and slicing it."""
+    filtered = movmedian_time(patch, window, axis=0)
+    filtered -= patch
     return filtered
 
 
-def temporal_filter_patch(movie, r0, r1, c0, c1, window=8):
-    """:func:`temporal_filter` restricted to one spatial patch.
-
-    The filter runs purely along time and is independent per pixel, so filtering a spatial
-    sub-block is **bit-identical** to filtering the whole movie and then slicing it — while
-    touching only the pixels a region actually needs.
-
-    Parameters
-    ----------
-    movie : (T, H, W) float array
-    r0, r1, c0, c1 : int
-        0-indexed half-open patch bounds.
-    window : int
-
-    Returns
-    -------
-    (T, r1-r0, c1-c0) ndarray
-    """
-    sub = movie[:, r0:r1, c0:c1]
-    filtered = movmedian_time(sub, window, axis=0)
-    filtered -= sub
-    return filtered
+def read_patch(movie, r0, r1, c0, c1):
+    """Corrected ``(T, r1 - r0, c1 - c0)`` block: ``movie.patch(...)`` for a
+    :class:`pyali.movie.CorrectedMovie`, a plain slice for a dense ``(T, H, W)`` array."""
+    if hasattr(movie, "patch"):
+        return movie.patch(r0, r1, c0, c1)
+    return movie[:, r0:r1, c0:c1]
 
 
 # --------------------------------------------------------------------------- #
@@ -410,18 +378,14 @@ def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_ro
 SOURCES = ("spiking", "no_ap", "no_com", "all_noise")     # cells.source vocabulary
 
 
-def extract_footprints(movie, filtered_movie, regions, spatial_footprints, p,
-                       height, width, verbose=False):
+def extract_footprints(movie, regions, spatial_footprints, p, height, width, verbose=False):
     """Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.
 
     Parameters
     ----------
-    movie : (T, H, W) float array
-    filtered_movie : (T, H, W) float array or None
-        Pre-filtered movie. Pass ``None`` (preferred) to filter each region's patch on demand
-        via :func:`temporal_filter_patch`: only region patches are ever read from it, so the
-        global array is both a full extra copy of the movie and mostly wasted work. The two
-        paths are bit-identical — the filter is per-pixel along time.
+    movie : :class:`pyali.movie.CorrectedMovie` or a dense (T, H, W) float array
+        Only the region patches are ever read (:func:`read_patch`), each filtered on demand by
+        :func:`temporal_filter_patch`.
     regions, spatial_footprints : from :func:`pyali.segmentation.cell_segmentation`
     p : Params
     height, width : int
@@ -473,15 +437,13 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, p,
         sel_patch = sel_full[np.ix_(patch_rows - 1, patch_cols - 1)]
         r0, r1 = patch_rows[0] - 1, patch_rows[-1]
         c0, c1 = patch_cols[0] - 1, patch_cols[-1]
-        if filtered_movie is None:                        # filter just this patch, on demand
-            pm = temporal_filter_patch(movie, r0, r1, c0, c1, fw)
-        else:
-            pm = filtered_movie[:, r0:r1, c0:c1].copy()
+        sub = read_patch(movie, r0, r1, c0, c1)           # corrected patch, read on demand
+        pm = temporal_filter_patch(sub, fw)
         pm[:half] = 0.0
         pm[T - half:] = 0.0
         pm_max = pm.max(axis=0)
 
-        region_AP, _diag = detect_region_aps(movie[:, r0:r1, c0:c1], sel_patch, pm, origin0,
+        region_AP, _diag = detect_region_aps(sub, sel_patch, pm, origin0,
                                              p.detect_median_window, p.detect_edge_frames,
                                              p.threshold_factor)
         region_AP = dedup_close_peaks(region_AP, p.min_peak_interval)
