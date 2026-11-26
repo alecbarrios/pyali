@@ -64,6 +64,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
     log("large-scale background ...")
     t0 = tic()
     reference_raw = preprocess.raw_mean_reference(movie, p.reference_frames)
+    focus = preprocess.focus_score(reference_raw)                    # QC: defocused fields score ~1e-4 or less
+    log(f"focus score {focus:.2e} (sharp fields of this preparation: ~1e-3 to 3.5e-3)")
     background_map = preprocess.large_scale_background(reference_raw, p.background_radius,
                                                        p.background_sigma)
     reference_corrected = (reference_raw - background_map).astype(np.float32)
@@ -153,7 +155,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
                                           region_of_ap),
             images=dict(reference=reference_image, binary_map=binary_map,
                         brightness_reference=reference_corrected),
-            attrs=dict(fps=p.fps, profile=profile, fov_id=identity.fov_id,
+            attrs=dict(fps=p.fps, profile=profile, fov_id=identity.fov_id, focus_score=focus,
                        n_ap_detected=len(APs), n_ap_localized=len(COMs)))
         toc("write", t0)
         timing["total"] = perf_counter() - t_start
@@ -163,7 +165,8 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         write_metadata(out_dir, fov_metadata(
             fov_dir, day=day, params=p, profile=profile,
             identity=identity, timing=timing,
-            extras=dict(n_regions_kept=len(regions), n_regions_dropped=len(dropped),
+            extras=dict(focus_score=focus,
+                        n_regions_kept=len(regions), n_regions_dropped=len(dropped),
                         segmentation=seg_info,
                         n_cells=int(cell_traces.shape[0]), n_cells_by_source=n_cells_by_source,
                         n_ap_detected=int(len(APs)), n_ap_localized=int(len(COMs)),
@@ -178,7 +181,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
 
     return dict(reference_image=reference_image, corr_image=corr_image,
                 reference_raw=reference_raw, reference_corrected=reference_corrected,
-                background_map=background_map, seg_info=seg_info,
+                background_map=background_map, seg_info=seg_info, focus_score=focus,
                 regions=regions, binary_map=binary_map, footprint=footprint,
                 footprint_center=footprint_center, cell_traces=cell_traces, APs=APs, COMs=COMs,
                 region_of_footprint=region_of_footprint, region_of_ap=region_of_ap,

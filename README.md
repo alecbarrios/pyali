@@ -55,7 +55,10 @@ the only writer and loader of these files):
   unit mean of the first 300 frames minus its large-scale background: the segmentation input and
   the `x` in `weighted_brightness`), and attributes `height`, `width`, `n_frames`, `fps`, `fov_id`,
   `pyali_git`, `schema_version`
-- `fov_metadata.json` — acquisition metadata, `identity`, every `Params` field under `params`,
+- `fov_metadata.json` — acquisition metadata, `identity`, the `focus_score` QC (variance of the
+  Laplacian of the 300-frame mean over its squared mean; sharp 800x800 fields of this preparation
+  score ~1e-3 to 3.5e-3, a defocused one ~1e-4 or less; also in the `signals.h5` attributes and
+  the corpus manifest), every `Params` field under `params`,
   per-stage wall seconds under `timing_s`, cell counts by `source`, the git commit
 
 Identity defaults come from the directory name (`P-4` → plate 4, `W-A2` → well, `burstN` → fov,
@@ -88,7 +91,9 @@ Two scripts, one contract: an **inventory CSV** with one row per FOV directory.
 ```bash
 # 1. inventory a dataset (any mounted root; nothing dataset-specific is hard-coded)
 python scripts/build_inventory.py --root /mnt/stp/20260716 --experiment-id 443screen2 \
-    --wells A2 C3 --out inv_20260716.csv
+    --wells A2 C3 --out inv_20260716.csv --focus-dims 800 800
+#    --focus-dims scores each movie's focus from its first 300 frames (column `focus`; ~1e-4 or
+#    less = defocused) and lists the fields below a third of the dataset median
 #    plate relabels are a flag, e.g. the 20260715 folders named P-1 that are plate 5:
 python scripts/build_inventory.py --root /mnt/stp/20260715 --plate-map 20260715:P-1=5 \
     --experiment-id 443screen2 --out inv_20260715.csv

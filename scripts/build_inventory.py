@@ -34,7 +34,8 @@ from pyali.metadata import parse_dir_name                                 # noqa
 
 COLUMNS = ["run_id", "fov_name", "day", "plate", "plate_token", "well", "batch", "burst",
            "src_dir", "bin_bytes", "bytes_per_frame", "frames_in_file", "frames_requested",
-           "include", "exclude_reason"]
+           "include", "exclude_reason", "focus"]
+FOCUS_FRAMES = 300
 SIDECAR = "frames1_dropped_frames.txt"
 MOVIE = "frames1.bin"
 ABORTED_FRACTION = 0.5          # a movie shorter than this fraction of target_frames is an aborted run
@@ -81,8 +82,22 @@ def parse_plate_map(items):
     return out
 
 
-def inventory_row(fov_dir, root, experiment_id, plate_map=None):
-    """One inventory row for ``fov_dir`` (see the module docstring for the columns)."""
+def focus_of(fov_dir, nrow, ncol, bytes_per_frame):
+    """Focus QC score of the mean of the first ``FOCUS_FRAMES`` frames (8-bit when
+    ``bytes_per_frame == nrow * ncol``, else 16-bit); ``''`` when the file is too short."""
+    import numpy as np
+    from pyali.preprocess import focus_score
+    dtype = np.uint8 if bytes_per_frame == nrow * ncol else np.uint16
+    n = nrow * ncol * FOCUS_FRAMES
+    raw = np.fromfile(os.path.join(fov_dir, MOVIE), dtype=dtype, count=n)
+    if raw.size < n:
+        return ""
+    return round(focus_score(raw.reshape(FOCUS_FRAMES, nrow, ncol).mean(axis=0, dtype=np.float64)), 8)
+
+
+def inventory_row(fov_dir, root, experiment_id, plate_map=None, focus_dims=None):
+    """One inventory row for ``fov_dir`` (see the module docstring for the columns).
+    ``focus_dims=(nrow, ncol)`` fills the ``focus`` QC column from the first 300 frames."""
     plate_map = plate_map or {}
     fov_dir = os.path.abspath(fov_dir)
     name = os.path.basename(fov_dir)
@@ -116,16 +131,20 @@ def inventory_row(fov_dir, root, experiment_id, plate_map=None):
     else:
         reason = ""
 
+    focus = ""
+    if focus_dims and reason == "" and bpf:
+        focus = focus_of(fov_dir, int(focus_dims[0]), int(focus_dims[1]), bpf)
     return dict(run_id=f"P{plate}_{well}", fov_name=name, day=day, plate=plate, plate_token=token,
                 well=well, batch=batch, burst=burst if burst is not None else 0, src_dir=fov_dir,
                 bin_bytes=bin_bytes, bytes_per_frame=bpf, frames_in_file=frames_in_file,
                 frames_requested=target if target is not None else "",
-                include=reason == "", exclude_reason=reason)
+                include=reason == "", exclude_reason=reason, focus=focus)
 
 
-def build_inventory(roots, out_csv, experiment_id, plate_map=None, wells=None):
+def build_inventory(roots, out_csv, experiment_id, plate_map=None, wells=None, focus_dims=None):
     """Scan ``roots``, write ``out_csv`` and return the rows (sorted by plate, well, burst, name)."""
-    rows = [inventory_row(f, root, experiment_id, plate_map) for root in roots for f in scan_fovs(root)]
+    rows = [inventory_row(f, root, experiment_id, plate_map, focus_dims)
+            for root in roots for f in scan_fovs(root)]
     if wells:
         keep = {w.upper() for w in wells}
         rows = [r for r in rows if r["well"].upper() in keep]
@@ -157,11 +176,23 @@ def main(argv=None):
     ap.add_argument("--plate-map", action="append", default=[],
                     help="DAY:TOKEN=PLATE, repeatable, e.g. 20260715:P-1=5 (the folder token P-1 is plate 5)")
     ap.add_argument("--wells", nargs="+", default=None, help="keep only these wells, e.g. A2 C3")
+    ap.add_argument("--focus-dims", nargs=2, type=int, metavar=("NROW", "NCOL"), default=None,
+                    help="fill the focus QC column from the first 300 frames of each included movie "
+                         "(e.g. 800 800 for 443screen2); ~1e-4 or less means defocused")
     a = ap.parse_args(argv)
-    rows = build_inventory(a.root, a.out, a.experiment_id, parse_plate_map(a.plate_map), a.wells)
+    rows = build_inventory(a.root, a.out, a.experiment_id, parse_plate_map(a.plate_map), a.wells,
+                           a.focus_dims)
     print(f"[inventory] {len(rows)} FOV directories -> {a.out}")
     for run_id, inc, exc in summarize(rows):
         print(f"  {run_id:<10} include={inc:<4} excluded={exc}")
+    if a.focus_dims:
+        scored = [r for r in rows if r["focus"] != ""]
+        if scored:
+            import statistics
+            med = statistics.median(float(r["focus"]) for r in scored)
+            low = [r for r in scored if float(r["focus"]) < med / 3]
+            print(f"[inventory] focus: median {med:.2e}; {len(low)} of {len(scored)} fields below 1/3 of it"
+                  + (": " + ", ".join(f"{r['run_id']} b{r['burst']} ({float(r['focus']):.1e})" for r in low) if low else ""))
     for r in rows:
         if not r["include"]:
             print(f"  EXCLUDED {r['day']}/{r['fov_name']}: {r['exclude_reason']}")
