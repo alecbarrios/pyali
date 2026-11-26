@@ -4,6 +4,8 @@ footprints (per-cell traces are solved in :mod:`pyali.traces`).
 Movies are ``[T, H, W]``; patch movies ``[T, Hp, Wp]``. Frame/pixel indices in
 ``region_AP`` are 0-based.
 """
+from dataclasses import dataclass
+
 import numpy as np
 
 from .results import SparseBuilder
@@ -133,8 +135,22 @@ def detect_region_aps(patch_raw, selection_map_patch, pm, origin0, median_window
         threshold``.
     """
     mask = np.asarray(selection_map_patch) > 0
-    T = patch_raw.shape[0]
-    trace = np.asarray(patch_raw)[:, mask].sum(axis=1, dtype=np.float64) / float(mask.size)
+    trace = region_trace(np.asarray(patch_raw)[:, mask], mask.size)
+    peaks, pk, diag = detect_peaks(trace, median_window, edge_frames, threshold_factor)
+    return coarse_ap_pixels(pm, peaks, pk, mask, origin0), diag
+
+
+def region_trace(mask_values, patch_area):
+    """Region trace: the in-mask pixel values ``(T, n_mask)`` summed per frame (float64) and
+    divided by the patch area, as Mini ALI forms it."""
+    return np.asarray(mask_values).sum(axis=1, dtype=np.float64) / float(patch_area)
+
+
+def detect_peaks(trace, median_window=32, edge_frames=16, threshold_factor=4.0):
+    """Peaks of one region trace: ``dF = medfilt1(trace) - trace`` with ``edge_frames`` zeroed at
+    each end, thresholded at ``threshold_factor`` x its mean absolute deviation, local maxima
+    by the MATLAB ``findpeaks`` rule. Returns ``(peak_values, peak_frames, diag)``."""
+    T = trace.shape[0]
     dF = median_filter_1d(trace, median_window) - trace
     e = min(int(edge_frames), T)
     dF[:e] = 0.0
@@ -143,16 +159,20 @@ def detect_region_aps(patch_raw, selection_map_patch, pm, origin0, median_window
     threshold = float(threshold_factor) * sigma
     thr = np.where(dF >= threshold, dF, 0.0) if threshold > 0 else np.zeros_like(dF)
     peaks, pk = findpeaks(thr)
+    return peaks, pk, dict(trace=trace, dF=dF, sigma=sigma, threshold=threshold)
 
+
+def coarse_ap_pixels(pm, peaks, peak_frames, mask, origin0):
+    """``(k, 4) = [row, col, frame, amplitude]``: for each peak, the brightest in-mask pixel of
+    the filtered frame ``pm[frame]`` (first in column-major order on ties), 0-indexed absolute."""
     region_AP = []
-    for amp, t in zip(peaks, pk):
+    for amp, t in zip(peaks, peak_frames):
         frame = np.asarray(pm[int(t)]) * mask                            # coarse location inside the mask
         pv = frame.max()
         fi = int(np.argmax(frame.ravel(order="F") == pv))               # first occurrence, column-major
         px0, py0 = np.unravel_index(fi, frame.shape, order="F")
         region_AP.append([px0 + origin0[0], py0 + origin0[1], int(t), float(amp)])
-    region_AP = np.array(region_AP, dtype=np.float64).reshape(-1, 4)
-    return region_AP, dict(trace=trace, dF=dF, sigma=sigma, threshold=threshold)
+    return np.array(region_AP, dtype=np.float64).reshape(-1, 4)
 
 
 def dedup_close_peaks(region_AP, min_interval=25):
@@ -245,11 +265,47 @@ def region_grow_brightest(current, radius=6.0, n_pixels=25):
     ``max(x(:))``). Each step queues the 4-neighbours of the last picked pixel that lie inside
     the patch and within ``radius`` of the seed, drops already-picked pixels, and picks the
     brightest pixel *inside the queue*; an empty queue ends the growth early instead of raising
-    (``spk_fine`` lines 54-56), so the result may be shorter than ``n_pixels``. The queue is a
-    boolean mask (O(1) membership); on exactly equal float values it breaks ties in
-    column-major order where MATLAB's coordinate list breaks them in insertion order — the one
-    accepted deviation, immaterial on denoised data.
+    (``spk_fine`` lines 54-56), so the result may be shorter than ``n_pixels``. On exactly equal
+    float values it breaks ties in column-major order where MATLAB's coordinate list breaks them
+    in insertion order — the one accepted deviation, immaterial on denoised data.
+
+    The queue is a heap keyed by ``(-value, column-major index)``, which pops exactly the pixel
+    the argmax-over-the-queue rule picks; images with non-finite values take the original
+    mask-and-argmax loop (:func:`_region_grow_brightest_mask`), whose NaN handling a heap cannot
+    reproduce.
     """
+    import heapq
+    if not np.all(np.isfinite(current)):
+        return _region_grow_brightest_mask(current, radius, n_pixels)
+    Hp, Wp = current.shape
+    flat_f = current.ravel(order="F")
+    seed = np.unravel_index(int(np.argmax(flat_f)), current.shape, order="F")
+    sr, sc = int(seed[0]), int(seed[1])
+    picked = [(sr, sc)]
+    if n_pixels <= 1:
+        return np.array(picked, int).reshape(-1, 2)
+    r2 = radius ** 2
+    vals = current.tolist()                         # python floats: exact for float32 / float64
+    seen = {(sr, sc)}                               # picked or queued
+    heap = []
+    pr, pc = sr, sc
+    while len(picked) < n_pixels:
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):           # 4-neighbours of the last pick
+            r, c = pr + dr, pc + dc
+            if (0 <= r < Hp and 0 <= c < Wp and (r, c) not in seen
+                    and (r - sr) ** 2 + (c - sc) ** 2 <= r2):
+                seen.add((r, c))
+                heapq.heappush(heap, (-vals[r][c], c * Hp + r, r, c))
+        if not heap:
+            break
+        _, _, pr, pc = heapq.heappop(heap)                          # brightest; ties -> column-major
+        picked.append((pr, pc))
+    return np.array(picked, int).reshape(-1, 2)
+
+
+def _region_grow_brightest_mask(current, radius=6.0, n_pixels=25):
+    """:func:`region_grow_brightest` with a boolean queue and an argmax per step (the reference
+    form; used for images containing non-finite values)."""
     Hp, Wp = current.shape
     flat_f = current.ravel(order="F")
     seed = np.unravel_index(int(np.argmax(flat_f)), current.shape, order="F")
@@ -378,18 +434,227 @@ def cluster_footprints(patch_movie, cluster_times, selection_map_patch, patch_ro
 SOURCES = ("spiking", "no_ap", "no_com", "all_noise")     # cells.source vocabulary
 
 
-def extract_footprints(movie, regions, spatial_footprints, p, height, width, verbose=False):
+# --------------------------------------------------------------------------- #
+# Per-region work: reads only what it uses, returns a self-contained result
+# --------------------------------------------------------------------------- #
+class DensePatch:
+    """The :class:`pyali.movie.CorrectedPatch` interface over a dense ``(T, H, W)`` movie."""
+
+    def __init__(self, movie, r0, r1, c0, c1):
+        self.view = movie[:, r0:r1, c0:c1]
+        self.shape = self.view.shape
+
+    def full(self):
+        return self.view
+
+    def frames(self, frames):
+        return self.view[np.asarray(frames, dtype=np.int64)]
+
+    def columns(self, mask):
+        return np.asarray(self.view)[:, np.asarray(mask, bool)]
+
+
+def region_source(movie, r0, r1, c0, c1):
+    """The corrected block ``[r0:r1, c0:c1]`` of ``movie`` as a lazily read patch: a
+    :class:`pyali.movie.CorrectedPatch` for a :class:`pyali.movie.CorrectedMovie`, a
+    :class:`DensePatch` for a dense array."""
+    if hasattr(movie, "region"):
+        return movie.region(r0, r1, c0, c1)
+    return DensePatch(movie, r0, r1, c0, c1)
+
+
+class FrameSubset:
+    """Rows of a ``(T, Hp, Wp)`` filtered patch at a few frames, indexable by frame number like
+    the full array (``fs[t]``, ``fs[array_of_t]``, ``fs.shape``); asking for a frame that was not
+    computed raises ``KeyError``."""
+
+    def __init__(self, frames, stack, n_frames):
+        self.frames = np.asarray(frames, dtype=np.int64)
+        self.stack = stack
+        self.shape = (int(n_frames),) + tuple(stack.shape[1:])
+
+    def _rows(self, t):
+        t = np.asarray(t, dtype=np.int64)
+        i = np.searchsorted(self.frames, t)
+        if np.any(i >= self.frames.size) or np.any(self.frames[np.minimum(i, self.frames.size - 1)] != t):
+            raise KeyError("frame not in this FrameSubset")
+        return i
+
+    def __getitem__(self, t):
+        if np.ndim(t) == 0:
+            return self.stack[int(self._rows(int(t)))]
+        return self.stack[self._rows(t)]
+
+
+def filtered_frames(src, frames, window, half):
+    """The temporally filtered patch (:func:`temporal_filter_patch`, then ``half`` frames zeroed
+    at each end) at ``frames`` only, reading just their ``window``-frame neighbourhoods from
+    ``src``. Bit-identical to the corresponding rows of the full filtered patch."""
+    from .utils import movmedian_at, movmedian_support
+    T = src.shape[0]
+    want = np.unique(np.asarray(frames, dtype=np.int64))
+    rows = movmedian_support(want, T, window)
+    stack = src.frames(rows)
+    if not np.issubdtype(stack.dtype, np.floating):
+        stack = stack.astype(np.float64)
+    pm = movmedian_at(stack, rows, want, T, window)
+    pm -= stack[np.searchsorted(rows, want)]                     # movmedian(a) - a, in a's dtype
+    pm[(want < half) | (want >= T - half)] = 0.0
+    return FrameSubset(want, pm, T)
+
+
+def _full_filtered_max(src, window, half):
+    """Per-pixel maximum over time of the full filtered patch (the fallback footprint's input)."""
+    pm = temporal_filter_patch(src.full(), window)
+    T = pm.shape[0]
+    pm[:half] = 0.0
+    pm[T - half:] = 0.0
+    return pm.max(axis=0)
+
+
+def _sparse_plane(plane):
+    """``(pixel, values)`` of an ``(H, W)`` plane's nonzeros in C order (what
+    :meth:`pyali.results.SparseBuilder.add_plane` stores)."""
+    flat = np.ascontiguousarray(plane).ravel()
+    nz = np.flatnonzero(flat)
+    return nz.astype(np.uint32), flat[nz]
+
+
+@dataclass
+class RegionResult:
+    """Everything one region contributes, with cell rows local to the region (``-1`` = none)."""
+    aps: np.ndarray                     # (k, 4) [row, col, frame, amplitude], after dedup
+    coms: np.ndarray                    # (m, 3) [row, col, frame]
+    spike_rows: np.ndarray              # (m,) local footprint row of each COM, or -1
+    planes: list                        # [(pixel uint32, values float64)] in footprint order
+    centers: list                       # [[row, col]] per footprint (1-indexed)
+    sources: list                       # SOURCES entry per footprint
+
+
+def process_region(movie, region, pixel_list, p, height, width):
+    """AP detection -> centers of mass -> DBSCAN clustering -> footprints for one region.
+
+    Pure: depends only on its arguments and returns a :class:`RegionResult`, so regions can run
+    in any order or in parallel. Reads the region trace from the in-mask pixels and the filtered
+    patch only at the detected peak frames (their 8-frame neighbourhoods); the full filtered
+    patch is built only when the region falls back to its max-projection footprint.
+    """
+    from sklearn.cluster import DBSCAN
+
+    fw = p.filter_window
+    half = int(round_half_away_from_zero(fw / 2))
+    patch_rows, patch_cols, origin0 = compute_patch(region["Centroid"], region["BoundingBox"],
+                                                    p.patch_size, height, width)
+    sel_full = build_selection_map(pixel_list, height, width)
+    sel_patch = sel_full[np.ix_(patch_rows - 1, patch_cols - 1)]
+    r0, r1 = patch_rows[0] - 1, patch_rows[-1]
+    c0, c1 = patch_cols[0] - 1, patch_cols[-1]
+    src = region_source(movie, r0, r1, c0, c1)
+    mask = np.asarray(sel_patch) > 0
+
+    aps = np.zeros((0, 4))
+    coms = np.zeros((0, 3))
+    spike_rows = np.zeros(0, dtype=np.int64)
+
+    def fallback(reason):
+        plane = region_fallback_footprint(sel_full, sel_patch, _full_filtered_max(src, fw, half),
+                                          height, width)
+        return RegionResult(aps, coms, spike_rows, [_sparse_plane(plane)],
+                            [region_center_rowcol(region)], [reason])
+
+    trace = region_trace(src.columns(mask), mask.size)
+    peaks, pk, _diag = detect_peaks(trace, p.detect_median_window, p.detect_edge_frames,
+                                    p.threshold_factor)
+    if len(pk) == 0:
+        return fallback("no_ap")
+    pm = filtered_frames(src, pk, fw, half)
+    region_AP = dedup_close_peaks(coarse_ap_pixels(pm, peaks, pk, mask, origin0),
+                                  p.min_peak_interval)
+    if len(region_AP) == 0:
+        return fallback("no_ap")
+    aps = region_AP
+
+    region_COMs = com_via_svd(pm, region_AP[:, 2].astype(int), patch_rows, patch_cols,
+                              sel_patch, p.svd_rank, p.com_radius, p.com_n_pixels)
+    if len(region_COMs) == 0:
+        return fallback("no_com")
+    coms = region_COMs
+    labels = DBSCAN(eps=p.dbscan_eps, min_samples=p.dbscan_min_pts).fit_predict(region_COMs[:, :2])
+    if np.all(labels == -1):
+        spike_rows = np.full(len(region_COMs), -1, dtype=np.int64)
+        return fallback("all_noise")
+
+    # cluster k (in label order, skipping empty labels) becomes the next footprint
+    kept = [k for k in range(labels.max() + 1) if np.any(labels == k)]
+    cluster_times = [region_COMs[labels == k, 2].astype(int) for k in kept]
+    pl, ce = cluster_footprints(pm, cluster_times, sel_patch, patch_rows, patch_cols,
+                                height, width)
+    row_of_label = {k: i for i, k in enumerate(kept)}
+    spike_rows = np.array([row_of_label.get(int(lab), -1) for lab in labels], dtype=np.int64)
+    return RegionResult(aps, coms, spike_rows, [_sparse_plane(pl_) for pl_ in pl],
+                        [list(c) for c in ce], ["spiking"] * len(pl))
+
+
+# --------------------------------------------------------------------------- #
+# The region loop: sequential or a fork process pool, assembled in region order
+# --------------------------------------------------------------------------- #
+_POOL_CONTEXT = None                   # (movie, regions, spatial_footprints, p, H, W) for workers
+
+
+def _pool_init():
+    from threadpoolctl import threadpool_limits
+    threadpool_limits(limits=1)        # one region per process: no nested BLAS threads
+
+
+def _pool_task(c):
+    movie, regions, spatial_footprints, p, height, width = _POOL_CONTEXT
+    return process_region(movie, regions[c], spatial_footprints[c], p, height, width)
+
+
+def resolve_workers(workers):
+    """``workers`` for :func:`extract_footprints`: ``None`` or ``0`` -> ``os.cpu_count()``."""
+    import os
+    return int(workers) if workers else (os.cpu_count() or 1)
+
+
+def iter_region_results(movie, regions, spatial_footprints, p, height, width, workers=1):
+    """Yield ``(c, RegionResult)`` in region order, computed inline (``workers == 1``) or by a
+    fork-based process pool: the movie and the other inputs are inherited copy-on-write, so
+    nothing large is pickled; results come back in order (``imap``)."""
+    n = len(regions)
+    workers = max(1, min(resolve_workers(workers), n))
+    if workers == 1:
+        for c in range(n):
+            yield c, process_region(movie, regions[c], spatial_footprints[c], p, height, width)
+        return
+    import multiprocessing as mp
+    global _POOL_CONTEXT
+    _POOL_CONTEXT = (movie, regions, spatial_footprints, p, height, width)
+    try:
+        with mp.get_context("fork").Pool(workers, initializer=_pool_init) as pool:
+            chunk = max(1, n // (workers * 8))
+            for c, res in enumerate(pool.imap(_pool_task, range(n), chunksize=chunk)):
+                yield c, res
+    finally:
+        _POOL_CONTEXT = None
+
+
+def extract_footprints(movie, regions, spatial_footprints, p, height, width, verbose=False,
+                       workers=1):
     """Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.
 
     Parameters
     ----------
     movie : :class:`pyali.movie.CorrectedMovie` or a dense (T, H, W) float array
-        Only the region patches are ever read (:func:`read_patch`), each filtered on demand by
-        :func:`temporal_filter_patch`.
+        Read per region through :func:`region_source` (in-mask pixels for the trace, peak-frame
+        neighbourhoods for the filtered patch).
     regions, spatial_footprints : from :func:`pyali.segmentation.cell_segmentation`
     p : Params
     height, width : int
     verbose : bool
+    workers : int
+        Region processes (1 = inline; ``None``/0 = all CPUs). Each region is a pure
+        :func:`process_region` task, so the output does not depend on ``workers``.
 
     Returns
     -------
@@ -399,7 +664,7 @@ def extract_footprints(movie, regions, spatial_footprints, p, height, width, ver
         ``COMs`` : (nCOM, 3) = ``[row, col, frame]`` (1-indexed row/col) -- ``nCOM <= nAP``
         because :func:`com_via_svd` drops APs whose centroid is undefined or off-mask;
         ``footprints`` : :class:`pyali.results.SparseFootprints` (N cells, float64 values, packed
-        as each plane is produced so no ``(H, W, N)`` stack exists);
+        as each region's planes arrive, so no ``(H, W, N)`` stack exists);
         ``footprint_center`` : (N, 2) = ``[row, col]``;
         ``region_of_footprint`` : (N,) int, the segmentation region each footprint came from;
         ``region_of_ap`` : (nAP,) int, the region of each ``APs`` row;
@@ -411,70 +676,28 @@ def extract_footprints(movie, regions, spatial_footprints, p, height, width, ver
         footprint: ``no_ap`` (no AP detected), ``no_com`` (no centroid survived the mask), or
         ``all_noise`` (every centroid was DBSCAN noise).
     """
-    from sklearn.cluster import DBSCAN
-
-    T = movie.shape[0]
-    fw = p.filter_window
-    half = int(round_half_away_from_zero(fw / 2))
     APs, COMs, centers = [], [], []
-    footprints = SparseBuilder(height, width)                 # planes packed as they are made
+    footprints = SparseBuilder(height, width)
     region_of_footprint, region_of_ap, region_of_spike, spike_cell_row = [], [], [], []
     source_of_footprint = []
-
-    def _fallback(sel_full, sel_patch, pm_max, region, c, reason):
-        footprints.add_plane(region_fallback_footprint(sel_full, sel_patch, pm_max, height, width))
-        cen = region_center_rowcol(region)
-        centers.append(cen)
-        region_of_footprint.append(c)
-        source_of_footprint.append(reason)
-
-    for c, region in enumerate(regions):
-        if verbose and (c % 25 == 0 or c == len(regions) - 1):
-            print(f"[pyali]   region {c + 1}/{len(regions)}", flush=True)
-        patch_rows, patch_cols, origin0 = compute_patch(region["Centroid"], region["BoundingBox"],
-                                                        p.patch_size, height, width)
-        sel_full = build_selection_map(spatial_footprints[c], height, width)
-        sel_patch = sel_full[np.ix_(patch_rows - 1, patch_cols - 1)]
-        r0, r1 = patch_rows[0] - 1, patch_rows[-1]
-        c0, c1 = patch_cols[0] - 1, patch_cols[-1]
-        sub = read_patch(movie, r0, r1, c0, c1)           # corrected patch, read on demand
-        pm = temporal_filter_patch(sub, fw)
-        pm[:half] = 0.0
-        pm[T - half:] = 0.0
-        pm_max = pm.max(axis=0)
-
-        region_AP, _diag = detect_region_aps(sub, sel_patch, pm, origin0,
-                                             p.detect_median_window, p.detect_edge_frames,
-                                             p.threshold_factor)
-        region_AP = dedup_close_peaks(region_AP, p.min_peak_interval)
-        if len(region_AP) == 0:
-            _fallback(sel_full, sel_patch, pm_max, region, c, "no_ap"); continue
-        APs.append(region_AP)
-        region_of_ap.extend([c] * len(region_AP))
-
-        region_COMs = com_via_svd(pm, region_AP[:, 2].astype(int), patch_rows, patch_cols,
-                                  sel_patch, p.svd_rank, p.com_radius, p.com_n_pixels)
-        if len(region_COMs) == 0:                         # every COM undefined or outside the mask
-            _fallback(sel_full, sel_patch, pm_max, region, c, "no_com"); continue
-        COMs.append(region_COMs)
-        region_of_spike.extend([c] * len(region_COMs))
-        labels = DBSCAN(eps=p.dbscan_eps, min_samples=p.dbscan_min_pts).fit_predict(region_COMs[:, :2])
-        if np.all(labels == -1):
-            spike_cell_row.extend([-1] * len(region_COMs))
-            _fallback(sel_full, sel_patch, pm_max, region, c, "all_noise"); continue
-
-        # cluster k (in label order, skipping empty labels) becomes the next appended plane
-        kept = [k for k in range(labels.max() + 1) if np.any(labels == k)]
-        cluster_times = [region_COMs[labels == k, 2].astype(int) for k in kept]
-        pl, ce = cluster_footprints(pm, cluster_times, sel_patch, patch_rows, patch_cols,
-                                    height, width)
-        row_of_label = {k: footprints.n() + i for i, k in enumerate(kept)}
-        spike_cell_row.extend(row_of_label.get(int(lab), -1) for lab in labels)
-        for plane in pl:
-            footprints.add_plane(plane)
-        centers.extend(ce)
-        region_of_footprint.extend([c] * len(pl))
-        source_of_footprint.extend(["spiking"] * len(pl))
+    n = len(regions)
+    for c, res in iter_region_results(movie, regions, spatial_footprints, p, height, width,
+                                      workers):
+        if verbose and (c % 100 == 0 or c == n - 1):
+            print(f"[pyali]   region {c + 1}/{n}", flush=True)
+        if len(res.aps):
+            APs.append(res.aps)
+            region_of_ap.extend([c] * len(res.aps))
+        if len(res.coms):
+            COMs.append(res.coms)
+            region_of_spike.extend([c] * len(res.coms))
+        offset = footprints.n()
+        spike_cell_row.extend(int(r) + offset if r >= 0 else -1 for r in res.spike_rows)
+        for pix, vals in res.planes:
+            footprints.add_sparse(pix, vals)
+        centers.extend(res.centers)
+        region_of_footprint.extend([c] * len(res.planes))
+        source_of_footprint.extend(res.sources)
 
     footprint_center = np.array(centers, dtype=float).reshape(-1, 2)
     APs = np.vstack(APs) if APs else np.zeros((0, 4))

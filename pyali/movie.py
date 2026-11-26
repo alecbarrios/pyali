@@ -158,6 +158,12 @@ class CorrectedMovie:
         X -= self._correction(pixels, t0, t1).reshape(n, hp, wp)
         return np.asarray(self._finish(X), dtype)
 
+    def region(self, r0, r1, c0, c1):
+        """A :class:`CorrectedPatch` over all analysis frames: corrected values of the block on
+        request (whole block, chosen frames or chosen pixels), each bit-identical to
+        ``patch(r0, r1, c0, c1)``."""
+        return CorrectedPatch(self, r0, r1, c0, c1)
+
     def materialize(self, dtype=np.float64, chunk_frames=256):
         """The whole corrected movie ``(T, H, W)`` -- for tests and small movies only."""
         out = np.empty((self.n_frames, self.height, self.width), dtype)
@@ -178,3 +184,46 @@ def corrected_movie(raw, p, n_frames=None):
     movie = CorrectedMovie(raw, samples, anchors, shift, A, n_frames=T,
                            saturation_clip=getattr(p, "saturation_clip", None))
     return movie, dict(samples=samples, anchors=anchors, shift=shift, A=A, f0=f0)
+
+
+class CorrectedPatch:
+    """One block of a :class:`CorrectedMovie` over all analysis frames, read in pieces.
+
+    The correction is computed once with exactly the call :meth:`CorrectedMovie.patch` makes for
+    the whole block (``(T, 5) @ (5, n_px)`` plus the motion term): BLAS results depend on the
+    matrix shape at the last bit, so restricting the matmul to the requested pixels or frames
+    would not reproduce ``patch()``; selecting from the full result does. Each accessor then
+    applies the same per-element steps (``float64(raw) - correction``, saturation clip, cast),
+    so ``frames(f)``, ``columns(m)`` and ``full()`` equal the corresponding parts of ``patch()``
+    bit for bit while materializing only what is asked for.
+    """
+
+    def __init__(self, movie, r0, r1, c0, c1):
+        self.movie = movie
+        r0, r1, c0, c1 = int(r0), int(r1), int(c0), int(c1)
+        T = movie.n_frames
+        self.hp, self.wp = r1 - r0, c1 - c0
+        self.shape = (T, self.hp, self.wp)
+        self.raw = np.ascontiguousarray(movie.raw[0:T, r0:r1, c0:c1]).reshape(T, self.hp * self.wp)
+        rows, cols = np.mgrid[r0:r1, c0:c1]
+        self.corr = movie._correction((rows * movie.width + cols).ravel(), 0, T)   # (T, n_px)
+
+    def _apply(self, raw_vals, corr_vals, dtype):
+        X = raw_vals.astype(np.float64)
+        X -= corr_vals
+        return np.asarray(self.movie._finish(X), dtype)
+
+    def full(self, dtype=np.float32):
+        """The whole corrected block ``(T, hp, wp)``."""
+        return self._apply(self.raw, self.corr, dtype).reshape(self.shape)
+
+    def frames(self, frames, dtype=np.float32):
+        """Corrected block at frame indices ``frames`` -> ``(len(frames), hp, wp)``."""
+        f = np.asarray(frames, dtype=np.int64).ravel()
+        return self._apply(self.raw[f], self.corr[f], dtype).reshape(f.size, self.hp, self.wp)
+
+    def columns(self, mask, dtype=np.float32):
+        """Corrected values of the pixels where the ``(hp, wp)`` boolean ``mask`` is True, in C
+        order -> ``(T, n_mask)`` (the layout of ``patch()[:, mask]``)."""
+        cols = np.flatnonzero(np.asarray(mask, bool).ravel())
+        return self._apply(self.raw[:, cols], self.corr[:, cols], dtype)

@@ -81,8 +81,8 @@ def test_source_planted_cells_are_spiking(synthetic_fov):
 
 def test_source_no_ap_when_detection_finds_nothing(synthetic_fov, monkeypatch):
     d, data = synthetic_fov
-    monkeypatch.setattr(extract, "detect_region_aps",
-                        lambda *a, **k: (np.zeros((0, 4)), {}))
+    monkeypatch.setattr(extract, "detect_peaks",                     # the per-region detection step
+                        lambda *a, **k: (np.zeros(0), np.zeros(0, int), {}))
     out = _run(d, data["params"])
     assert out["source_of_footprint"] == ["no_ap"] * len(out["regions"])
     assert np.asarray(out["APs"]).shape == (0, 4)
