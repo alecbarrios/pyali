@@ -171,3 +171,44 @@ def test_main_without_movie(tmp_path, capsys):
     assert qc.main([out, "--no-sta", "--n", "4", "--crop", "16", "--dpi", "50"]) == 0
     with open(os.path.join(out, qc.QC_DIR, qc.CSV)) as f:
         assert len(list(csv.DictReader(f))) == 4
+
+
+# --------------------------------------------------------------------------- #
+# spike map, named cells, before/after comparison (Cycle D2)
+# --------------------------------------------------------------------------- #
+def test_named_cells_and_spike_map(tmp_path):
+    out, _, _ = _results_dir(tmp_path)
+    R = load_results(out)
+    df = qc.cell_table(R)
+    picked = qc.pick_named(df, ["C0003", "exp_P04_A2_F041_C0005", "1"])
+    assert picked["cell_id"].str[-5:].tolist() == ["C0003", "C0005", "C0002"]
+    assert np.isnan(picked["percentile"]).all()
+    with pytest.raises(KeyError):
+        qc.pick_named(df, ["C9999"])
+    # spikes_in_crop fills kept / cluster for older results and maps COMs into the crop
+    sp = qc.spikes_in_crop(R, 0, 0, 50)                                       # covers the 40 x 50 frame
+    assert {"x", "y", "kept", "cluster"} <= set(sp.columns) and len(sp) == len(R.spikes)
+    assert np.allclose(sp["y"], R.spikes["row"] - 1.0) and np.allclose(sp["x"], R.spikes["col"] - 1.0)
+    rows = qc.cells_in_crop(R, 0, 0, 20, exclude=[0])
+    assert 0 not in rows and all(R.centers[k][0] - 1 < 20 and R.centers[k][1] - 1 < 20 for k in rows)
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    cmap = qc.draw_spike_map(ax, R, [3], 0, 0, 40)
+    assert cmap[3] == qc.OWN_COLOUR and len(cmap) >= 2
+    plt.close(fig)
+    assert qc.main([out, "--cells", "C0003,C0005", "--crop", "16", "--dpi", "50", "--no-sta"]) == 0
+    assert os.path.isfile(os.path.join(out, qc.QC_DIR, "footprints_traces_cells.png"))
+
+
+def test_qc_compare_writes_png_and_csv(tmp_path):
+    sys.path.insert(0, os.path.join(_ROOT, "scripts"))
+    import qc_compare
+    before, _, _ = _results_dir(tmp_path / "b")
+    after, _, _ = _results_dir(tmp_path / "a")
+    tab = qc_compare.run(before, after, cells=["C0003"], n=2, radius=6.0, crop=16, label="t", dpi=50)
+    assert os.path.getsize(os.path.join(after, qc.QC_DIR, "compare_t.png")) > 1000
+    assert list(tab.columns) == qc_compare.CSV_COLUMNS
+    first = tab[tab["before_cell"].str.endswith("C0003")]
+    assert (first["after_cell"].str.endswith("C0003")).any() and first["distance_px"].min() == 0.0

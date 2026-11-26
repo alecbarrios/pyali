@@ -74,8 +74,17 @@ class Params:
     com_radius: float = 6.0                  # px from the seed for the COM region growing
     com_n_pixels: int = 25                   #   (Mini ALI V2.2 fine_radius_px / fine_npix;
                                              #   were 8.5 / 50)
-    dbscan_eps: float = 1.5
-    dbscan_min_pts: int = 3
+    # field-wide spike assignment (pyali.assign; Mini ALI V2.2): same-frame spikes whose COMs are
+    # linked within spike_merge_distance_px are one event (largest coarse dF kept); survivors are
+    # clustered on a spike-density map with ali_cluster_factor bins per pixel, smoothed (sigma 2
+    # bins) and thresholded at ali_cluster_threshold, split between density peaks by a watershed;
+    # each cluster's footprint is a (2 footprint_radius_px + 1)^2 window around its mean COM
+    spike_merge_distance_px: float = 8.0
+    ali_cluster_factor: int = 4
+    ali_cluster_threshold: float = 0.15
+    ali_flood_margin: Optional[int] = 16     # watershed flood restricted to this many bins around
+                                             #   the above-threshold area (None = whole grid)
+    footprint_radius_px: int = 6
 
     # trace extraction: whitened GLS (opt-in; default OFF = the baseline unweighted pinv)
     # See snr_analysis/ for the A/B benchmarking recipe. When False, cell_traces are byte-for-byte

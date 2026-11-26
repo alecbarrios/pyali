@@ -136,7 +136,7 @@
    "src_module": "bench.fastpath"
   },
   {
-   "defined": true,
+   "defined": false,
    "dst": "pyali.extract.cluster_footprints",
    "dst_module": "pyali.extract",
    "lazy": false,
@@ -776,20 +776,92 @@
   },
   {
    "defined": true,
+   "dst": "pyali.assign.density_map",
+   "dst_module": "pyali.assign",
+   "lazy": false,
+   "line": 136,
+   "src": "pyali.assign.ali_clustering",
+   "src_module": "pyali.assign"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.gaussian_matlab",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 137,
+   "src": "pyali.assign.ali_clustering",
+   "src_module": "pyali.assign"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.round_half_away_from_zero",
+   "dst_module": "pyali.utils",
+   "lazy": false,
+   "line": 155,
+   "src": "pyali.assign.ali_clustering",
+   "src_module": "pyali.assign"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.cluster_footprint",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 639,
+   "src": "pyali.extract._cluster_task",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.region_fallback",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 643,
+   "src": "pyali.extract._fallback_task",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
    "dst": "pyali.extract.temporal_filter_patch",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 508,
+   "line": 476,
    "src": "pyali.extract._full_filtered_max",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.extract.process_region",
+   "dst": "pyali.extract.region_spikes",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 611,
-   "src": "pyali.extract._pool_task",
+   "line": 634,
+   "src": "pyali.extract._region_spikes_task",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.filtered_frames",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 564,
+   "src": "pyali.extract.cluster_footprint",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.region_source",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 563,
+   "src": "pyali.extract.cluster_footprint",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.round_half_away_from_zero",
+   "dst_module": "pyali.utils",
+   "lazy": false,
+   "line": 555,
+   "src": "pyali.extract.cluster_footprint",
    "src_module": "pyali.extract"
   },
   {
@@ -797,7 +869,7 @@
    "dst": "pyali.extract._weighted_com",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 375,
+   "line": 376,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
@@ -806,7 +878,7 @@
    "dst": "pyali.extract.region_grow_brightest",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 374,
+   "line": 375,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
@@ -815,7 +887,7 @@
    "dst": "pyali.extract.svd_denoise_frames",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 368,
+   "line": 369,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
@@ -824,7 +896,7 @@
    "dst": "pyali.utils.round_half_away_from_zero",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 378,
+   "line": 379,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
@@ -833,7 +905,7 @@
    "dst": "pyali.extract.mean_abs_dev",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 158,
+   "line": 159,
    "src": "pyali.extract.detect_peaks",
    "src_module": "pyali.extract"
   },
@@ -842,7 +914,7 @@
    "dst": "pyali.extract.median_filter_1d",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 154,
+   "line": 155,
    "src": "pyali.extract.detect_peaks",
    "src_module": "pyali.extract"
   },
@@ -851,7 +923,7 @@
    "dst": "pyali.utils.findpeaks",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 161,
+   "line": 162,
    "src": "pyali.extract.detect_peaks",
    "src_module": "pyali.extract"
   },
@@ -860,13 +932,22 @@
    "dst": "pyali.extract.coarse_ap_pixels",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 140,
+   "line": 141,
    "src": "pyali.extract.detect_region_aps",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
    "dst": "pyali.extract.detect_peaks",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 140,
+   "src": "pyali.extract.detect_region_aps",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.region_trace",
    "dst_module": "pyali.extract",
    "lazy": false,
    "line": 139,
@@ -875,19 +956,28 @@
   },
   {
    "defined": true,
-   "dst": "pyali.extract.region_trace",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 138,
-   "src": "pyali.extract.detect_region_aps",
+   "dst": "pyali.assign.ali_clustering",
+   "dst_module": "pyali.assign",
+   "lazy": true,
+   "line": 713,
+   "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.extract.iter_region_results",
+   "dst": "pyali.assign.merge_close_spikes_keep_max",
+   "dst_module": "pyali.assign",
+   "lazy": true,
+   "line": 709,
+   "src": "pyali.extract.extract_footprints",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.run_tasks",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 684,
+   "line": 699,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -896,7 +986,7 @@
    "dst": "pyali.results.SparseBuilder",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 680,
+   "line": 724,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -905,7 +995,7 @@
    "dst": "pyali.extract.FrameSubset",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 503,
+   "line": 471,
    "src": "pyali.extract.filtered_frames",
    "src_module": "pyali.extract"
   },
@@ -914,7 +1004,7 @@
    "dst": "pyali.utils.movmedian_at",
    "dst_module": "pyali.utils",
    "lazy": true,
-   "line": 500,
+   "line": 468,
    "src": "pyali.extract.filtered_frames",
    "src_module": "pyali.extract"
   },
@@ -923,35 +1013,8 @@
    "dst": "pyali.utils.movmedian_support",
    "dst_module": "pyali.utils",
    "lazy": true,
-   "line": 496,
+   "line": 464,
    "src": "pyali.extract.filtered_frames",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.process_region",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 628,
-   "src": "pyali.extract.iter_region_results",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.resolve_workers",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 625,
-   "src": "pyali.extract.iter_region_results",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.RegionResult",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 594,
-   "src": "pyali.extract.process_region",
    "src_module": "pyali.extract"
   },
   {
@@ -959,8 +1022,8 @@
    "dst": "pyali.extract._full_filtered_max",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 560,
-   "src": "pyali.extract.process_region",
+   "line": 585,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -968,8 +1031,8 @@
    "dst": "pyali.extract._sparse_plane",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 594,
-   "src": "pyali.extract.process_region",
+   "line": 587,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -977,35 +1040,8 @@
    "dst": "pyali.extract.build_selection_map",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 548,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.cluster_footprints",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 590,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.coarse_ap_pixels",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 571,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.com_via_svd",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 577,
-   "src": "pyali.extract.process_region",
+   "line": 582,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -1013,35 +1049,8 @@
    "dst": "pyali.extract.compute_patch",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 546,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.dedup_close_peaks",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 571,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.detect_peaks",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 566,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.filtered_frames",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 570,
-   "src": "pyali.extract.process_region",
+   "line": 580,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -1049,8 +1058,8 @@
    "dst": "pyali.extract.region_center_rowcol",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 563,
-   "src": "pyali.extract.process_region",
+   "line": 587,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -1058,8 +1067,8 @@
    "dst": "pyali.extract.region_fallback_footprint",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 560,
-   "src": "pyali.extract.process_region",
+   "line": 585,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -1067,17 +1076,8 @@
    "dst": "pyali.extract.region_source",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 552,
-   "src": "pyali.extract.process_region",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.region_trace",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 565,
-   "src": "pyali.extract.process_region",
+   "line": 584,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -1085,8 +1085,8 @@
    "dst": "pyali.utils.round_half_away_from_zero",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 545,
-   "src": "pyali.extract.process_region",
+   "line": 579,
+   "src": "pyali.extract.region_fallback",
    "src_module": "pyali.extract"
   },
   {
@@ -1094,7 +1094,7 @@
    "dst": "pyali.extract._region_grow_brightest_mask",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 279,
+   "line": 280,
    "src": "pyali.extract.region_grow_brightest",
    "src_module": "pyali.extract"
   },
@@ -1103,8 +1103,116 @@
    "dst": "pyali.extract.DensePatch",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 463,
+   "line": 431,
    "src": "pyali.extract.region_source",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.RegionSpikes",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 539,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.build_selection_map",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 516,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.coarse_ap_pixels",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 530,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.com_via_svd",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 534,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.compute_patch",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 514,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.dedup_close_peaks",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 530,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.detect_peaks",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 525,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.filtered_frames",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 529,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.region_source",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 520,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.region_trace",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 524,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.round_half_away_from_zero",
+   "dst_module": "pyali.utils",
+   "lazy": false,
+   "line": 513,
+   "src": "pyali.extract.region_spikes",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.resolve_workers",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 618,
+   "src": "pyali.extract.run_tasks",
    "src_module": "pyali.extract"
   },
   {
@@ -1112,7 +1220,7 @@
    "dst": "pyali.utils.movmedian_time",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 22,
+   "line": 23,
    "src": "pyali.extract.temporal_filter_patch",
    "src_module": "pyali.extract"
   },
@@ -1409,7 +1517,7 @@
    "dst": "pyali.extract.extract_footprints",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 105,
+   "line": 106,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1427,7 +1535,7 @@
    "dst": "pyali.figures.save_result_figures",
    "dst_module": "pyali.figures",
    "lazy": true,
-   "line": 172,
+   "line": 177,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1445,7 +1553,7 @@
    "dst": "pyali.metadata.fov_metadata",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 158,
+   "line": 161,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1463,7 +1571,7 @@
    "dst": "pyali.metadata.write_metadata",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 158,
+   "line": 161,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1508,7 +1616,7 @@
    "dst": "pyali.params.Params.std_frames_index",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 114,
+   "line": 115,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1562,7 +1670,7 @@
    "dst": "pyali.results.make_cells",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 140,
+   "line": 141,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1571,7 +1679,7 @@
    "dst": "pyali.results.pack_spikes",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 143,
+   "line": 144,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1580,7 +1688,7 @@
    "dst": "pyali.results.weighted_brightness",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 132,
+   "line": 133,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1589,7 +1697,7 @@
    "dst": "pyali.results.write_results",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 138,
+   "line": 139,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1625,7 +1733,7 @@
    "dst": "pyali.traces.FootprintOperator",
    "dst_module": "pyali.traces",
    "lazy": false,
-   "line": 114,
+   "line": 115,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1634,7 +1742,7 @@
    "dst": "pyali.traces.extract_cell_traces",
    "dst_module": "pyali.traces",
    "lazy": false,
-   "line": 120,
+   "line": 121,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1643,7 +1751,7 @@
    "dst": "pyali.traces.noise_map_on_union",
    "dst_module": "pyali.traces",
    "lazy": false,
-   "line": 113,
+   "line": 114,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1652,7 +1760,7 @@
    "dst": "pyali.params.Params",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 186,
+   "line": 192,
    "src": "pyali.pipeline.run_folder",
    "src_module": "pyali.pipeline"
   },
@@ -1661,7 +1769,7 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
-   "line": 197,
+   "line": 203,
    "src": "pyali.pipeline.run_folder",
    "src_module": "pyali.pipeline"
   },
@@ -3407,7 +3515,7 @@
    "dst": "pyali.results.SparseFootprints",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 163,
+   "line": 166,
    "src": "pyali.results.SparseBuilder.build",
    "src_module": "pyali.results"
   },
@@ -3416,7 +3524,7 @@
    "dst": "pyali.results.SparseFootprints",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 98,
+   "line": 101,
    "src": "pyali.results.SparseFootprints.astype",
    "src_module": "pyali.results"
   },
@@ -3425,7 +3533,7 @@
    "dst": "pyali.results.SparseFootprints",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 125,
+   "line": 128,
    "src": "pyali.results.SparseFootprints.from_dense",
    "src_module": "pyali.results"
   },
@@ -3434,7 +3542,7 @@
    "dst": "pyali.results.Results",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 385,
+   "line": 401,
    "src": "pyali.results.load_results",
    "src_module": "pyali.results"
   },
@@ -3443,7 +3551,7 @@
    "dst": "pyali.results.SparseFootprints",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 375,
+   "line": 391,
    "src": "pyali.results.load_results",
    "src_module": "pyali.results"
   },
@@ -3452,7 +3560,7 @@
    "dst": "pyali.results._py",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 373,
+   "line": 389,
    "src": "pyali.results.load_results",
    "src_module": "pyali.results"
   },
@@ -3461,7 +3569,7 @@
    "dst": "pyali.results._typed_frame",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 222,
+   "line": 225,
    "src": "pyali.results.make_cells",
    "src_module": "pyali.results"
   },
@@ -3470,7 +3578,7 @@
    "dst": "pyali.results._typed_frame",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 255,
+   "line": 267,
    "src": "pyali.results.pack_spikes",
    "src_module": "pyali.results"
   },
@@ -3479,7 +3587,7 @@
    "dst": "pyali.results._check_frame",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 308,
+   "line": 324,
    "src": "pyali.results.write_results",
    "src_module": "pyali.results"
   },
@@ -3488,7 +3596,7 @@
    "dst": "pyali.results.git_sha",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 347,
+   "line": 363,
    "src": "pyali.results.write_results",
    "src_module": "pyali.results"
   },
@@ -4028,6 +4136,69 @@
    "dst": "pyali.metrics.per_cell_snr",
    "dst_module": "pyali.metrics",
    "lazy": false,
+   "line": 54,
+   "src": "scripts.experiments.d2.lumping.lumping",
+   "src_module": "scripts.experiments.d2.lumping"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 35,
+   "src": "scripts.experiments.d2.lumping.lumping",
+   "src_module": "scripts.experiments.d2.lumping"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.experiments.d2.lumping.trace_spikes",
+   "dst_module": "scripts.experiments.d2.lumping",
+   "lazy": false,
+   "line": 41,
+   "src": "scripts.experiments.d2.lumping.lumping",
+   "src_module": "scripts.experiments.d2.lumping"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.experiments.d2.lumping.lumping",
+   "dst_module": "scripts.experiments.d2.lumping",
+   "lazy": false,
+   "line": 76,
+   "src": "scripts.experiments.d2.lumping.main",
+   "src_module": "scripts.experiments.d2.lumping"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metrics.highpass",
+   "dst_module": "pyali.metrics",
+   "lazy": false,
+   "line": 28,
+   "src": "scripts.experiments.d2.lumping.trace_spikes",
+   "src_module": "scripts.experiments.d2.lumping"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metrics.robust_sigma",
+   "dst_module": "pyali.metrics",
+   "lazy": false,
+   "line": 29,
+   "src": "scripts.experiments.d2.lumping.trace_spikes",
+   "src_module": "scripts.experiments.d2.lumping"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 31,
+   "src": "scripts.experiments.d2.oracle_compare.main",
+   "src_module": "scripts.experiments.d2.oracle_compare"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metrics.per_cell_snr",
+   "dst_module": "pyali.metrics",
+   "lazy": false,
    "line": 79,
    "src": "scripts.experiments.e1.e1_ab.main",
    "src_module": "scripts.experiments.e1.e1_ab"
@@ -4151,11 +4322,155 @@
   },
   {
    "defined": true,
+   "dst": "pyali.metrics.highpass",
+   "dst_module": "pyali.metrics",
+   "lazy": true,
+   "line": 53,
+   "src": "scripts.qc_compare._robust_scale",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metrics.robust_sigma",
+   "dst_module": "pyali.metrics",
+   "lazy": true,
+   "line": 53,
+   "src": "scripts.qc_compare._robust_scale",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_compare.run",
+   "dst_module": "scripts.qc_compare",
+   "lazy": false,
+   "line": 178,
+   "src": "scripts.qc_compare.main",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_compare._robust_scale",
+   "dst_module": "scripts.qc_compare",
+   "lazy": false,
+   "line": 83,
+   "src": "scripts.qc_compare.render",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_compare.after_cells_near",
+   "dst_module": "scripts.qc_compare",
+   "lazy": false,
+   "line": 92,
+   "src": "scripts.qc_compare.render",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.crop_window",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 76,
+   "src": "scripts.qc_compare.render",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.draw_spike_map",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 78,
+   "src": "scripts.qc_compare.render",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 136,
+   "src": "scripts.qc_compare.run",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_compare.render",
+   "dst_module": "scripts.qc_compare",
+   "lazy": false,
+   "line": 154,
+   "src": "scripts.qc_compare.run",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.cell_table",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 137,
+   "src": "scripts.qc_compare.run",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.pick_named",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 142,
+   "src": "scripts.qc_compare.run",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.select_cells",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 144,
+   "src": "scripts.qc_compare.run",
+   "src_module": "scripts.qc_compare"
+  },
+  {
+   "defined": true,
    "dst": "pyali.metrics.per_cell_snr",
    "dst_module": "pyali.metrics",
    "lazy": false,
-   "line": 57,
+   "line": 64,
    "src": "scripts.qc_footprints.cell_table",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints._half_max_contour",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 250,
+   "src": "scripts.qc_footprints.draw_spike_map",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints._stretch",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 232,
+   "src": "scripts.qc_footprints.draw_spike_map",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.cells_in_crop",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 235,
+   "src": "scripts.qc_footprints.draw_spike_map",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.spikes_in_crop",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 242,
+   "src": "scripts.qc_footprints.draw_spike_map",
    "src_module": "scripts.qc_footprints"
   },
   {
@@ -4163,7 +4478,7 @@
    "dst": "pyali.io.open_bin_memmap",
    "dst_module": "pyali.io",
    "lazy": false,
-   "line": 145,
+   "line": 174,
    "src": "scripts.qc_footprints.find_movie",
    "src_module": "scripts.qc_footprints"
   },
@@ -4172,7 +4487,7 @@
    "dst": "scripts.qc_footprints.run",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 292,
+   "line": 408,
    "src": "scripts.qc_footprints.main",
    "src_module": "scripts.qc_footprints"
   },
@@ -4181,7 +4496,16 @@
    "dst": "scripts.qc_footprints._stretch",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 186,
+   "line": 289,
+   "src": "scripts.qc_footprints.render",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.cells_in_crop",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 302,
    "src": "scripts.qc_footprints.render",
    "src_module": "scripts.qc_footprints"
   },
@@ -4190,7 +4514,16 @@
    "dst": "scripts.qc_footprints.crop_window",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 176,
+   "line": 279,
+   "src": "scripts.qc_footprints.render",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.draw_spike_map",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 303,
    "src": "scripts.qc_footprints.render",
    "src_module": "scripts.qc_footprints"
   },
@@ -4199,7 +4532,7 @@
    "dst": "scripts.qc_footprints.sta_crop",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 198,
+   "line": 306,
    "src": "scripts.qc_footprints.render",
    "src_module": "scripts.qc_footprints"
   },
@@ -4208,7 +4541,7 @@
    "dst": "pyali.results.load_results",
    "dst_module": "pyali.results",
    "lazy": false,
-   "line": 249,
+   "line": 359,
    "src": "scripts.qc_footprints.run",
    "src_module": "scripts.qc_footprints"
   },
@@ -4217,7 +4550,7 @@
    "dst": "scripts.qc_footprints.cell_table",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 252,
+   "line": 362,
    "src": "scripts.qc_footprints.run",
    "src_module": "scripts.qc_footprints"
   },
@@ -4226,7 +4559,16 @@
    "dst": "scripts.qc_footprints.find_movie",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 254,
+   "line": 364,
+   "src": "scripts.qc_footprints.run",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.pick_named",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 363,
    "src": "scripts.qc_footprints.run",
    "src_module": "scripts.qc_footprints"
   },
@@ -4235,7 +4577,7 @@
    "dst": "scripts.qc_footprints.render",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 271,
+   "line": 383,
    "src": "scripts.qc_footprints.run",
    "src_module": "scripts.qc_footprints"
   },
@@ -4244,7 +4586,7 @@
    "dst": "scripts.qc_footprints.select_cells",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 253,
+   "line": 363,
    "src": "scripts.qc_footprints.run",
    "src_module": "scripts.qc_footprints"
   },
@@ -4253,7 +4595,7 @@
    "dst": "scripts.qc_footprints.percentiles",
    "dst_module": "scripts.qc_footprints",
    "lazy": false,
-   "line": 87,
+   "line": 94,
    "src": "scripts.qc_footprints.select_cells",
    "src_module": "scripts.qc_footprints"
   },
@@ -5582,34 +5924,9 @@
   }
  ],
  "core": [
-  "pyali.extract.DensePatch",
-  "pyali.extract.FrameSubset",
-  "pyali.extract.RegionResult",
-  "pyali.extract._full_filtered_max",
-  "pyali.extract._region_grow_brightest_mask",
-  "pyali.extract._sparse_plane",
-  "pyali.extract._weighted_com",
-  "pyali.extract.build_selection_map",
-  "pyali.extract.cluster_footprints",
-  "pyali.extract.coarse_ap_pixels",
-  "pyali.extract.com_via_svd",
-  "pyali.extract.compute_patch",
-  "pyali.extract.dedup_close_peaks",
-  "pyali.extract.detect_peaks",
   "pyali.extract.extract_footprints",
-  "pyali.extract.filtered_frames",
-  "pyali.extract.iter_region_results",
-  "pyali.extract.mean_abs_dev",
-  "pyali.extract.median_filter_1d",
-  "pyali.extract.process_region",
-  "pyali.extract.region_center_rowcol",
-  "pyali.extract.region_fallback_footprint",
-  "pyali.extract.region_grow_brightest",
-  "pyali.extract.region_source",
-  "pyali.extract.region_trace",
   "pyali.extract.resolve_workers",
-  "pyali.extract.svd_denoise_frames",
-  "pyali.extract.temporal_filter_patch",
+  "pyali.extract.run_tasks",
   "pyali.io.read_bin_mov",
   "pyali.movie.CorrectedMovie",
   "pyali.movie.estimate_shift",
@@ -5654,7 +5971,6 @@
   "pyali.traces.noise_map_on_union",
   "pyali.traces.pinv_traces",
   "pyali.utils._median8_network",
-  "pyali.utils.findpeaks",
   "pyali.utils.movmedian_time",
   "pyali.utils.round_half_away_from_zero",
   "pyali.utils.strel_disk"
@@ -5829,7 +6145,8 @@
      "region_of_footprint",
      "region_of_spike",
      "source_of_footprint",
-     "spike_cell_row"
+     "spike_cell_row",
+     "spike_info"
     ]
    },
    {
@@ -5872,7 +6189,8 @@
     "src": "pyali.extract.extract_footprints",
     "vars": [
      "APs",
-     "COMs"
+     "COMs",
+     "spike_info"
     ]
    },
    {
@@ -6236,16 +6554,15 @@
      "region_of_ap",
      "region_of_spike",
      "spike_cell_row",
-     "source_of_footprint"
+     "source_of_footprint",
+     "spike_info"
     ],
     "reads": [],
     "shapes": {
      "APs": "(nAP, 4)",
      "COMs": "(nCOM, 3)",
      "footprint_center": "(N, 2)",
-     "region_of_ap": "(nAP,)",
      "region_of_footprint": "(N,)",
-     "region_of_spike": "(nCOM,)",
      "spike_cell_row": "(nCOM,)"
     },
     "writes": []
@@ -6262,7 +6579,7 @@
      "traces"
     ],
     "kwargs": [],
-    "line": 113,
+    "line": 114,
     "module": "pyali.traces",
     "outputs": [
      "noise_map"
@@ -6289,7 +6606,7 @@
      "noise_map",
      "verbose"
     ],
-    "line": 120,
+    "line": 121,
     "module": "pyali.traces",
     "outputs": [
      "cell_traces"
@@ -6308,7 +6625,7 @@
      "sparse_fp"
     ],
     "kwargs": [],
-    "line": 132,
+    "line": 133,
     "module": "pyali.results",
     "outputs": [
      "brightness"
@@ -6345,7 +6662,8 @@
      "results",
      "source_of_footprint",
      "sparse_fp",
-     "spike_cell_row"
+     "spike_cell_row",
+     "spike_info"
     ],
     "kwargs": [
      "attrs",
@@ -6355,7 +6673,7 @@
      "spikes_df",
      "traces"
     ],
-    "line": 138,
+    "line": 139,
     "module": "pyali.results",
     "outputs": [],
     "reads": [],
@@ -6385,6 +6703,7 @@
      "fov_metadata",
      "identity",
      "int",
+     "k",
      "len",
      "n_cells_by_source",
      "np",
@@ -6395,10 +6714,11 @@
      "seg_info",
      "shift",
      "solve",
+     "spike_info",
      "telemetry"
     ],
     "kwargs": [],
-    "line": 158,
+    "line": 161,
     "module": "pyali.metadata",
     "outputs": [],
     "reads": [],
@@ -6427,7 +6747,7 @@
      "footprint",
      "fps"
     ],
-    "line": 172,
+    "line": 177,
     "module": "pyali.figures",
     "outputs": [],
     "reads": [],
@@ -6455,9 +6775,7 @@
    "ref_frames": "(n_ref, H, W)",
    "ref_raw": "(H, W)",
    "reference_image": "(H, W)",
-   "region_of_ap": "(nAP,)",
    "region_of_footprint": "(N,)",
-   "region_of_spike": "(nCOM,)",
    "samples": "(n, H, W)",
    "spike_cell_row": "(nCOM,)"
   }
@@ -6920,6 +7238,13 @@
    "src": "bench.seg_survey"
   },
   {
+   "dst": "pyali.assign",
+   "lazy": false,
+   "line": 13,
+   "name": "pyali.assign",
+   "src": "pyali"
+  },
+  {
    "dst": "pyali.extract",
    "lazy": false,
    "line": 13,
@@ -6997,44 +7322,65 @@
    "src": "pyali"
   },
   {
+   "dst": "pyali.preprocess",
+   "lazy": false,
+   "line": 22,
+   "name": "pyali.preprocess.gaussian_matlab",
+   "src": "pyali.assign"
+  },
+  {
+   "dst": "pyali.utils",
+   "lazy": false,
+   "line": 23,
+   "name": "pyali.utils.round_half_away_from_zero",
+   "src": "pyali.assign"
+  },
+  {
+   "dst": "pyali.assign",
+   "lazy": true,
+   "line": 693,
+   "name": "pyali.assign",
+   "src": "pyali.extract"
+  },
+  {
    "dst": "pyali.results",
    "lazy": false,
-   "line": 11,
+   "line": 12,
    "name": "pyali.results.SparseBuilder",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 12,
+   "line": 13,
    "name": "pyali.utils.findpeaks",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": true,
-   "line": 493,
+   "line": 461,
    "name": "pyali.utils.movmedian_at",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": true,
-   "line": 493,
+   "line": 461,
    "name": "pyali.utils.movmedian_support",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 12,
+   "line": 13,
    "name": "pyali.utils.movmedian_time",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 12,
+   "line": 13,
    "name": "pyali.utils.round_half_away_from_zero",
    "src": "pyali.extract"
   },
@@ -7076,7 +7422,7 @@
   {
    "dst": "pyali.figures",
    "lazy": true,
-   "line": 171,
+   "line": 176,
    "name": "pyali.figures.save_result_figures",
    "src": "pyali.pipeline"
   },
@@ -7090,7 +7436,7 @@
   {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 157,
+   "line": 160,
    "name": "pyali.metadata.fov_metadata",
    "src": "pyali.pipeline"
   },
@@ -7104,7 +7450,7 @@
   {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 157,
+   "line": 160,
    "name": "pyali.metadata.write_metadata",
    "src": "pyali.pipeline"
   },
@@ -7678,6 +8024,41 @@
   {
    "dst": "pyali.metrics",
    "lazy": false,
+   "line": 22,
+   "name": "pyali.metrics.highpass",
+   "src": "scripts.experiments.d2.lumping"
+  },
+  {
+   "dst": "pyali.metrics",
+   "lazy": false,
+   "line": 22,
+   "name": "pyali.metrics.per_cell_snr",
+   "src": "scripts.experiments.d2.lumping"
+  },
+  {
+   "dst": "pyali.metrics",
+   "lazy": false,
+   "line": 22,
+   "name": "pyali.metrics.robust_sigma",
+   "src": "scripts.experiments.d2.lumping"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 23,
+   "name": "pyali.results.load_results",
+   "src": "scripts.experiments.d2.lumping"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 20,
+   "name": "pyali.results.load_results",
+   "src": "scripts.experiments.d2.oracle_compare"
+  },
+  {
+   "dst": "pyali.metrics",
+   "lazy": false,
    "line": 21,
    "name": "pyali.metrics.per_cell_snr",
    "src": "scripts.experiments.e1.e1_ab"
@@ -7690,23 +8071,100 @@
    "src": "scripts.experiments.e1.e1_ab"
   },
   {
+   "dst": "pyali.metrics",
+   "lazy": true,
+   "line": 52,
+   "name": "pyali.metrics.highpass",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "pyali.metrics",
+   "lazy": true,
+   "line": 52,
+   "name": "pyali.metrics.robust_sigma",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 34,
+   "name": "pyali.results.load_results",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.NEIGHBOUR_COLOURS",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.OWN_COLOUR",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.QC_DIR",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.cell_table",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.crop_window",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.draw_spike_map",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.pick_named",
+   "src": "scripts.qc_compare"
+  },
+  {
+   "dst": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 35,
+   "name": "scripts.qc_footprints.select_cells",
+   "src": "scripts.qc_compare"
+  },
+  {
    "dst": "pyali.io",
    "lazy": false,
-   "line": 38,
+   "line": 45,
    "name": "pyali.io.open_bin_memmap",
    "src": "scripts.qc_footprints"
   },
   {
    "dst": "pyali.metrics",
    "lazy": false,
-   "line": 39,
+   "line": 46,
    "name": "pyali.metrics.per_cell_snr",
    "src": "scripts.qc_footprints"
   },
   {
    "dst": "pyali.results",
    "lazy": false,
-   "line": 40,
+   "line": 47,
    "name": "pyali.results.load_results",
    "src": "scripts.qc_footprints"
   },
@@ -8487,7 +8945,7 @@
    "file": "fov_metadata.json",
    "func": "pyali.pipeline.process_fov",
    "kind": "write",
-   "line": 158,
+   "line": 161,
    "loc": "summary",
    "module": "pyali.pipeline"
   },
@@ -8663,7 +9121,7 @@
    "file": "cells.parquet",
    "func": "pyali.results.load_results",
    "kind": "read",
-   "line": 370,
+   "line": 386,
    "loc": "per FOV",
    "module": "pyali.results"
   },
@@ -8671,7 +9129,7 @@
    "file": "spikes.parquet",
    "func": "pyali.results.load_results",
    "kind": "read",
-   "line": 371,
+   "line": 387,
    "loc": "per FOV",
    "module": "pyali.results"
   },
@@ -8679,7 +9137,7 @@
    "file": "cells.csv",
    "func": "pyali.results.write_results",
    "kind": "write",
-   "line": 326,
+   "line": 342,
    "loc": "summary",
    "module": "pyali.results"
   },
@@ -8687,7 +9145,7 @@
    "file": "cells.parquet",
    "func": "pyali.results.write_results",
    "kind": "write",
-   "line": 325,
+   "line": 341,
    "loc": "summary",
    "module": "pyali.results"
   },
@@ -8695,7 +9153,7 @@
    "file": "spikes.parquet",
    "func": "pyali.results.write_results",
    "kind": "write",
-   "line": 327,
+   "line": 343,
    "loc": "summary",
    "module": "pyali.results"
   },
@@ -8749,6 +9207,14 @@
   },
   {
    "file": "fov_metadata.json",
+   "func": "scripts.experiments.d2.oracle_compare.main",
+   "kind": "read",
+   "line": 32,
+   "loc": "summary",
+   "module": "scripts.experiments.d2.oracle_compare"
+  },
+  {
+   "file": "fov_metadata.json",
    "func": "scripts.experiments.e1.e1_ab.meta",
    "kind": "read",
    "line": 26,
@@ -8764,10 +9230,26 @@
    "module": "scripts.experiments.e1.e1_table"
   },
   {
+   "file": "*.csv",
+   "func": "scripts.qc_compare.run",
+   "kind": "write",
+   "line": 157,
+   "loc": "summary",
+   "module": "scripts.qc_compare"
+  },
+  {
+   "file": "*.png",
+   "func": "scripts.qc_compare.run",
+   "kind": "write",
+   "line": 154,
+   "loc": "summary",
+   "module": "scripts.qc_compare"
+  },
+  {
    "file": "fov_metadata.json",
    "func": "scripts.qc_footprints.run",
    "kind": "read",
-   "line": 254,
+   "line": 364,
    "loc": "per FOV",
    "module": "scripts.qc_footprints"
   },
@@ -8775,23 +9257,39 @@
    "file": "frames1.bin",
    "func": "scripts.qc_footprints.find_movie",
    "kind": "read",
-   "line": 145,
+   "line": 174,
    "loc": "per FOV",
    "module": "scripts.qc_footprints"
   },
   {
    "file": "footprints_traces.csv",
-   "func": "scripts.qc_footprints.run",
+   "func": "scripts.qc_footprints.main",
    "kind": "write",
-   "line": 272,
+   "line": 408,
    "loc": "summary",
    "module": "scripts.qc_footprints"
   },
   {
    "file": "footprints_traces.png",
-   "func": "scripts.qc_footprints.run",
+   "func": "scripts.qc_footprints.main",
    "kind": "write",
-   "line": 271,
+   "line": 408,
+   "loc": "summary",
+   "module": "scripts.qc_footprints"
+  },
+  {
+   "file": "footprints_traces_cells.csv",
+   "func": "scripts.qc_footprints.main",
+   "kind": "write",
+   "line": 408,
+   "loc": "summary",
+   "module": "scripts.qc_footprints"
+  },
+  {
+   "file": "footprints_traces_cells.png",
+   "func": "scripts.qc_footprints.main",
+   "kind": "write",
+   "line": 408,
    "loc": "summary",
    "module": "scripts.qc_footprints"
   },
@@ -9584,6 +10082,32 @@
     "path"
    ]
   },
+  "scripts.experiments.d2.lumping.lumping": {
+   "read": [
+    "results_dir"
+   ],
+   "returns": [
+    "cells.parquet",
+    "spikes.parquet"
+   ],
+   "write": []
+  },
+  "scripts.experiments.d2.lumping.main": {
+   "read": [],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
+  "scripts.experiments.d2.oracle_compare.main": {
+   "read": [
+    "argv"
+   ],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
   "scripts.experiments.e1.e1_ab.main": {
    "read": [
     "argv"
@@ -9644,6 +10168,37 @@
    "returns": [],
    "write": []
   },
+  "scripts.qc_compare.main": {
+   "read": [
+    "argv"
+   ],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
+  "scripts.qc_compare.render": {
+   "read": [],
+   "returns": [],
+   "write": [
+    "out_png"
+   ]
+  },
+  "scripts.qc_compare.run": {
+   "read": [
+    "after_dir",
+    "before_dir"
+   ],
+   "returns": [
+    "*.png",
+    "cells.parquet",
+    "spikes.parquet"
+   ],
+   "write": [
+    "after_dir",
+    "label"
+   ]
+  },
   "scripts.qc_footprints.find_movie": {
    "read": [
     "fov_dir",
@@ -9680,6 +10235,8 @@
     "spikes.parquet"
    ],
    "write": [
+    "csv",
+    "png",
     "results_dir"
    ]
   },
@@ -11474,6 +12031,11 @@
     {
      "lazy": false,
      "line": 13,
+     "target": "pyali.assign"
+    },
+    {
+     "lazy": false,
+     "line": 13,
      "target": "pyali.traces"
     },
     {
@@ -11623,357 +12185,461 @@
    "loc": 202,
    "path": "pyali/_h5read.py"
   },
-  "pyali.extract": {
+  "pyali.assign": {
    "defs": [
     {
-     "doc": "Moving-median high-pass along time of one corrected patch ``(T, Hp, Wp)``, sign-flipped so",
-     "end": 24,
+     "doc": "Merge same-frame spikes whose COMs are within ``dist`` px (single linkage), keeping the",
+     "end": 86,
      "kind": "function",
-     "line": 18,
-     "name": "temporal_filter_patch"
+     "line": 29,
+     "name": "merge_close_spikes_keep_max"
     },
     {
-     "doc": "Corrected ``(T, r1 - r0, c1 - c0)`` block: ``movie.patch(...)`` for a",
-     "end": 32,
+     "doc": "Spike counts on a grid ``factor`` x finer than the pixels (Mini ALI",
+     "end": 104,
      "kind": "function",
-     "line": 27,
-     "name": "read_patch"
+     "line": 92,
+     "name": "density_map"
     },
     {
-     "doc": "Row/column index ranges of the analysis patch for a region (a fixed patch or its bbox).",
-     "end": 63,
+     "doc": "Cluster spike COMs on the whole field by spike density (Mini ALI ``mini_ali_ALI_clustering``).",
+     "end": 157,
      "kind": "function",
-     "line": 38,
-     "name": "compute_patch"
-    },
-    {
-     "doc": "Binary map of a region's pixels. ``pixel_list`` = ``[col, row]`` (1-indexed).",
-     "end": 72,
-     "kind": "function",
-     "line": 66,
-     "name": "build_selection_map"
-    },
-    {
-     "doc": "MATLAB ``medfilt1(x, n)`` with its default zero padding: output ``k`` is the median of",
-     "end": 90,
-     "kind": "function",
-     "line": 78,
-     "name": "median_filter_1d"
-    },
-    {
-     "doc": "MATLAB/Octave ``mad(x)`` with the default flag 0: the mean absolute deviation about the",
-     "end": 97,
-     "kind": "function",
-     "line": 93,
-     "name": "mean_abs_dev"
-    },
-    {
-     "doc": "Detect action potentials in one region from its raw patch's mean trace.",
-     "end": 140,
-     "kind": "function",
-     "line": 103,
-     "name": "detect_region_aps"
-    },
-    {
-     "doc": "Region trace: the in-mask pixel values ``(T, n_mask)`` summed per frame (float64) and",
-     "end": 146,
-     "kind": "function",
-     "line": 143,
-     "name": "region_trace"
-    },
-    {
-     "doc": "Peaks of one region trace: ``dF = medfilt1(trace) - trace`` with ``edge_frames`` zeroed at",
-     "end": 162,
-     "kind": "function",
-     "line": 149,
-     "name": "detect_peaks"
-    },
-    {
-     "doc": "``(k, 4) = [row, col, frame, amplitude]``: for each peak, the brightest in-mask pixel of",
-     "end": 175,
-     "kind": "function",
-     "line": 165,
-     "name": "coarse_ap_pixels"
-    },
-    {
-     "doc": "Keep the largest-amplitude AP within any ``min_interval``-frame window.",
-     "end": 209,
-     "kind": "function",
-     "line": 178,
-     "name": "dedup_close_peaks"
-    },
-    {
-     "doc": "Low-rank denoise the AP frames: one filtered frame per spike (Mini ALI",
-     "end": 242,
-     "kind": "function",
-     "line": 215,
-     "name": "svd_denoise_frames"
-    },
-    {
-     "doc": "Greedily grow up to ``n_pixels`` bright pixels outward from the maximum, within ``radius``",
-     "end": 303,
-     "kind": "function",
-     "line": 245,
-     "name": "region_grow_brightest"
-    },
-    {
-     "doc": ":func:`region_grow_brightest` with a boolean queue and an argmax per step (the reference",
-     "end": 333,
-     "kind": "function",
-     "line": 306,
-     "name": "_region_grow_brightest_mask"
-    },
-    {
-     "doc": "Intensity^2-weighted centroid of the picked pixels (``mini_ali_spk_fine`` lines 72-86).",
-     "end": 353,
-     "kind": "function",
-     "line": 336,
-     "name": "_weighted_com"
-    },
-    {
-     "doc": "Center of mass per AP -> ``[k, 3]`` = ``[row, col, frame]`` (0-indexed frame), ``k <= nAP``.",
-     "end": 383,
-     "kind": "function",
-     "line": 356,
-     "name": "com_via_svd"
-    },
-    {
-     "doc": "Fallback footprint (no AP / no cluster): the region's per-pixel max projection.",
-     "end": 400,
-     "kind": "function",
-     "line": 389,
-     "name": "region_fallback_footprint"
-    },
-    {
-     "doc": "Per-cluster footprints: mean of each cluster's AP frames, negatives clipped to zero, masked",
-     "end": 431,
-     "kind": "function",
-     "line": 403,
-     "name": "cluster_footprints"
-    },
-    {
-     "doc": "The :class:`pyali.movie.CorrectedPatch` interface over a dense ``(T, H, W)`` movie.",
-     "end": 454,
-     "kind": "class",
-     "line": 440,
-     "name": "DensePatch"
-    },
-    {
-     "doc": "",
-     "end": 445,
-     "kind": "function",
-     "line": 443,
-     "name": "DensePatch.__init__"
-    },
-    {
-     "doc": "",
-     "end": 448,
-     "kind": "function",
-     "line": 447,
-     "name": "DensePatch.full"
-    },
-    {
-     "doc": "",
-     "end": 451,
-     "kind": "function",
-     "line": 450,
-     "name": "DensePatch.frames"
-    },
-    {
-     "doc": "",
-     "end": 454,
-     "kind": "function",
-     "line": 453,
-     "name": "DensePatch.columns"
-    },
-    {
-     "doc": "The corrected block ``[r0:r1, c0:c1]`` of ``movie`` as a lazily read patch: a",
-     "end": 463,
-     "kind": "function",
-     "line": 457,
-     "name": "region_source"
-    },
-    {
-     "doc": "Rows of a ``(T, Hp, Wp)`` filtered patch at a few frames, indexable by frame number like",
-     "end": 486,
-     "kind": "class",
-     "line": 466,
-     "name": "FrameSubset"
-    },
-    {
-     "doc": "",
-     "end": 474,
-     "kind": "function",
-     "line": 471,
-     "name": "FrameSubset.__init__"
-    },
-    {
-     "doc": "",
-     "end": 481,
-     "kind": "function",
-     "line": 476,
-     "name": "FrameSubset._rows"
-    },
-    {
-     "doc": "",
-     "end": 486,
-     "kind": "function",
-     "line": 483,
-     "name": "FrameSubset.__getitem__"
-    },
-    {
-     "doc": "The temporally filtered patch (:func:`temporal_filter_patch`, then ``half`` frames zeroed",
-     "end": 503,
-     "kind": "function",
-     "line": 489,
-     "name": "filtered_frames"
-    },
-    {
-     "doc": "Per-pixel maximum over time of the full filtered patch (the fallback footprint's input).",
-     "end": 512,
-     "kind": "function",
-     "line": 506,
-     "name": "_full_filtered_max"
-    },
-    {
-     "doc": "``(pixel, values)`` of an ``(H, W)`` plane's nonzeros in C order (what",
-     "end": 520,
-     "kind": "function",
-     "line": 515,
-     "name": "_sparse_plane"
-    },
-    {
-     "doc": "Everything one region contributes, with cell rows local to the region (``-1`` = none).",
-     "end": 531,
-     "kind": "class",
-     "line": 524,
-     "name": "RegionResult"
-    },
-    {
-     "doc": "AP detection -> centers of mass -> DBSCAN clustering -> footprints for one region.",
-     "end": 595,
-     "kind": "function",
-     "line": 534,
-     "name": "process_region"
-    },
-    {
-     "doc": "",
-     "end": 606,
-     "kind": "function",
-     "line": 604,
-     "name": "_pool_init"
-    },
-    {
-     "doc": "",
-     "end": 611,
-     "kind": "function",
-     "line": 609,
-     "name": "_pool_task"
-    },
-    {
-     "doc": "``workers`` for :func:`extract_footprints`: ``None`` or ``0`` -> ``os.cpu_count()``.",
-     "end": 617,
-     "kind": "function",
-     "line": 614,
-     "name": "resolve_workers"
-    },
-    {
-     "doc": "Yield ``(c, RegionResult)`` in region order, computed inline (``workers == 1``) or by a",
-     "end": 639,
-     "kind": "function",
-     "line": 620,
-     "name": "iter_region_results"
-    },
-    {
-     "doc": "Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.",
-     "end": 708,
-     "kind": "function",
-     "line": 642,
-     "name": "extract_footprints"
-    },
-    {
-     "doc": "Region center as ``[row, col]`` from the region's Centroid ``[col, row]``.",
-     "end": 714,
-     "kind": "function",
-     "line": 711,
-     "name": "region_center_rowcol"
+     "line": 107,
+     "name": "ali_clustering"
     }
    ],
-   "doc": "Waveform extraction: temporal filter, per-region AP detection, centers of mass and spatial",
+   "doc": "Spike assignment across the whole field: which localized spikes are the same event, and which",
    "group": "core",
    "imports": [
     {
      "lazy": false,
-     "line": 7,
-     "target": "dataclasses.dataclass"
-    },
-    {
-     "lazy": false,
-     "line": 9,
+     "line": 20,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 11,
-     "target": "pyali.results.SparseBuilder"
+     "line": 22,
+     "target": "pyali.preprocess.gaussian_matlab"
     },
     {
      "lazy": false,
-     "line": 12,
-     "target": "pyali.utils.movmedian_time"
-    },
-    {
-     "lazy": false,
-     "line": 12,
-     "target": "pyali.utils.findpeaks"
-    },
-    {
-     "lazy": false,
-     "line": 12,
+     "line": 23,
      "target": "pyali.utils.round_half_away_from_zero"
     },
     {
      "lazy": true,
-     "line": 83,
+     "line": 52,
+     "target": "scipy.sparse.coo_matrix"
+    },
+    {
+     "lazy": true,
+     "line": 53,
+     "target": "scipy.sparse.csgraph.connected_components"
+    },
+    {
+     "lazy": true,
+     "line": 54,
+     "target": "scipy.spatial.cKDTree"
+    },
+    {
+     "lazy": true,
+     "line": 131,
+     "target": "scipy.ndimage"
+    },
+    {
+     "lazy": true,
+     "line": 132,
+     "target": "skimage.morphology.local_maxima"
+    },
+    {
+     "lazy": true,
+     "line": 133,
+     "target": "skimage.segmentation.watershed"
+    }
+   ],
+   "loc": 158,
+   "path": "pyali/assign.py"
+  },
+  "pyali.extract": {
+   "defs": [
+    {
+     "doc": "Moving-median high-pass along time of one corrected patch ``(T, Hp, Wp)``, sign-flipped so",
+     "end": 25,
+     "kind": "function",
+     "line": 19,
+     "name": "temporal_filter_patch"
+    },
+    {
+     "doc": "Corrected ``(T, r1 - r0, c1 - c0)`` block: ``movie.patch(...)`` for a",
+     "end": 33,
+     "kind": "function",
+     "line": 28,
+     "name": "read_patch"
+    },
+    {
+     "doc": "Row/column index ranges of the analysis patch for a region (a fixed patch or its bbox).",
+     "end": 64,
+     "kind": "function",
+     "line": 39,
+     "name": "compute_patch"
+    },
+    {
+     "doc": "Binary map of a region's pixels. ``pixel_list`` = ``[col, row]`` (1-indexed).",
+     "end": 73,
+     "kind": "function",
+     "line": 67,
+     "name": "build_selection_map"
+    },
+    {
+     "doc": "MATLAB ``medfilt1(x, n)`` with its default zero padding: output ``k`` is the median of",
+     "end": 91,
+     "kind": "function",
+     "line": 79,
+     "name": "median_filter_1d"
+    },
+    {
+     "doc": "MATLAB/Octave ``mad(x)`` with the default flag 0: the mean absolute deviation about the",
+     "end": 98,
+     "kind": "function",
+     "line": 94,
+     "name": "mean_abs_dev"
+    },
+    {
+     "doc": "Detect action potentials in one region from its raw patch's mean trace.",
+     "end": 141,
+     "kind": "function",
+     "line": 104,
+     "name": "detect_region_aps"
+    },
+    {
+     "doc": "Region trace: the in-mask pixel values ``(T, n_mask)`` summed per frame (float64) and",
+     "end": 147,
+     "kind": "function",
+     "line": 144,
+     "name": "region_trace"
+    },
+    {
+     "doc": "Peaks of one region trace: ``dF = medfilt1(trace) - trace`` with ``edge_frames`` zeroed at",
+     "end": 163,
+     "kind": "function",
+     "line": 150,
+     "name": "detect_peaks"
+    },
+    {
+     "doc": "``(k, 4) = [row, col, frame, amplitude]``: for each peak, the brightest in-mask pixel of",
+     "end": 176,
+     "kind": "function",
+     "line": 166,
+     "name": "coarse_ap_pixels"
+    },
+    {
+     "doc": "Keep the largest-amplitude AP within any ``min_interval``-frame window.",
+     "end": 210,
+     "kind": "function",
+     "line": 179,
+     "name": "dedup_close_peaks"
+    },
+    {
+     "doc": "Low-rank denoise the AP frames: one filtered frame per spike (Mini ALI",
+     "end": 243,
+     "kind": "function",
+     "line": 216,
+     "name": "svd_denoise_frames"
+    },
+    {
+     "doc": "Greedily grow up to ``n_pixels`` bright pixels outward from the maximum, within ``radius``",
+     "end": 304,
+     "kind": "function",
+     "line": 246,
+     "name": "region_grow_brightest"
+    },
+    {
+     "doc": ":func:`region_grow_brightest` with a boolean queue and an argmax per step (the reference",
+     "end": 334,
+     "kind": "function",
+     "line": 307,
+     "name": "_region_grow_brightest_mask"
+    },
+    {
+     "doc": "Intensity^2-weighted centroid of the picked pixels (``mini_ali_spk_fine`` lines 72-86).",
+     "end": 354,
+     "kind": "function",
+     "line": 337,
+     "name": "_weighted_com"
+    },
+    {
+     "doc": "Center of mass per AP -> ``[k, 3]`` = ``[row, col, frame]`` (0-indexed frame), ``k <= nAP``.",
+     "end": 384,
+     "kind": "function",
+     "line": 357,
+     "name": "com_via_svd"
+    },
+    {
+     "doc": "Fallback footprint (no AP / no cluster): the region's per-pixel max projection.",
+     "end": 401,
+     "kind": "function",
+     "line": 390,
+     "name": "region_fallback_footprint"
+    },
+    {
+     "doc": "The :class:`pyali.movie.CorrectedPatch` interface over a dense ``(T, H, W)`` movie.",
+     "end": 422,
+     "kind": "class",
+     "line": 408,
+     "name": "DensePatch"
+    },
+    {
+     "doc": "",
+     "end": 413,
+     "kind": "function",
+     "line": 411,
+     "name": "DensePatch.__init__"
+    },
+    {
+     "doc": "",
+     "end": 416,
+     "kind": "function",
+     "line": 415,
+     "name": "DensePatch.full"
+    },
+    {
+     "doc": "",
+     "end": 419,
+     "kind": "function",
+     "line": 418,
+     "name": "DensePatch.frames"
+    },
+    {
+     "doc": "",
+     "end": 422,
+     "kind": "function",
+     "line": 421,
+     "name": "DensePatch.columns"
+    },
+    {
+     "doc": "The corrected block ``[r0:r1, c0:c1]`` of ``movie`` as a lazily read patch: a",
+     "end": 431,
+     "kind": "function",
+     "line": 425,
+     "name": "region_source"
+    },
+    {
+     "doc": "Rows of a ``(T, Hp, Wp)`` filtered patch at a few frames, indexable by frame number like",
+     "end": 454,
+     "kind": "class",
+     "line": 434,
+     "name": "FrameSubset"
+    },
+    {
+     "doc": "",
+     "end": 442,
+     "kind": "function",
+     "line": 439,
+     "name": "FrameSubset.__init__"
+    },
+    {
+     "doc": "",
+     "end": 449,
+     "kind": "function",
+     "line": 444,
+     "name": "FrameSubset._rows"
+    },
+    {
+     "doc": "",
+     "end": 454,
+     "kind": "function",
+     "line": 451,
+     "name": "FrameSubset.__getitem__"
+    },
+    {
+     "doc": "The temporally filtered patch (:func:`temporal_filter_patch`, then ``half`` frames zeroed",
+     "end": 471,
+     "kind": "function",
+     "line": 457,
+     "name": "filtered_frames"
+    },
+    {
+     "doc": "Per-pixel maximum over time of the full filtered patch (the fallback footprint's input).",
+     "end": 480,
+     "kind": "function",
+     "line": 474,
+     "name": "_full_filtered_max"
+    },
+    {
+     "doc": "``(pixel, values)`` of an ``(H, W)`` plane's nonzeros in C order (what",
+     "end": 488,
+     "kind": "function",
+     "line": 483,
+     "name": "_sparse_plane"
+    },
+    {
+     "doc": "One region's detected APs and localized spikes.",
+     "end": 502,
+     "kind": "class",
+     "line": 498,
+     "name": "RegionSpikes"
+    },
+    {
+     "doc": "AP detection and sub-pixel localization for one region (pure; runs in a worker or inline).",
+     "end": 539,
+     "kind": "function",
+     "line": 505,
+     "name": "region_spikes"
+    },
+    {
+     "doc": "Footprint of one spike cluster (Mini ALI's per-cluster loop): the mean of the filtered",
+     "end": 569,
+     "kind": "function",
+     "line": 545,
+     "name": "cluster_footprint"
+    },
+    {
+     "doc": "The region's max-projection footprint over the whole filtered patch and its centre, for",
+     "end": 587,
+     "kind": "function",
+     "line": 575,
+     "name": "region_fallback"
+    },
+    {
+     "doc": "",
+     "end": 598,
+     "kind": "function",
+     "line": 596,
+     "name": "_pool_init"
+    },
+    {
+     "doc": "",
+     "end": 603,
+     "kind": "function",
+     "line": 601,
+     "name": "_pool_task"
+    },
+    {
+     "doc": "``workers`` for :func:`run_tasks`: ``None`` or ``0`` -> ``os.cpu_count()``.",
+     "end": 609,
+     "kind": "function",
+     "line": 606,
+     "name": "resolve_workers"
+    },
+    {
+     "doc": "Yield ``fn(*shared, item)`` for each item, in order: inline (``workers == 1``) or from a",
+     "end": 630,
+     "kind": "function",
+     "line": 612,
+     "name": "run_tasks"
+    },
+    {
+     "doc": "",
+     "end": 634,
+     "kind": "function",
+     "line": 633,
+     "name": "_region_spikes_task"
+    },
+    {
+     "doc": "",
+     "end": 639,
+     "kind": "function",
+     "line": 637,
+     "name": "_cluster_task"
+    },
+    {
+     "doc": "",
+     "end": 643,
+     "kind": "function",
+     "line": 642,
+     "name": "_fallback_task"
+    },
+    {
+     "doc": "Spikes per region, assigned to cells across the whole field, and one footprint per cell.",
+     "end": 760,
+     "kind": "function",
+     "line": 649,
+     "name": "extract_footprints"
+    },
+    {
+     "doc": "Region center as ``[row, col]`` from the region's Centroid ``[col, row]``.",
+     "end": 766,
+     "kind": "function",
+     "line": 763,
+     "name": "region_center_rowcol"
+    }
+   ],
+   "doc": "Waveform extraction: per-region AP detection and centers of mass, field-wide spike assignment",
+   "group": "core",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 8,
+     "target": "dataclasses.dataclass"
+    },
+    {
+     "lazy": false,
+     "line": 10,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 12,
+     "target": "pyali.results.SparseBuilder"
+    },
+    {
+     "lazy": false,
+     "line": 13,
+     "target": "pyali.utils.movmedian_time"
+    },
+    {
+     "lazy": false,
+     "line": 13,
+     "target": "pyali.utils.findpeaks"
+    },
+    {
+     "lazy": false,
+     "line": 13,
+     "target": "pyali.utils.round_half_away_from_zero"
+    },
+    {
+     "lazy": true,
+     "line": 84,
      "target": "numpy.lib.stride_tricks.sliding_window_view"
     },
     {
      "lazy": true,
-     "line": 277,
+     "line": 278,
      "target": "heapq"
     },
     {
      "lazy": true,
-     "line": 493,
+     "line": 461,
      "target": "pyali.utils.movmedian_at"
     },
     {
      "lazy": true,
-     "line": 493,
+     "line": 461,
      "target": "pyali.utils.movmedian_support"
     },
     {
      "lazy": true,
-     "line": 542,
-     "target": "sklearn.cluster.DBSCAN"
-    },
-    {
-     "lazy": true,
-     "line": 605,
+     "line": 597,
      "target": "threadpoolctl.threadpool_limits"
     },
     {
      "lazy": true,
-     "line": 616,
+     "line": 608,
      "target": "os"
     },
     {
      "lazy": true,
-     "line": 630,
+     "line": 623,
      "target": "multiprocessing"
+    },
+    {
+     "lazy": true,
+     "line": 693,
+     "target": "pyali.assign"
     }
    ],
-   "loc": 715,
+   "loc": 767,
    "path": "pyali/extract.py"
   },
   "pyali.figures": {
@@ -12503,44 +13169,44 @@
    "defs": [
     {
      "doc": "",
-     "end": 178,
+     "end": 187,
      "kind": "class",
      "line": 13,
      "name": "Params"
     },
     {
      "doc": "Baseline frames as a 0-indexed concatenated array (from ``std_ranges``).",
-     "end": 103,
+     "end": 112,
      "kind": "function",
-     "line": 100,
+     "line": 109,
      "name": "Params.std_frames_index"
     },
     {
      "doc": "Legacy **6GP002** batch: 312x1200, 16-bit, ~6389 frames. These are the dataclass",
-     "end": 112,
+     "end": 121,
      "kind": "function",
-     "line": 109,
+     "line": 118,
      "name": "Params.profile_6GP002"
     },
     {
      "doc": "**6GP002** 8-bit variant (the 20260401 ``*_8bit_*`` runs): 1080x1080, 6399 frames.",
-     "end": 124,
+     "end": 133,
      "kind": "function",
-     "line": 115,
+     "line": 124,
      "name": "Params.profile_6GP002_8bit"
     },
     {
      "doc": "**443screen1** batch (20260611/12; the directories name it ``443GP`` \u2014 same batch):",
-     "end": 143,
+     "end": 152,
      "kind": "function",
-     "line": 127,
+     "line": 136,
      "name": "Params.profile_443screen1"
     },
     {
      "doc": "**443screen2** batch: 800x800, 8-bit, fps=800, 8399 frames (~10.5 s), blue-stimulus.",
-     "end": 178,
+     "end": 187,
      "kind": "function",
-     "line": 146,
+     "line": 155,
      "name": "Params.profile_443screen2"
     }
    ],
@@ -12564,27 +13230,27 @@
     },
     {
      "lazy": true,
-     "line": 102,
+     "line": 111,
      "target": "numpy"
     }
    ],
-   "loc": 179,
+   "loc": 188,
    "path": "pyali/params.py"
   },
   "pyali.pipeline": {
    "defs": [
     {
      "doc": "Run the full extraction on one FOV; returns a dict of the key outputs.",
-     "end": 183,
+     "end": 189,
      "kind": "function",
      "line": 24,
      "name": "process_fov"
     },
     {
      "doc": "Process every sub-folder of ``root_path``, writing results into ``root_path/Analysis``.",
-     "end": 201,
+     "end": 207,
      "kind": "function",
-     "line": 186,
+     "line": 192,
      "name": "run_folder"
     }
    ],
@@ -12663,21 +13329,21 @@
     },
     {
      "lazy": true,
-     "line": 157,
+     "line": 160,
      "target": "pyali.metadata.fov_metadata"
     },
     {
      "lazy": true,
-     "line": 157,
+     "line": 160,
      "target": "pyali.metadata.write_metadata"
     },
     {
      "lazy": true,
-     "line": 171,
+     "line": 176,
      "target": "pyali.figures.save_result_figures"
     }
    ],
-   "loc": 202,
+   "loc": 208,
    "path": "pyali/pipeline.py"
   },
   "pyali.preprocess": {
@@ -14188,170 +14854,170 @@
    "defs": [
     {
      "doc": "All cells' footprints as one COO list: ``values[offsets[k]:offsets[k+1]]`` at C-order",
-     "end": 128,
+     "end": 131,
      "kind": "class",
-     "line": 60,
+     "line": 63,
      "name": "SparseFootprints"
     },
     {
      "doc": "",
-     "end": 70,
+     "end": 73,
      "kind": "function",
-     "line": 69,
+     "line": 72,
      "name": "SparseFootprints.n"
     },
     {
      "doc": "Dense ``(H, W)`` float32 plane of cell ``k``.",
-     "end": 79,
+     "end": 82,
      "kind": "function",
-     "line": 72,
+     "line": 75,
      "name": "SparseFootprints.plane"
     },
     {
      "doc": "``(N,)`` int: number of stored (nonzero) pixels of each cell.",
-     "end": 84,
+     "end": 87,
      "kind": "function",
-     "line": 81,
+     "line": 84,
      "name": "SparseFootprints.nnz_per_cell"
     },
     {
      "doc": "Inclusive ``(r0, r1, c0, c1)`` bounding box of cell ``k``'s stored pixels, or ``None``",
-     "end": 94,
+     "end": 97,
      "kind": "function",
-     "line": 86,
+     "line": 89,
      "name": "SparseFootprints.bbox"
     },
     {
      "doc": "The same footprints with ``values`` cast to ``dtype`` (pixel / offsets shared).",
-     "end": 99,
+     "end": 102,
      "kind": "function",
-     "line": 96,
+     "line": 99,
      "name": "SparseFootprints.astype"
     },
     {
      "doc": "``(H, W, N)`` float64, the old ``footprint`` array (registration is the only user).",
-     "end": 106,
+     "end": 109,
      "kind": "function",
-     "line": 101,
+     "line": 104,
      "name": "SparseFootprints.dense"
     },
     {
      "doc": "Pack an ``(H, W, N)`` array; ``height``/``width`` are only needed when ``fp`` is empty",
-     "end": 128,
+     "end": 131,
      "kind": "function",
-     "line": 109,
+     "line": 112,
      "name": "SparseFootprints.from_dense"
     },
     {
      "doc": "Accumulate footprints one plane at a time, straight into the COO form, so the dense",
-     "end": 166,
+     "end": 169,
      "kind": "class",
-     "line": 131,
+     "line": 134,
      "name": "SparseBuilder"
-    },
-    {
-     "doc": "",
-     "end": 138,
-     "kind": "function",
-     "line": 136,
-     "name": "SparseBuilder.__init__"
     },
     {
      "doc": "",
      "end": 141,
      "kind": "function",
-     "line": 140,
+     "line": 139,
+     "name": "SparseBuilder.__init__"
+    },
+    {
+     "doc": "",
+     "end": 144,
+     "kind": "function",
+     "line": 143,
      "name": "SparseBuilder.n"
     },
     {
      "doc": "Append one cell from its ``(H, W)`` plane (nonzeros in C order, ``row * W + col``).",
-     "end": 150,
+     "end": 153,
      "kind": "function",
-     "line": 143,
+     "line": 146,
      "name": "SparseBuilder.add_plane"
     },
     {
      "doc": "Append one cell from flat pixel indices (C order) and their values.",
-     "end": 160,
+     "end": 163,
      "kind": "function",
-     "line": 152,
+     "line": 155,
      "name": "SparseBuilder.add_sparse"
     },
     {
      "doc": "",
-     "end": 166,
+     "end": 169,
      "kind": "function",
-     "line": 162,
+     "line": 165,
      "name": "SparseBuilder.build"
     },
     {
      "doc": "Per-cell footprint-weighted brightness: ``sum(w * x) / sum(w)`` over each cell's",
-     "end": 189,
+     "end": 192,
      "kind": "function",
-     "line": 169,
+     "line": 172,
      "name": "weighted_brightness"
     },
     {
      "doc": "DataFrame with exactly ``dtypes``'s columns, cast; zero rows when ``columns`` is empty.",
-     "end": 199,
+     "end": 202,
      "kind": "function",
-     "line": 195,
+     "line": 198,
      "name": "_typed_frame"
     },
     {
      "doc": "The ``cells`` table for ``N`` cells.",
-     "end": 230,
+     "end": 233,
      "kind": "function",
-     "line": 202,
+     "line": 205,
      "name": "make_cells"
     },
     {
      "doc": "The ``spikes`` table: one row per localized spike (a ``COMs`` row), with the amplitude of",
-     "end": 257,
+     "end": 270,
      "kind": "function",
-     "line": 233,
+     "line": 236,
      "name": "pack_spikes"
     },
     {
      "doc": "Everything in one FOV output directory (see the module docstring).",
-     "end": 272,
+     "end": 285,
      "kind": "class",
-     "line": 264,
+     "line": 277,
      "name": "Results"
     },
     {
-     "doc": "Commit of the checked-out pyali, or ``''`` when git is unavailable.",
-     "end": 284,
+     "doc": "Commit of the checked-out pyali; ``$PYALI_GIT_SHA`` when set (runs from an exported copy of",
+     "end": 300,
      "kind": "function",
-     "line": 275,
+     "line": 288,
      "name": "git_sha"
     },
     {
      "doc": "",
-     "end": 290,
+     "end": 306,
      "kind": "function",
-     "line": 287,
+     "line": 303,
      "name": "_check_frame"
     },
     {
      "doc": "Write one FOV's results into ``out_dir`` (created if needed). Returns ``out_dir``.",
-     "end": 350,
+     "end": 366,
      "kind": "function",
-     "line": 293,
+     "line": 309,
      "name": "write_results"
     },
     {
      "doc": "HDF5 attribute -> plain Python scalar / str.",
-     "end": 359,
+     "end": 375,
      "kind": "function",
-     "line": 353,
+     "line": 369,
      "name": "_py"
     },
     {
      "doc": "Read a FOV output directory (or the path of its ``signals.h5``) back as :class:`Results`.",
-     "end": 386,
+     "end": 402,
      "kind": "function",
-     "line": 362,
+     "line": 378,
      "name": "load_results"
     }
    ],
@@ -14360,56 +15026,56 @@
    "imports": [
     {
      "lazy": false,
-     "line": 33,
+     "line": 35,
      "target": "dataclasses.dataclass"
     },
     {
      "lazy": false,
-     "line": 35,
+     "line": 37,
      "target": "numpy"
     },
     {
      "lazy": true,
-     "line": 197,
+     "line": 200,
      "target": "pandas"
     },
     {
      "lazy": true,
-     "line": 277,
+     "line": 291,
      "target": "os"
     },
     {
      "lazy": true,
-     "line": 278,
+     "line": 292,
      "target": "subprocess"
     },
     {
      "lazy": true,
-     "line": 304,
+     "line": 320,
      "target": "os"
     },
     {
      "lazy": true,
-     "line": 305,
+     "line": 321,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 364,
+     "line": 380,
      "target": "os"
     },
     {
      "lazy": true,
-     "line": 365,
+     "line": 381,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 366,
+     "line": 382,
      "target": "pandas"
     }
    ],
-   "loc": 387,
+   "loc": 403,
    "path": "pyali/results.py"
   },
   "pyali.segmentation": {
@@ -15380,6 +16046,149 @@
    "loc": 386,
    "path": "scripts/dev_smoke_registration.py"
   },
+  "scripts.experiments.d2.lumping": {
+   "defs": [
+    {
+     "doc": "",
+     "end": 30,
+     "kind": "function",
+     "line": 26,
+     "name": "trace_spikes"
+    },
+    {
+     "doc": "",
+     "end": 65,
+     "kind": "function",
+     "line": 33,
+     "name": "lumping"
+    },
+    {
+     "doc": "",
+     "end": 86,
+     "kind": "function",
+     "line": 68,
+     "name": "main"
+    }
+   ],
+   "doc": "Neighbour-pair crosstalk (\"lumping\") of one or more result directories.",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 12,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 13,
+     "target": "json"
+    },
+    {
+     "lazy": false,
+     "line": 14,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 15,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 17,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 22,
+     "target": "pyali.metrics.highpass"
+    },
+    {
+     "lazy": false,
+     "line": 22,
+     "target": "pyali.metrics.per_cell_snr"
+    },
+    {
+     "lazy": false,
+     "line": 22,
+     "target": "pyali.metrics.robust_sigma"
+    },
+    {
+     "lazy": false,
+     "line": 23,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": true,
+     "line": 27,
+     "target": "scipy.signal.find_peaks"
+    },
+    {
+     "lazy": true,
+     "line": 34,
+     "target": "scipy.spatial.cKDTree"
+    }
+   ],
+   "loc": 91,
+   "path": "scripts/experiments/d2/lumping.py"
+  },
+  "scripts.experiments.d2.oracle_compare": {
+   "defs": [
+    {
+     "doc": "",
+     "end": 57,
+     "kind": "function",
+     "line": 23,
+     "name": "main"
+    }
+   ],
+   "doc": "Field-level comparison of a pyali result with the stored Octave (Mini ALI V2.2) result.",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 10,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 11,
+     "target": "json"
+    },
+    {
+     "lazy": false,
+     "line": 12,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 13,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 15,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 20,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": true,
+     "line": 24,
+     "target": "scipy.io"
+    },
+    {
+     "lazy": true,
+     "line": 25,
+     "target": "scipy.spatial.cKDTree"
+    }
+   ],
+   "loc": 62,
+   "path": "scripts/experiments/d2/oracle_compare.py"
+  },
   "scripts.experiments.e1.e1_ab": {
    "defs": [
     {
@@ -15586,76 +16395,246 @@
    "loc": 184,
    "path": "scripts/find_video_dims.py"
   },
-  "scripts.qc_footprints": {
+  "scripts.qc_compare": {
    "defs": [
     {
-     "doc": "``R.cells`` plus ``snr_median`` / ``noise_sigma`` / ``qc_spikes`` (from",
-     "end": 70,
+     "doc": "Trace rows of ``after`` cells within ``radius`` px of ``centre_rc`` (1-indexed), nearest",
+     "end": 48,
      "kind": "function",
-     "line": 52,
-     "name": "cell_table"
-    },
-    {
-     "doc": "``n`` percentiles evenly spread over (0, 100): 5, 15, ..., 95 for ``n = 10``.",
-     "end": 75,
-     "kind": "function",
-     "line": 73,
-     "name": "percentiles"
-    },
-    {
-     "doc": "The rows nearest the :func:`percentiles` of ``snr_median`` among spiking cells with at",
-     "end": 96,
-     "kind": "function",
-     "line": 78,
-     "name": "select_cells"
-    },
-    {
-     "doc": "0-indexed top-left ``(r0, c0)`` of a ``size x size`` crop centred on the 1-indexed",
-     "end": 108,
-     "kind": "function",
-     "line": 102,
-     "name": "crop_window"
-    },
-    {
-     "doc": "``sign * (mean(F[t]) - mean(F[t - lag]))`` over the crop at the given spike frames",
-     "end": 132,
-     "kind": "function",
-     "line": 111,
-     "name": "sta_crop"
-    },
-    {
-     "doc": "Memmap of ``frames1.bin`` for this result (``fov_dir`` overrides the recorded one);",
-     "end": 146,
-     "kind": "function",
-     "line": 135,
-     "name": "find_movie"
+     "line": 42,
+     "name": "after_cells_near"
     },
     {
      "doc": "",
-     "end": 155,
+     "end": 54,
      "kind": "function",
-     "line": 152,
-     "name": "_stretch"
+     "line": 51,
+     "name": "_robust_scale"
     },
     {
-     "doc": "Draw the ``len(picked) x 3`` panel figure and save it to ``out_png``.",
-     "end": 241,
+     "doc": "",
+     "end": 130,
      "kind": "function",
-     "line": 158,
+     "line": 57,
      "name": "render"
     },
     {
-     "doc": "Build the QC for ``results_dir``; returns the picked-cell table (also written as CSV).",
-     "end": 278,
+     "doc": "",
+     "end": 163,
      "kind": "function",
-     "line": 247,
+     "line": 133,
      "name": "run"
     },
     {
      "doc": "",
-     "end": 293,
+     "end": 179,
      "kind": "function",
-     "line": 281,
+     "line": 166,
+     "name": "main"
+    }
+   ],
+   "doc": "Before / after QC around chosen cells: does a lumped trace come apart into several cells?",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 24,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 25,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 28,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 34,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.OWN_COLOUR"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.NEIGHBOUR_COLOURS"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.QC_DIR"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.cell_table"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.crop_window"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.draw_spike_map"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.pick_named"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "scripts.qc_footprints.select_cells"
+    },
+    {
+     "lazy": true,
+     "line": 52,
+     "target": "pyali.metrics.highpass"
+    },
+    {
+     "lazy": true,
+     "line": 52,
+     "target": "pyali.metrics.robust_sigma"
+    },
+    {
+     "lazy": true,
+     "line": 59,
+     "target": "matplotlib"
+    },
+    {
+     "lazy": true,
+     "line": 61,
+     "target": "matplotlib.pyplot"
+    },
+    {
+     "lazy": true,
+     "line": 135,
+     "target": "pandas"
+    }
+   ],
+   "loc": 184,
+   "path": "scripts/qc_compare.py"
+  },
+  "scripts.qc_footprints": {
+   "defs": [
+    {
+     "doc": "``R.cells`` plus ``snr_median`` / ``noise_sigma`` / ``qc_spikes`` (from",
+     "end": 77,
+     "kind": "function",
+     "line": 59,
+     "name": "cell_table"
+    },
+    {
+     "doc": "``n`` percentiles evenly spread over (0, 100): 5, 15, ..., 95 for ``n = 10``.",
+     "end": 82,
+     "kind": "function",
+     "line": 80,
+     "name": "percentiles"
+    },
+    {
+     "doc": "The rows nearest the :func:`percentiles` of ``snr_median`` among spiking cells with at",
+     "end": 103,
+     "kind": "function",
+     "line": 85,
+     "name": "select_cells"
+    },
+    {
+     "doc": "Rows of ``df`` for ``names`` -- full cell ids, ``C0713``-style suffixes or trace rows --",
+     "end": 125,
+     "kind": "function",
+     "line": 106,
+     "name": "pick_named"
+    },
+    {
+     "doc": "0-indexed top-left ``(r0, c0)`` of a ``size x size`` crop centred on the 1-indexed",
+     "end": 137,
+     "kind": "function",
+     "line": 131,
+     "name": "crop_window"
+    },
+    {
+     "doc": "``sign * (mean(F[t]) - mean(F[t - lag]))`` over the crop at the given spike frames",
+     "end": 161,
+     "kind": "function",
+     "line": 140,
+     "name": "sta_crop"
+    },
+    {
+     "doc": "Memmap of ``frames1.bin`` for this result (``fov_dir`` overrides the recorded one);",
+     "end": 175,
+     "kind": "function",
+     "line": 164,
+     "name": "find_movie"
+    },
+    {
+     "doc": "",
+     "end": 189,
+     "kind": "function",
+     "line": 186,
+     "name": "_stretch"
+    },
+    {
+     "doc": "Trace rows of the cells whose centre lies inside the crop, nearest the crop centre first.",
+     "end": 198,
+     "kind": "function",
+     "line": 192,
+     "name": "cells_in_crop"
+    },
+    {
+     "doc": "The spikes table restricted to COMs inside the crop, with crop coordinates ``y``/``x`` and",
+     "end": 214,
+     "kind": "function",
+     "line": 201,
+     "name": "spikes_in_crop"
+    },
+    {
+     "doc": "",
+     "end": 219,
+     "kind": "function",
+     "line": 217,
+     "name": "_half_max_contour"
+    },
+    {
+     "doc": "Reference crop with spike COMs and footprint contours.",
+     "end": 258,
+     "kind": "function",
+     "line": 222,
+     "name": "draw_spike_map"
+    },
+    {
+     "doc": "Draw the ``len(picked) x 3`` panel figure and save it to ``out_png``.",
+     "end": 349,
+     "kind": "function",
+     "line": 261,
+     "name": "render"
+    },
+    {
+     "doc": "Build the QC for ``results_dir``; returns the picked-cell table (also written as CSV).",
+     "end": 390,
+     "kind": "function",
+     "line": 355,
+     "name": "run"
+    },
+    {
+     "doc": "",
+     "end": 411,
+     "kind": "function",
+     "line": 393,
      "name": "main"
     }
    ],
@@ -15664,56 +16643,56 @@
    "imports": [
     {
      "lazy": false,
-     "line": 28,
+     "line": 35,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 29,
+     "line": 36,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 30,
+     "line": 37,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 31,
+     "line": 38,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 33,
+     "line": 40,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 38,
+     "line": 45,
      "target": "pyali.io.open_bin_memmap"
     },
     {
      "lazy": false,
-     "line": 39,
+     "line": 46,
      "target": "pyali.metrics.per_cell_snr"
     },
     {
      "lazy": false,
-     "line": 40,
+     "line": 47,
      "target": "pyali.results.load_results"
     },
     {
      "lazy": true,
-     "line": 160,
+     "line": 263,
      "target": "matplotlib"
     },
     {
      "lazy": true,
-     "line": 162,
+     "line": 265,
      "target": "matplotlib.pyplot"
     }
    ],
-   "loc": 298,
+   "loc": 416,
    "path": "scripts/qc_footprints.py"
   },
   "scripts.rename_to_convention": {
@@ -17573,8 +18552,11 @@
   "svd_rank",
   "com_radius",
   "com_n_pixels",
-  "dbscan_eps",
-  "dbscan_min_pts",
+  "spike_merge_distance_px",
+  "ali_cluster_factor",
+  "ali_cluster_threshold",
+  "ali_flood_margin",
+  "footprint_radius_px",
   "whiten_traces",
   "whiten_ridge",
   "whiten_sigma_floor_pct",
@@ -17597,8 +18579,6 @@
   "bench.fastpath.extract_footprints_lowmem": [
    "com_n_pixels",
    "com_radius",
-   "dbscan_eps",
-   "dbscan_min_pts",
    "filter_window",
    "min_peak_interval",
    "patch_size",
@@ -17668,11 +18648,23 @@
    "disk_radius",
    "patch_size"
   ],
-  "pyali.extract.process_region": [
+  "pyali.extract.cluster_footprint": [
+   "filter_window",
+   "footprint_radius_px"
+  ],
+  "pyali.extract.extract_footprints": [
+   "ali_cluster_factor",
+   "ali_cluster_threshold",
+   "ali_flood_margin",
+   "spike_merge_distance_px"
+  ],
+  "pyali.extract.region_fallback": [
+   "filter_window",
+   "patch_size"
+  ],
+  "pyali.extract.region_spikes": [
    "com_n_pixels",
    "com_radius",
-   "dbscan_eps",
-   "dbscan_min_pts",
    "detect_edge_frames",
    "detect_median_window",
    "filter_window",

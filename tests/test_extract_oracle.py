@@ -255,22 +255,30 @@ def test_region_and_spike_bookkeeping(fov):
     assert rof.shape == (N,) and roa.shape == (len(aps),) and ros.shape == (len(coms),)
     assert scr.shape == (len(coms),)
     assert len(coms) <= len(aps) and len(aps) > 0
-    assert set(rof.tolist()) == set(range(n_regions)), "every region yields >= 1 footprint"
     assert rof.min() >= 0 and rof.max() < n_regions and roa.max() < n_regions
     assert np.all((scr == -1) | ((scr >= 0) & (scr < N)))
+    src = out["source_of_footprint"]
+    info = out["spike_info"]
     # a localized spike belongs to the region of the AP it came from, and that region's APs
     # contain its frame
     for r in set(ros.tolist()):
         assert set(coms[ros == r, 2].astype(int)) <= set(aps[roa == r, 2].astype(int))
-    # an assigned spike's cell lies in the spike's region, and sits within 2 px of its centre
+    # every region is either the source of a cluster spike (via the merge survivor) or a fallback
+    fallback_regions = {int(rof[k]) for k in range(N) if src[k] != "spiking"}
+    clustered_regions = set(ros[info["cluster"] > 0].tolist())
+    assert clustered_regions | fallback_regions >= set(range(n_regions)) - set(ros[~info["kept"]].tolist())
+    # an assigned spike survived the merge, carries its cell's cluster, and sits near the centre
     n_spikes = np.bincount(scr[scr >= 0], minlength=N)
     for i in np.flatnonzero(scr >= 0):
         k = scr[i]
-        assert rof[k] == ros[i], f"spike {i}: cell {k} is in region {rof[k]}, spike in {ros[i]}"
-        assert np.hypot(coms[i, 0] - fc[k, 0], coms[i, 1] - fc[k, 1]) <= 2.0, (
+        assert info["kept"][i] and info["cluster"][i] > 0 and src[k] == "spiking"
+        assert np.hypot(coms[i, 0] - fc[k, 0], coms[i, 1] - fc[k, 1]) <= 3.0, (
             f"spike {i} at {coms[i, :2]} is far from cell {k} centre {fc[k]}")
-    # cluster cells carry at least a DBSCAN cluster's worth of spikes; fallback cells carry none
-    assert np.all((n_spikes == 0) | (n_spikes >= p.dbscan_min_pts))
+    # one cluster label per spiking cell; fallback cells carry no spikes
+    for k in range(N):
+        labs = set(info["cluster"][scr == k].tolist())
+        assert (len(labs) == 1) if src[k] == "spiking" else (n_spikes[k] == 0)
+    assert info["n_spikes_before_merge"] == len(coms) >= info["n_spikes_after_merge"] >= info["n_spikes_clustered"]
     assert (n_spikes > 0).sum() >= len(fov["truth"]["centers"]), "a planted cell has no spikes"
     print(f"\n[oracle] cells={N} spiking={(n_spikes > 0).sum()} fallback={(n_spikes == 0).sum()} "
           f"APs={len(aps)} localized={len(coms)} assigned={(scr >= 0).sum()}")
@@ -303,7 +311,7 @@ def test_written_results_round_trip(fov):
     assert r.spikes["cell_row"].tolist() == scr.tolist()
     assert np.isfinite(r.spikes["amplitude"]).all() and (r.spikes["amplitude"] > 0).all()
     assert r.attrs["n_ap_detected"] == len(out["APs"]) and r.attrs["n_ap_localized"] == len(coms)
-    assert r.attrs["fps"] == fov["params"].fps and r.attrs["schema_version"] == 2
+    assert r.attrs["fps"] == fov["params"].fps and r.attrs["schema_version"] == 3
     assert np.array_equal(r.images["reference"], np.asarray(out["reference_image"], np.float32))
     assert np.array_equal(r.images["binary_map"], np.asarray(out["binary_map"], np.uint8))
     assert np.array_equal(r.images["brightness_reference"], out["reference_corrected"])
