@@ -307,7 +307,7 @@
    "src_module": "bench.guard_test_seg"
   },
   {
-   "defined": true,
+   "defined": false,
    "dst": "pyali.preprocess.sharpen",
    "dst_module": "pyali.preprocess",
    "lazy": false,
@@ -383,7 +383,7 @@
    "dst": "pyali.params.Params.profile_443screen2",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 88,
+   "line": 87,
    "src": "bench.profile_highN.main",
    "src_module": "bench.profile_highN"
   },
@@ -392,7 +392,7 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
-   "line": 97,
+   "line": 96,
    "src": "bench.profile_highN.main",
    "src_module": "bench.profile_highN"
   },
@@ -478,7 +478,7 @@
    "src_module": "bench.seg_grid"
   },
   {
-   "defined": true,
+   "defined": false,
    "dst": "pyali.preprocess.sharpen",
    "dst_module": "pyali.preprocess",
    "lazy": false,
@@ -568,7 +568,7 @@
    "src_module": "bench.seg_nbhd"
   },
   {
-   "defined": true,
+   "defined": false,
    "dst": "pyali.preprocess.sharpen",
    "dst_module": "pyali.preprocess",
    "lazy": false,
@@ -667,7 +667,7 @@
    "src_module": "bench.seg_qc"
   },
   {
-   "defined": true,
+   "defined": false,
    "dst": "pyali.preprocess.sharpen",
    "dst_module": "pyali.preprocess",
    "lazy": false,
@@ -748,7 +748,7 @@
    "src_module": "bench.seg_survey"
   },
   {
-   "defined": true,
+   "defined": false,
    "dst": "pyali.preprocess.sharpen",
    "dst_module": "pyali.preprocess",
    "lazy": false,
@@ -779,7 +779,7 @@
    "dst": "pyali.extract._weighted_com",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 320,
+   "line": 319,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
@@ -788,43 +788,43 @@
    "dst": "pyali.extract.region_grow_brightest",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 319,
+   "line": 318,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.extract.svd_denoise_ap_stack",
+   "dst": "pyali.extract.svd_denoise_frames",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 314,
+   "line": 312,
    "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.utils.uniquetol_reps",
+   "dst": "pyali.utils.round_half_away_from_zero",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 199,
-   "src": "pyali.extract.dedup_close_peaks",
+   "line": 322,
+   "src": "pyali.extract.com_via_svd",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.extract.apply_dog_gain",
+   "dst": "pyali.extract.mean_abs_dev",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 160,
+   "line": 142,
    "src": "pyali.extract.detect_region_aps",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.extract.forward_rolling_min_subtract",
+   "dst": "pyali.extract.median_filter_1d",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 161,
+   "line": 138,
    "src": "pyali.extract.detect_region_aps",
    "src_module": "pyali.extract"
   },
@@ -833,44 +833,8 @@
    "dst": "pyali.utils.findpeaks",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 167,
+   "line": 145,
    "src": "pyali.extract.detect_region_aps",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.utils.round_half_away_from_zero",
-   "dst_module": "pyali.utils",
-   "lazy": false,
-   "line": 155,
-   "src": "pyali.extract.detect_region_aps",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.footprint_isolated_mask",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 640,
-   "src": "pyali.extract.extract_cell_traces",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.pinv_traces",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 639,
-   "src": "pyali.extract.extract_cell_traces",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.whitened_gls_traces",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 636,
-   "src": "pyali.extract.extract_cell_traces",
    "src_module": "pyali.extract"
   },
   {
@@ -878,7 +842,7 @@
    "dst": "pyali.extract.build_selection_map",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 411,
+   "line": 436,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -887,7 +851,7 @@
    "dst": "pyali.extract.cluster_footprints",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 439,
+   "line": 469,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -896,7 +860,7 @@
    "dst": "pyali.extract.com_via_svd",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 430,
+   "line": 455,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -905,7 +869,7 @@
    "dst": "pyali.extract.compute_patch",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 409,
+   "line": 434,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -914,7 +878,7 @@
    "dst": "pyali.extract.dedup_close_peaks",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 425,
+   "line": 449,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -923,7 +887,16 @@
    "dst": "pyali.extract.detect_region_aps",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 423,
+   "line": 446,
+   "src": "pyali.extract.extract_footprints",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.extract.read_patch",
+   "dst_module": "pyali.extract",
+   "lazy": false,
+   "line": 440,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -932,7 +905,7 @@
    "dst": "pyali.extract.region_center_rowcol",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 403,
+   "line": 426,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -941,7 +914,7 @@
    "dst": "pyali.extract.region_fallback_footprint",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 402,
+   "line": 425,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -950,7 +923,16 @@
    "dst": "pyali.extract.temporal_filter_patch",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 416,
+   "line": 441,
+   "src": "pyali.extract.extract_footprints",
+   "src_module": "pyali.extract"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.SparseBuilder",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 420,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
@@ -959,44 +941,17 @@
    "dst": "pyali.utils.round_half_away_from_zero",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 398,
+   "line": 418,
    "src": "pyali.extract.extract_footprints",
    "src_module": "pyali.extract"
   },
   {
    "defined": true,
-   "dst": "pyali.extract.project_movie",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 521,
-   "src": "pyali.extract.pinv_traces",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
    "dst": "pyali.utils.movmedian_time",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 35,
-   "src": "pyali.extract.temporal_filter",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.utils.movmedian_time",
-   "dst_module": "pyali.utils",
-   "lazy": false,
-   "line": 59,
+   "line": 20,
    "src": "pyali.extract.temporal_filter_patch",
-   "src_module": "pyali.extract"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.project_movie",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 619,
-   "src": "pyali.extract.whitened_gls_traces",
    "src_module": "pyali.extract"
   },
   {
@@ -1130,7 +1085,7 @@
    "dst": "pyali._h5read.read_mat_v73",
    "dst_module": "pyali._h5read",
    "lazy": true,
-   "line": 75,
+   "line": 80,
    "src": "pyali.io.load_v73",
    "src_module": "pyali.io"
   },
@@ -1139,17 +1094,62 @@
    "dst": "pyali.io._from_h5",
    "dst_module": "pyali.io",
    "lazy": false,
-   "line": 80,
+   "line": 85,
    "src": "pyali.io.load_v73",
    "src_module": "pyali.io"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata._jsonable",
+   "dst_module": "pyali.metadata",
+   "lazy": false,
+   "line": 180,
+   "src": "pyali.metadata._jsonable",
+   "src_module": "pyali.metadata"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata._jsonable",
+   "dst_module": "pyali.metadata",
+   "lazy": false,
+   "line": 225,
+   "src": "pyali.metadata.fov_metadata",
+   "src_module": "pyali.metadata"
   },
   {
    "defined": true,
    "dst": "pyali.metadata.parse_dir_name",
    "dst_module": "pyali.metadata",
    "lazy": false,
-   "line": 142,
+   "line": 213,
    "src": "pyali.metadata.fov_metadata",
+   "src_module": "pyali.metadata"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.git_sha",
+   "dst_module": "pyali.results",
+   "lazy": true,
+   "line": 222,
+   "src": "pyali.metadata.fov_metadata",
+   "src_module": "pyali.metadata"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.Identity",
+   "dst_module": "pyali.metadata",
+   "lazy": false,
+   "line": 173,
+   "src": "pyali.metadata.identity_from_dir_name",
+   "src_module": "pyali.metadata"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.parse_dir_name",
+   "dst_module": "pyali.metadata",
+   "lazy": false,
+   "line": 163,
+   "src": "pyali.metadata.identity_from_dir_name",
    "src_module": "pyali.metadata"
   },
   {
@@ -1172,37 +1172,73 @@
   },
   {
    "defined": true,
-   "dst": "pyali.extract.extract_cell_traces",
-   "dst_module": "pyali.extract",
+   "dst": "pyali.movie.interp_weights",
+   "dst_module": "pyali.movie",
    "lazy": false,
-   "line": 103,
-   "src": "pyali.pipeline.process_fov",
-   "src_module": "pyali.pipeline"
+   "line": 99,
+   "src": "pyali.movie.CorrectedMovie.__init__",
+   "src_module": "pyali.movie"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.movie.CorrectedMovie",
+   "dst_module": "pyali.movie",
+   "lazy": false,
+   "line": 169,
+   "src": "pyali.movie.corrected_movie",
+   "src_module": "pyali.movie"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.movie.estimate_shift",
+   "dst_module": "pyali.movie",
+   "lazy": false,
+   "line": 168,
+   "src": "pyali.movie.corrected_movie",
+   "src_module": "pyali.movie"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.movie.interp_weights",
+   "dst_module": "pyali.movie",
+   "lazy": false,
+   "line": 167,
+   "src": "pyali.movie.corrected_movie",
+   "src_module": "pyali.movie"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.background_samples",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 166,
+   "src": "pyali.movie.corrected_movie",
+   "src_module": "pyali.movie"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.motion_operator",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 66,
+   "src": "pyali.movie.estimate_shift",
+   "src_module": "pyali.movie"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess._interp_weight",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 36,
+   "src": "pyali.movie.interp_weights",
+   "src_module": "pyali.movie"
   },
   {
    "defined": true,
    "dst": "pyali.extract.extract_footprints",
    "dst_module": "pyali.extract",
    "lazy": false,
-   "line": 89,
-   "src": "pyali.pipeline.process_fov",
-   "src_module": "pyali.pipeline"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.per_pixel_noise_map",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 96,
-   "src": "pyali.pipeline.process_fov",
-   "src_module": "pyali.pipeline"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.extract.temporal_filter",
-   "dst_module": "pyali.extract",
-   "lazy": false,
-   "line": 84,
+   "line": 104,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1211,7 +1247,7 @@
    "dst": "pyali.figures.save_result_figures",
    "dst_module": "pyali.figures",
    "lazy": true,
-   "line": 123,
+   "line": 169,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1220,16 +1256,7 @@
    "dst": "pyali.io.read_bin_mov",
    "dst_module": "pyali.io",
    "lazy": false,
-   "line": 35,
-   "src": "pyali.pipeline.process_fov",
-   "src_module": "pyali.pipeline"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.io.save_mat_v73",
-   "dst_module": "pyali.io",
-   "lazy": false,
-   "line": 72,
+   "line": 48,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1238,7 +1265,16 @@
    "dst": "pyali.metadata.fov_metadata",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 114,
+   "line": 155,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.identity_from_dir_name",
+   "dst_module": "pyali.metadata",
+   "lazy": true,
+   "line": 42,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1247,7 +1283,34 @@
    "dst": "pyali.metadata.write_metadata",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 114,
+   "line": 155,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.movie.CorrectedMovie",
+   "dst_module": "pyali.movie",
+   "lazy": false,
+   "line": 78,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.movie.estimate_shift",
+   "dst_module": "pyali.movie",
+   "lazy": false,
+   "line": 77,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.movie.interp_weights",
+   "dst_module": "pyali.movie",
+   "lazy": false,
+   "line": 76,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1256,7 +1319,7 @@
    "dst": "pyali.params.Params",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 17,
+   "line": 24,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1265,34 +1328,43 @@
    "dst": "pyali.params.Params.std_frames_index",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 90,
+   "line": 112,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
   {
    "defined": true,
-   "dst": "pyali.preprocess.adaptive_background",
+   "dst": "pyali.preprocess.background_samples",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 50,
+   "line": 73,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
   {
    "defined": true,
-   "dst": "pyali.preprocess.clip_saturation",
+   "dst": "pyali.preprocess.focus_score",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 54,
+   "line": 63,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
   {
    "defined": true,
-   "dst": "pyali.preprocess.motion_correct",
+   "dst": "pyali.preprocess.large_scale_background",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 52,
+   "line": 65,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.raw_mean_reference",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 61,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1301,16 +1373,43 @@
    "dst": "pyali.preprocess.reference_and_correlation_image",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 43,
+   "line": 55,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
   {
    "defined": true,
-   "dst": "pyali.preprocess.sharpen",
-   "dst_module": "pyali.preprocess",
+   "dst": "pyali.results.make_cells",
+   "dst_module": "pyali.results",
    "lazy": false,
-   "line": 45,
+   "line": 138,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.pack_spikes",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 141,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.weighted_brightness",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 130,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.write_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 136,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1319,7 +1418,7 @@
    "dst": "pyali.segmentation.cell_segmentation",
    "dst_module": "pyali.segmentation",
    "lazy": false,
-   "line": 58,
+   "line": 85,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1328,16 +1427,43 @@
    "dst": "pyali.segmentation.drop_oversized_regions",
    "dst_module": "pyali.segmentation",
    "lazy": false,
-   "line": 61,
+   "line": 90,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
   {
    "defined": true,
-   "dst": "pyali.utils.dog_kernel",
-   "dst_module": "pyali.utils",
+   "dst": "pyali.telemetry.StageMeter",
+   "dst_module": "pyali.telemetry",
    "lazy": false,
-   "line": 87,
+   "line": 44,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.FootprintOperator",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 112,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.extract_cell_traces",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 118,
+   "src": "pyali.pipeline.process_fov",
+   "src_module": "pyali.pipeline"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.noise_map_on_union",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 111,
    "src": "pyali.pipeline.process_fov",
    "src_module": "pyali.pipeline"
   },
@@ -1346,7 +1472,7 @@
    "dst": "pyali.params.Params",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 131,
+   "line": 183,
    "src": "pyali.pipeline.run_folder",
    "src_module": "pyali.pipeline"
   },
@@ -1355,7 +1481,7 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
-   "line": 142,
+   "line": 194,
    "src": "pyali.pipeline.run_folder",
    "src_module": "pyali.pipeline"
   },
@@ -1364,25 +1490,7 @@
    "dst": "pyali.preprocess._interp_weight",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 225,
-   "src": "pyali.preprocess.adaptive_background",
-   "src_module": "pyali.preprocess"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.preprocess.background_samples",
-   "dst_module": "pyali.preprocess",
-   "lazy": false,
-   "line": 222,
-   "src": "pyali.preprocess.adaptive_background",
-   "src_module": "pyali.preprocess"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.preprocess._interp_weight",
-   "dst_module": "pyali.preprocess",
-   "lazy": false,
-   "line": 198,
+   "line": 168,
    "src": "pyali.preprocess.background_pixel_trace",
    "src_module": "pyali.preprocess"
   },
@@ -1391,7 +1499,7 @@
    "dst": "pyali.utils.round_half_away_from_zero",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 170,
+   "line": 140,
    "src": "pyali.preprocess.background_samples",
    "src_module": "pyali.preprocess"
   },
@@ -1400,17 +1508,35 @@
    "dst": "pyali.utils.strel_disk",
    "dst_module": "pyali.utils",
    "lazy": false,
-   "line": 162,
+   "line": 126,
    "src": "pyali.preprocess.background_samples",
    "src_module": "pyali.preprocess"
   },
   {
    "defined": true,
-   "dst": "pyali.preprocess.motion_operator",
+   "dst": "pyali.preprocess.gaussian_matlab",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 271,
-   "src": "pyali.preprocess.motion_correct",
+   "line": 245,
+   "src": "pyali.preprocess.large_scale_background",
+   "src_module": "pyali.preprocess"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.masked_grey_opening",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 243,
+   "src": "pyali.preprocess.large_scale_background",
+   "src_module": "pyali.preprocess"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.exact_disk",
+   "dst_module": "pyali.utils",
+   "lazy": true,
+   "line": 243,
+   "src": "pyali.preprocess.large_scale_background",
    "src_module": "pyali.preprocess"
   },
   {
@@ -1418,7 +1544,7 @@
    "dst": "pyali.preprocess._edge_gradients",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 248,
+   "line": 190,
    "src": "pyali.preprocess.motion_operator",
    "src_module": "pyali.preprocess"
   },
@@ -1427,35 +1553,8 @@
    "dst": "pyali.preprocess._correlation_image",
    "dst_module": "pyali.preprocess",
    "lazy": false,
-   "line": 33,
+   "line": 34,
    "src": "pyali.preprocess.reference_and_correlation_image",
-   "src_module": "pyali.preprocess"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.preprocess.gaussian_kernel",
-   "dst_module": "pyali.preprocess",
-   "lazy": false,
-   "line": 133,
-   "src": "pyali.preprocess.sharpen",
-   "src_module": "pyali.preprocess"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.utils.fspecial_laplacian",
-   "dst_module": "pyali.utils",
-   "lazy": false,
-   "line": 135,
-   "src": "pyali.preprocess.sharpen",
-   "src_module": "pyali.preprocess"
-  },
-  {
-   "defined": true,
-   "dst": "pyali.utils.strel_disk",
-   "dst_module": "pyali.utils",
-   "lazy": false,
-   "line": 130,
-   "src": "pyali.preprocess.sharpen",
    "src_module": "pyali.preprocess"
   },
   {
@@ -1769,7 +1868,7 @@
    "dst": "pyali.io.open_bin_memmap",
    "dst_module": "pyali.io",
    "lazy": true,
-   "line": 77,
+   "line": 78,
    "src": "pyali.registration.io.raw_mean_reference",
    "src_module": "pyali.registration.io"
   },
@@ -1778,7 +1877,7 @@
    "dst": "pyali.registration.io._h5str",
    "dst_module": "pyali.registration.io",
    "lazy": false,
-   "line": 57,
+   "line": 58,
    "src": "pyali.registration.io.read_stage_xy",
    "src_module": "pyali.registration.io"
   },
@@ -1787,7 +1886,25 @@
    "dst": "pyali.metrics.per_cell_snr",
    "dst_module": "pyali.metrics",
    "lazy": true,
-   "line": 120,
+   "line": 117,
+   "src": "pyali.registration.io.read_voltage_cells",
+   "src_module": "pyali.registration.io"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": true,
+   "line": 113,
+   "src": "pyali.registration.io.read_voltage_cells",
+   "src_module": "pyali.registration.io"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metrics.per_cell_snr",
+   "dst_module": "pyali.metrics",
+   "lazy": true,
+   "line": 146,
    "src": "pyali.registration.io.read_voltage_fov",
    "src_module": "pyali.registration.io"
   },
@@ -1796,7 +1913,7 @@
    "dst": "pyali.params.Params",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 115,
+   "line": 136,
    "src": "pyali.registration.io.read_voltage_fov",
    "src_module": "pyali.registration.io"
   },
@@ -1805,7 +1922,16 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": true,
-   "line": 119,
+   "line": 143,
+   "src": "pyali.registration.io.read_voltage_fov",
+   "src_module": "pyali.registration.io"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.registration.io.read_voltage_cells",
+   "dst_module": "pyali.registration.io",
+   "lazy": false,
+   "line": 138,
    "src": "pyali.registration.io.read_voltage_fov",
    "src_module": "pyali.registration.io"
   },
@@ -1814,7 +1940,7 @@
    "dst": "pyali.registration.io.read_voltage_reference",
    "dst_module": "pyali.registration.io",
    "lazy": false,
-   "line": 121,
+   "line": 147,
    "src": "pyali.registration.io.read_voltage_fov",
    "src_module": "pyali.registration.io"
   },
@@ -1823,7 +1949,7 @@
    "dst": "pyali.params.Params",
    "dst_module": "pyali.params",
    "lazy": false,
-   "line": 94,
+   "line": 95,
    "src": "pyali.registration.io.read_voltage_reference",
    "src_module": "pyali.registration.io"
   },
@@ -1832,7 +1958,7 @@
    "dst": "pyali.registration.io.raw_mean_reference",
    "dst_module": "pyali.registration.io",
    "lazy": false,
-   "line": 96,
+   "line": 97,
    "src": "pyali.registration.io.read_voltage_reference",
    "src_module": "pyali.registration.io"
   },
@@ -1841,7 +1967,7 @@
    "dst": "pyali.registration.io.read_stage_xy",
    "dst_module": "pyali.registration.io",
    "lazy": false,
-   "line": 97,
+   "line": 98,
    "src": "pyali.registration.io.read_voltage_reference",
    "src_module": "pyali.registration.io"
   },
@@ -3098,39 +3224,354 @@
   },
   {
    "defined": true,
-   "dst": "pyali.segmentation._threshold_scale",
-   "dst_module": "pyali.segmentation",
+   "dst": "pyali.results.SparseFootprints",
+   "dst_module": "pyali.results",
    "lazy": false,
-   "line": 43,
-   "src": "pyali.segmentation.adaptive_threshold_mean",
-   "src_module": "pyali.segmentation"
+   "line": 163,
+   "src": "pyali.results.SparseBuilder.build",
+   "src_module": "pyali.results"
   },
   {
    "defined": true,
-   "dst": "pyali.preprocess.gaussian_kernel",
-   "dst_module": "pyali.preprocess",
+   "dst": "pyali.results.SparseFootprints",
+   "dst_module": "pyali.results",
    "lazy": false,
-   "line": 95,
-   "src": "pyali.segmentation.cell_segmentation",
-   "src_module": "pyali.segmentation"
+   "line": 98,
+   "src": "pyali.results.SparseFootprints.astype",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.SparseFootprints",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 125,
+   "src": "pyali.results.SparseFootprints.from_dense",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.Results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 385,
+   "src": "pyali.results.load_results",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.SparseFootprints",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 375,
+   "src": "pyali.results.load_results",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results._py",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 373,
+   "src": "pyali.results.load_results",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results._typed_frame",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 222,
+   "src": "pyali.results.make_cells",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results._typed_frame",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 255,
+   "src": "pyali.results.pack_spikes",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results._check_frame",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 308,
+   "src": "pyali.results.write_results",
+   "src_module": "pyali.results"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.git_sha",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 347,
+   "src": "pyali.results.write_results",
+   "src_module": "pyali.results"
   },
   {
    "defined": true,
    "dst": "pyali.segmentation._regionprops",
    "dst_module": "pyali.segmentation",
    "lazy": false,
-   "line": 101,
+   "line": 156,
    "src": "pyali.segmentation.cell_segmentation",
    "src_module": "pyali.segmentation"
   },
   {
    "defined": true,
-   "dst": "pyali.segmentation.adaptive_threshold_mean",
+   "dst": "pyali.segmentation.hysteresis_mask",
    "dst_module": "pyali.segmentation",
    "lazy": false,
-   "line": 96,
+   "line": 151,
    "src": "pyali.segmentation.cell_segmentation",
    "src_module": "pyali.segmentation"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.segmentation.soma_watershed_mask",
+   "dst_module": "pyali.segmentation",
+   "lazy": false,
+   "line": 153,
+   "src": "pyali.segmentation.cell_segmentation",
+   "src_module": "pyali.segmentation"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.gaussian_matlab",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 45,
+   "src": "pyali.segmentation.hysteresis_mask",
+   "src_module": "pyali.segmentation"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.gaussian_matlab",
+   "dst_module": "pyali.preprocess",
+   "lazy": false,
+   "line": 98,
+   "src": "pyali.segmentation.soma_watershed_mask",
+   "src_module": "pyali.segmentation"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.matlab_disk",
+   "dst_module": "pyali.utils",
+   "lazy": true,
+   "line": 110,
+   "src": "pyali.segmentation.soma_watershed_mask",
+   "src_module": "pyali.segmentation"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.rss_gb",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 75,
+   "src": "pyali.telemetry.StageMeter.__init__",
+   "src_module": "pyali.telemetry"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.rss_gb",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 83,
+   "src": "pyali.telemetry.StageMeter._sample",
+   "src_module": "pyali.telemetry"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.rss_gb",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 120,
+   "src": "pyali.telemetry.StageMeter.close",
+   "src_module": "pyali.telemetry"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.thread_info",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 145,
+   "src": "pyali.telemetry.StageMeter.report",
+   "src_module": "pyali.telemetry"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.rss_gb",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 95,
+   "src": "pyali.telemetry.StageMeter.stage",
+   "src_module": "pyali.telemetry"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._gather",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 101,
+   "src": "pyali.traces.FootprintOperator.project",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._n_frames",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 89,
+   "src": "pyali.traces.FootprintOperator.project",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.gls_traces",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 276,
+   "src": "pyali.traces.extract_cell_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.isolated_mask",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 280,
+   "src": "pyali.traces.extract_cell_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.pinv_traces",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 279,
+   "src": "pyali.traces.extract_cell_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.FootprintOperator",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 244,
+   "src": "pyali.traces.gls_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._n_frames",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 245,
+   "src": "pyali.traces.gls_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._gather",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 212,
+   "src": "pyali.traces.noise_map_on_union",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._n_frames",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 206,
+   "src": "pyali.traces.noise_map_on_union",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.movmedian_time",
+   "dst_module": "pyali.utils",
+   "lazy": false,
+   "line": 213,
+   "src": "pyali.traces.noise_map_on_union",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.FootprintOperator",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 164,
+   "src": "pyali.traces.pinv_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._apply_spectrum",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 182,
+   "src": "pyali.traces.pinv_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._n_frames",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 169,
+   "src": "pyali.traces.pinv_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.default_rcond",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 165,
+   "src": "pyali.traces.pinv_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.gram_spectrum",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 170,
+   "src": "pyali.traces.pinv_traces",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces._apply_spectrum",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 157,
+   "src": "pyali.traces.truncated_gram_solve",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.traces.gram_spectrum",
+   "dst_module": "pyali.traces",
+   "lazy": false,
+   "line": 152,
+   "src": "pyali.traces.truncated_gram_solve",
+   "src_module": "pyali.traces"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.utils.exact_disk",
+   "dst_module": "pyali.utils",
+   "lazy": false,
+   "line": 84,
+   "src": "pyali.utils.matlab_disk",
+   "src_module": "pyali.utils"
   },
   {
    "defined": true,
@@ -3140,6 +3581,87 @@
    "line": 185,
    "src": "pyali.utils.movmedian_time",
    "src_module": "pyali.utils"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.inventory_row",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 146,
+   "src": "scripts.build_inventory.build_inventory",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.scan_fovs",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 147,
+   "src": "scripts.build_inventory.build_inventory",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.preprocess.focus_score",
+   "dst_module": "pyali.preprocess",
+   "lazy": true,
+   "line": 95,
+   "src": "scripts.build_inventory.focus_of",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.parse_dir_name",
+   "dst_module": "pyali.metadata",
+   "lazy": false,
+   "line": 107,
+   "src": "scripts.build_inventory.inventory_row",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.focus_of",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 136,
+   "src": "scripts.build_inventory.inventory_row",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.read_sidecar",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 115,
+   "src": "scripts.build_inventory.inventory_row",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.build_inventory",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 183,
+   "src": "scripts.build_inventory.main",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.parse_plate_map",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 183,
+   "src": "scripts.build_inventory.main",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.summarize",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 186,
+   "src": "scripts.build_inventory.main",
+   "src_module": "scripts.build_inventory"
   },
   {
    "defined": true,
@@ -3170,10 +3692,10 @@
   },
   {
    "defined": true,
-   "dst": "pyali.io.save_mat_v73",
-   "dst_module": "pyali.io",
+   "dst": "pyali.metadata.Identity",
+   "dst_module": "pyali.metadata",
    "lazy": false,
-   "line": 112,
+   "line": 126,
    "src": "scripts.cell_profile_to_corpus.convert",
    "src_module": "scripts.cell_profile_to_corpus"
   },
@@ -3182,7 +3704,43 @@
    "dst": "pyali.metadata.write_metadata",
    "dst_module": "pyali.metadata",
    "lazy": false,
-   "line": 139,
+   "line": 159,
+   "src": "scripts.cell_profile_to_corpus.convert",
+   "src_module": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.SparseFootprints",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 120,
+   "src": "scripts.cell_profile_to_corpus.convert",
+   "src_module": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.make_cells",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 129,
+   "src": "scripts.cell_profile_to_corpus.convert",
+   "src_module": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.pack_spikes",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 133,
+   "src": "scripts.cell_profile_to_corpus.convert",
+   "src_module": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.write_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 128,
    "src": "scripts.cell_profile_to_corpus.convert",
    "src_module": "scripts.cell_profile_to_corpus"
   },
@@ -3191,7 +3749,7 @@
    "dst": "scripts.cell_profile_to_corpus.perturbation_id",
    "dst_module": "scripts.cell_profile_to_corpus",
    "lazy": false,
-   "line": 85,
+   "line": 90,
    "src": "scripts.cell_profile_to_corpus.convert",
    "src_module": "scripts.cell_profile_to_corpus"
   },
@@ -3200,7 +3758,7 @@
    "dst": "scripts.cell_profile_to_corpus.convert",
    "dst_module": "scripts.cell_profile_to_corpus",
    "lazy": false,
-   "line": 163,
+   "line": 183,
    "src": "scripts.cell_profile_to_corpus.main",
    "src_module": "scripts.cell_profile_to_corpus"
   },
@@ -3314,6 +3872,114 @@
   },
   {
    "defined": true,
+   "dst": "pyali.metrics.per_cell_snr",
+   "dst_module": "pyali.metrics",
+   "lazy": false,
+   "line": 57,
+   "src": "scripts.qc_footprints.cell_table",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.io.open_bin_memmap",
+   "dst_module": "pyali.io",
+   "lazy": false,
+   "line": 145,
+   "src": "scripts.qc_footprints.find_movie",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.run",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 292,
+   "src": "scripts.qc_footprints.main",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints._stretch",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 186,
+   "src": "scripts.qc_footprints.render",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.crop_window",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 176,
+   "src": "scripts.qc_footprints.render",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.sta_crop",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 198,
+   "src": "scripts.qc_footprints.render",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 249,
+   "src": "scripts.qc_footprints.run",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.cell_table",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 252,
+   "src": "scripts.qc_footprints.run",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.find_movie",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 254,
+   "src": "scripts.qc_footprints.run",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.render",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 271,
+   "src": "scripts.qc_footprints.run",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.select_cells",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 253,
+   "src": "scripts.qc_footprints.run",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.qc_footprints.percentiles",
+   "dst_module": "scripts.qc_footprints",
+   "lazy": false,
+   "line": 87,
+   "src": "scripts.qc_footprints.select_cells",
+   "src_module": "scripts.qc_footprints"
+  },
+  {
+   "defined": true,
    "dst": "scripts.build_manifest.canonical_name",
    "dst_module": "scripts.build_manifest",
    "lazy": false,
@@ -3341,10 +4007,10 @@
   },
   {
    "defined": true,
-   "dst": "pyali.io.load_v73",
-   "dst_module": "pyali.io",
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
    "lazy": false,
-   "line": 192,
+   "line": 191,
    "src": "scripts.representative_traces.main",
    "src_module": "scripts.representative_traces"
   },
@@ -3371,7 +4037,7 @@
    "dst": "scripts.representative_traces.plot_trace",
    "dst_module": "scripts.representative_traces",
    "lazy": false,
-   "line": 212,
+   "line": 211,
    "src": "scripts.representative_traces.main",
    "src_module": "scripts.representative_traces"
   },
@@ -3422,46 +4088,172 @@
   },
   {
    "defined": true,
-   "dst": "pyali.pipeline.process_fov",
-   "dst_module": "pyali.pipeline",
+   "dst": "scripts.run_corpus.sh",
+   "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 82,
-   "src": "scripts.run_corpus._run_one",
+   "line": 267,
+   "src": "scripts.run_corpus.archive_run",
    "src_module": "scripts.run_corpus"
   },
   {
    "defined": true,
-   "dst": "scripts.run_corpus.dir_size",
+   "dst": "scripts.run_corpus.dest_prefix",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 90,
-   "src": "scripts.run_corpus._run_one",
+   "line": 98,
+   "src": "scripts.run_corpus.existing_done",
    "src_module": "scripts.run_corpus"
   },
   {
    "defined": true,
-   "dst": "scripts.run_corpus.read_root",
+   "dst": "scripts.run_corpus.sh",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 72,
-   "src": "scripts.run_corpus._run_one",
+   "line": 98,
+   "src": "scripts.run_corpus.existing_done",
    "src_module": "scripts.run_corpus"
   },
   {
    "defined": true,
-   "dst": "scripts.run_corpus.existing_keys",
+   "dst": "scripts.run_corpus.sh",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 171,
+   "line": 238,
+   "src": "scripts.run_corpus.git_sha",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.Identity",
+   "dst_module": "pyali.metadata",
+   "lazy": false,
+   "line": 78,
+   "src": "scripts.run_corpus.load_run",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.parse_dir_name",
+   "dst_module": "pyali.metadata",
+   "lazy": true,
+   "line": 77,
+   "src": "scripts.run_corpus.load_run",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.reroot",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 76,
+   "src": "scripts.run_corpus.load_run",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.archive_run",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 384,
    "src": "scripts.run_corpus.main",
    "src_module": "scripts.run_corpus"
   },
   {
    "defined": true,
-   "dst": "pyali.metadata.load_keep_index",
+   "dst": "scripts.run_corpus.existing_done",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 328,
+   "src": "scripts.run_corpus.main",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.git_sha",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 334,
+   "src": "scripts.run_corpus.main",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.load_run",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 321,
+   "src": "scripts.run_corpus.main",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.write_fov_index",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 324,
+   "src": "scripts.run_corpus.main",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.dest_prefix",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 160,
+   "src": "scripts.run_corpus.run_one",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.fov_command",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 177,
+   "src": "scripts.run_corpus.run_one",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.sh",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 217,
+   "src": "scripts.run_corpus.run_one",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.wait_for_slot",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 169,
+   "src": "scripts.run_corpus.run_one",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.avail_ram_gb",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 140,
+   "src": "scripts.run_corpus.wait_for_slot",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.telemetry.rss_gb",
+   "dst_module": "pyali.telemetry",
+   "lazy": false,
+   "line": 128,
+   "src": "scripts.run_corpus.watch_rss",
+   "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.metadata.identity_from_dir_name",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 202,
+   "line": 203,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -3470,7 +4262,7 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
-   "line": 212,
+   "line": 208,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -3479,7 +4271,7 @@
    "dst": "scripts.find_video_dims.detect_pixels_per_frame",
    "dst_module": "scripts.find_video_dims",
    "lazy": false,
-   "line": 155,
+   "line": 161,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -3488,7 +4280,7 @@
    "dst": "scripts.find_video_dims.recover_dims",
    "dst_module": "scripts.find_video_dims",
    "lazy": false,
-   "line": 158,
+   "line": 164,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -3497,7 +4289,7 @@
    "dst": "scripts.run_pyali._clamp_ranges",
    "dst_module": "scripts.run_pyali",
    "lazy": false,
-   "line": 187,
+   "line": 191,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -3506,7 +4298,7 @@
    "dst": "scripts.run_pyali.detect_bit_depth",
    "dst_module": "scripts.run_pyali",
    "lazy": false,
-   "line": 142,
+   "line": 148,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -3593,19 +4385,19 @@
   },
   {
    "defined": true,
-   "dst": "pyali.io.load_v73",
-   "dst_module": "pyali.io",
+   "dst": "pyali.metrics.per_cell_snr",
+   "dst_module": "pyali.metrics",
    "lazy": false,
-   "line": 149,
+   "line": 158,
    "src": "scripts.snr_corpus._run_one",
    "src_module": "scripts.snr_corpus"
   },
   {
    "defined": true,
-   "dst": "pyali.metrics.per_cell_snr",
-   "dst_module": "pyali.metrics",
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
    "lazy": false,
-   "line": 158,
+   "line": 151,
    "src": "scripts.snr_corpus._run_one",
    "src_module": "scripts.snr_corpus"
   },
@@ -3632,7 +4424,7 @@
    "dst": "scripts.snr_corpus._fmt",
    "dst_module": "scripts.snr_corpus",
    "lazy": false,
-   "line": 104,
+   "line": 105,
    "src": "scripts.snr_corpus.build_csv",
    "src_module": "scripts.snr_corpus"
   },
@@ -3944,19 +4736,10 @@
   },
   {
    "defined": true,
-   "dst": "pyali.io.load_v73",
-   "dst_module": "pyali.io",
-   "lazy": false,
-   "line": 142,
-   "src": "scripts.snr_sta._run_one",
-   "src_module": "scripts.snr_sta"
-  },
-  {
-   "defined": true,
    "dst": "pyali.io.save_mat_v73",
    "dst_module": "pyali.io",
    "lazy": false,
-   "line": 164,
+   "line": 165,
    "src": "scripts.snr_sta._run_one",
    "src_module": "scripts.snr_sta"
   },
@@ -3965,7 +4748,7 @@
    "dst": "pyali.metrics.highpass",
    "dst_module": "pyali.metrics",
    "lazy": false,
-   "line": 150,
+   "line": 151,
    "src": "scripts.snr_sta._run_one",
    "src_module": "scripts.snr_sta"
   },
@@ -3974,7 +4757,16 @@
    "dst": "pyali.metrics.robust_sigma",
    "dst_module": "pyali.metrics",
    "lazy": false,
-   "line": 151,
+   "line": 152,
+   "src": "scripts.snr_sta._run_one",
+   "src_module": "scripts.snr_sta"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": false,
+   "line": 145,
    "src": "scripts.snr_sta._run_one",
    "src_module": "scripts.snr_sta"
   },
@@ -3983,7 +4775,7 @@
    "dst": "scripts.snr_corpus._write",
    "dst_module": "scripts.snr_corpus",
    "lazy": false,
-   "line": 161,
+   "line": 162,
    "src": "scripts.snr_sta._run_one",
    "src_module": "scripts.snr_sta"
   },
@@ -3992,7 +4784,7 @@
    "dst": "scripts.snr_sta.build_csv",
    "dst_module": "scripts.snr_sta",
    "lazy": false,
-   "line": 161,
+   "line": 162,
    "src": "scripts.snr_sta._run_one",
    "src_module": "scripts.snr_sta"
   },
@@ -4001,7 +4793,7 @@
    "dst": "scripts.snr_sta.cell_sta",
    "dst_module": "scripts.snr_sta",
    "lazy": false,
-   "line": 156,
+   "line": 157,
    "src": "scripts.snr_sta._run_one",
    "src_module": "scripts.snr_sta"
   },
@@ -4010,7 +4802,7 @@
    "dst": "scripts.snr_sta._fmt",
    "dst_module": "scripts.snr_sta",
    "lazy": false,
-   "line": 128,
+   "line": 129,
    "src": "scripts.snr_sta.build_csv",
    "src_module": "scripts.snr_sta"
   },
@@ -4019,7 +4811,7 @@
    "dst": "scripts.snr_sta._cubic_shift",
    "dst_module": "scripts.snr_sta",
    "lazy": false,
-   "line": 102,
+   "line": 103,
    "src": "scripts.snr_sta.cell_sta",
    "src_module": "scripts.snr_sta"
   },
@@ -4028,7 +4820,7 @@
    "dst": "scripts.snr_corpus.list_fovs",
    "dst_module": "scripts.snr_corpus",
    "lazy": false,
-   "line": 195,
+   "line": 196,
    "src": "scripts.snr_sta.main",
    "src_module": "scripts.snr_sta"
   },
@@ -4289,16 +5081,34 @@
    "dst": "snr_analysis.snr.snr_compare._load_v73",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 83,
+   "line": 95,
+   "src": "snr_analysis.snr.snr_compare._load_legacy_mat",
+   "src_module": "snr_analysis.snr.snr_compare"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": true,
+   "line": 114,
    "src": "snr_analysis.snr.snr_compare.load_result",
    "src_module": "snr_analysis.snr.snr_compare"
   },
   {
    "defined": true,
-   "dst": "snr_analysis.snr.snr_compare._resolve_mat",
+   "dst": "snr_analysis.snr.snr_compare._load_legacy_mat",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 82,
+   "line": 111,
+   "src": "snr_analysis.snr.snr_compare.load_result",
+   "src_module": "snr_analysis.snr.snr_compare"
+  },
+  {
+   "defined": true,
+   "dst": "snr_analysis.snr.snr_compare._resolve",
+   "dst_module": "snr_analysis.snr.snr_compare",
+   "lazy": false,
+   "line": 109,
    "src": "snr_analysis.snr.snr_compare.load_result",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4307,7 +5117,7 @@
    "dst": "snr_analysis.snr.snr_compare._summ",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 290,
+   "line": 315,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4316,7 +5126,7 @@
    "dst": "snr_analysis.snr.snr_compare._write_text_summary",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 295,
+   "line": 320,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4325,7 +5135,7 @@
    "dst": "snr_analysis.snr.snr_compare.load_result",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 240,
+   "line": 265,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4334,7 +5144,7 @@
    "dst": "snr_analysis.snr.snr_compare.make_figures",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 299,
+   "line": 324,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4343,7 +5153,7 @@
    "dst": "snr_analysis.snr.snr_compare.match_cells",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 246,
+   "line": 271,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4352,7 +5162,7 @@
    "dst": "snr_analysis.snr.snr_compare.paired_diagnostics",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 257,
+   "line": 282,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4361,7 +5171,7 @@
    "dst": "snr_analysis.snr.snr_compare.per_cell_metrics",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 251,
+   "line": 276,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4370,7 +5180,7 @@
    "dst": "snr_analysis.snr.snr_compare.write_csv",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 294,
+   "line": 319,
    "src": "snr_analysis.snr.snr_compare.main",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4379,7 +5189,7 @@
    "dst": "snr_analysis.snr.snr_compare.highpass",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 420,
+   "line": 445,
    "src": "snr_analysis.snr.snr_compare.make_figures",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4388,7 +5198,7 @@
    "dst": "snr_analysis.snr.snr_compare.highpass",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 186,
+   "line": 211,
    "src": "snr_analysis.snr.snr_compare.paired_diagnostics",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4397,7 +5207,7 @@
    "dst": "snr_analysis.snr.snr_compare.highpass",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 168,
+   "line": 193,
    "src": "snr_analysis.snr.snr_compare.per_cell_metrics",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4406,7 +5216,7 @@
    "dst": "snr_analysis.snr.snr_compare.robust_sigma",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 169,
+   "line": 194,
    "src": "snr_analysis.snr.snr_compare.per_cell_metrics",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4415,7 +5225,7 @@
    "dst": "snr_analysis.snr.snr_compare.spectral_hf_snr",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 172,
+   "line": 197,
    "src": "snr_analysis.snr.snr_compare.per_cell_metrics",
    "src_module": "snr_analysis.snr.snr_compare"
   },
@@ -4424,16 +5234,25 @@
    "dst": "snr_analysis.snr.snr_compare.spike_snr_metrics",
    "dst_module": "snr_analysis.snr.snr_compare",
    "lazy": false,
-   "line": 171,
+   "line": 196,
    "src": "snr_analysis.snr.snr_compare.per_cell_metrics",
    "src_module": "snr_analysis.snr.snr_compare"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.load_results",
+   "dst_module": "pyali.results",
+   "lazy": true,
+   "line": 53,
+   "src": "snr_analysis.snr.snr_postproc_demo._load",
+   "src_module": "snr_analysis.snr.snr_postproc_demo"
   },
   {
    "defined": true,
    "dst": "snr_analysis.snr.snr_postproc_demo._load",
    "dst_module": "snr_analysis.snr.snr_postproc_demo",
    "lazy": false,
-   "line": 98,
+   "line": 103,
    "src": "snr_analysis.snr.snr_postproc_demo.main",
    "src_module": "snr_analysis.snr.snr_postproc_demo"
   },
@@ -4442,7 +5261,7 @@
    "dst": "snr_analysis.snr.snr_postproc_demo.highpass",
    "dst_module": "snr_analysis.snr.snr_postproc_demo",
    "lazy": false,
-   "line": 121,
+   "line": 123,
    "src": "snr_analysis.snr.snr_postproc_demo.main",
    "src_module": "snr_analysis.snr.snr_postproc_demo"
   },
@@ -4451,7 +5270,7 @@
    "dst": "snr_analysis.snr.snr_postproc_demo.notch_chain",
    "dst_module": "snr_analysis.snr.snr_postproc_demo",
    "lazy": false,
-   "line": 107,
+   "line": 109,
    "src": "snr_analysis.snr.snr_postproc_demo.main",
    "src_module": "snr_analysis.snr.snr_postproc_demo"
   },
@@ -4460,7 +5279,7 @@
    "dst": "snr_analysis.snr.snr_postproc_demo.snr_of",
    "dst_module": "snr_analysis.snr.snr_postproc_demo",
    "lazy": false,
-   "line": 113,
+   "line": 115,
    "src": "snr_analysis.snr.snr_postproc_demo.main",
    "src_module": "snr_analysis.snr.snr_postproc_demo"
   },
@@ -4469,7 +5288,7 @@
    "dst": "snr_analysis.snr.snr_postproc_demo.highpass",
    "dst_module": "snr_analysis.snr.snr_postproc_demo",
    "lazy": false,
-   "line": 73,
+   "line": 78,
    "src": "snr_analysis.snr.snr_postproc_demo.snr_of",
    "src_module": "snr_analysis.snr.snr_postproc_demo"
   },
@@ -4478,63 +5297,76 @@
    "dst": "snr_analysis.snr.snr_postproc_demo.robust_sigma",
    "dst_module": "snr_analysis.snr.snr_postproc_demo",
    "lazy": false,
-   "line": 74,
+   "line": 79,
    "src": "snr_analysis.snr.snr_postproc_demo.snr_of",
    "src_module": "snr_analysis.snr.snr_postproc_demo"
   }
  ],
  "core": [
   "pyali.extract._weighted_com",
-  "pyali.extract.apply_dog_gain",
   "pyali.extract.build_selection_map",
   "pyali.extract.cluster_footprints",
   "pyali.extract.com_via_svd",
   "pyali.extract.compute_patch",
   "pyali.extract.dedup_close_peaks",
   "pyali.extract.detect_region_aps",
-  "pyali.extract.extract_cell_traces",
   "pyali.extract.extract_footprints",
-  "pyali.extract.footprint_isolated_mask",
-  "pyali.extract.forward_rolling_min_subtract",
-  "pyali.extract.per_pixel_noise_map",
-  "pyali.extract.pinv_traces",
-  "pyali.extract.project_movie",
+  "pyali.extract.mean_abs_dev",
+  "pyali.extract.median_filter_1d",
+  "pyali.extract.read_patch",
   "pyali.extract.region_center_rowcol",
   "pyali.extract.region_fallback_footprint",
   "pyali.extract.region_grow_brightest",
-  "pyali.extract.svd_denoise_ap_stack",
-  "pyali.extract.temporal_filter",
+  "pyali.extract.svd_denoise_frames",
   "pyali.extract.temporal_filter_patch",
-  "pyali.extract.whitened_gls_traces",
   "pyali.io.read_bin_mov",
-  "pyali.io.save_mat_v73",
+  "pyali.movie.CorrectedMovie",
+  "pyali.movie.estimate_shift",
+  "pyali.movie.interp_weights",
   "pyali.params.Params",
   "pyali.params.Params.std_frames_index",
   "pyali.pipeline.process_fov",
   "pyali.preprocess._correlation_image",
   "pyali.preprocess._edge_gradients",
   "pyali.preprocess._interp_weight",
-  "pyali.preprocess.adaptive_background",
   "pyali.preprocess.background_samples",
-  "pyali.preprocess.clip_saturation",
-  "pyali.preprocess.gaussian_kernel",
-  "pyali.preprocess.motion_correct",
+  "pyali.preprocess.focus_score",
+  "pyali.preprocess.gaussian_matlab",
+  "pyali.preprocess.large_scale_background",
+  "pyali.preprocess.masked_grey_opening",
   "pyali.preprocess.motion_operator",
+  "pyali.preprocess.raw_mean_reference",
   "pyali.preprocess.reference_and_correlation_image",
-  "pyali.preprocess.sharpen",
+  "pyali.results.SparseBuilder",
+  "pyali.results._check_frame",
+  "pyali.results._typed_frame",
+  "pyali.results.git_sha",
+  "pyali.results.make_cells",
+  "pyali.results.pack_spikes",
+  "pyali.results.weighted_brightness",
+  "pyali.results.write_results",
   "pyali.segmentation._regionprops",
-  "pyali.segmentation._threshold_scale",
-  "pyali.segmentation.adaptive_threshold_mean",
   "pyali.segmentation.cell_segmentation",
   "pyali.segmentation.drop_oversized_regions",
+  "pyali.segmentation.hysteresis_mask",
+  "pyali.segmentation.soma_watershed_mask",
+  "pyali.telemetry.StageMeter",
+  "pyali.traces.FootprintOperator",
+  "pyali.traces._apply_spectrum",
+  "pyali.traces._gather",
+  "pyali.traces._n_frames",
+  "pyali.traces.default_rcond",
+  "pyali.traces.extract_cell_traces",
+  "pyali.traces.gls_traces",
+  "pyali.traces.gram_spectrum",
+  "pyali.traces.isolated_mask",
+  "pyali.traces.noise_map_on_union",
+  "pyali.traces.pinv_traces",
   "pyali.utils._median8_network",
-  "pyali.utils.dog_kernel",
   "pyali.utils.findpeaks",
-  "pyali.utils.fspecial_laplacian",
   "pyali.utils.movmedian_time",
   "pyali.utils.round_half_away_from_zero",
-  "pyali.utils.strel_disk",
-  "pyali.utils.uniquetol_reps"
+  "pyali.utils.strel_disk"
  ],
  "dataflow": {
   "edges": [
@@ -4542,42 +5374,93 @@
     "dst": "pyali.preprocess.reference_and_correlation_image",
     "src": "pyali.io.read_bin_mov",
     "vars": [
-     "movie"
+     "raw"
     ]
    },
    {
-    "dst": "pyali.preprocess.sharpen",
-    "src": "pyali.preprocess.reference_and_correlation_image",
-    "vars": [
-     "reference_image"
-    ]
-   },
-   {
-    "dst": "pyali.preprocess.adaptive_background",
+    "dst": "pyali.preprocess.raw_mean_reference",
     "src": "pyali.io.read_bin_mov",
     "vars": [
-     "movie"
+     "raw"
     ]
    },
    {
-    "dst": "pyali.preprocess.motion_correct",
-    "src": "pyali.preprocess.adaptive_background",
+    "dst": "pyali.preprocess.focus_score",
+    "src": "pyali.preprocess.raw_mean_reference",
     "vars": [
-     "movie"
+     "reference_raw"
     ]
    },
    {
-    "dst": "pyali.preprocess.clip_saturation",
-    "src": "pyali.preprocess.motion_correct",
+    "dst": "pyali.preprocess.large_scale_background",
+    "src": "pyali.preprocess.raw_mean_reference",
     "vars": [
-     "movie"
+     "reference_raw"
+    ]
+   },
+   {
+    "dst": "pyali.preprocess.background_samples",
+    "src": "pyali.io.read_bin_mov",
+    "vars": [
+     "raw"
+    ]
+   },
+   {
+    "dst": "pyali.movie.interp_weights",
+    "src": "pyali.preprocess.background_samples",
+    "vars": [
+     "anchors"
+    ]
+   },
+   {
+    "dst": "pyali.movie.estimate_shift",
+    "src": "pyali.io.read_bin_mov",
+    "vars": [
+     "raw"
+    ]
+   },
+   {
+    "dst": "pyali.movie.estimate_shift",
+    "src": "pyali.movie.interp_weights",
+    "vars": [
+     "W_interp"
+    ]
+   },
+   {
+    "dst": "pyali.movie.estimate_shift",
+    "src": "pyali.preprocess.background_samples",
+    "vars": [
+     "samples"
+    ]
+   },
+   {
+    "dst": "pyali.movie.CorrectedMovie",
+    "src": "pyali.io.read_bin_mov",
+    "vars": [
+     "raw"
+    ]
+   },
+   {
+    "dst": "pyali.movie.CorrectedMovie",
+    "src": "pyali.movie.estimate_shift",
+    "vars": [
+     "A",
+     "shift"
+    ]
+   },
+   {
+    "dst": "pyali.movie.CorrectedMovie",
+    "src": "pyali.preprocess.background_samples",
+    "vars": [
+     "anchors",
+     "samples"
     ]
    },
    {
     "dst": "pyali.segmentation.cell_segmentation",
-    "src": "pyali.preprocess.sharpen",
+    "src": "pyali.preprocess.raw_mean_reference",
     "vars": [
-     "sharpened"
+     "reference_raw"
     ]
    },
    {
@@ -4589,42 +5472,8 @@
     ]
    },
    {
-    "dst": "pyali.io.save_mat_v73@72",
-    "src": "pyali.preprocess.reference_and_correlation_image",
-    "vars": [
-     "reference_image"
-    ]
-   },
-   {
-    "dst": "pyali.io.save_mat_v73@72",
-    "src": "pyali.preprocess.sharpen",
-    "vars": [
-     "I2",
-     "LoG",
-     "LoG_n",
-     "bkg",
-     "blurred",
-     "h_lap",
-     "sharpened"
-    ]
-   },
-   {
-    "dst": "pyali.extract.temporal_filter",
-    "src": "pyali.preprocess.clip_saturation",
-    "vars": [
-     "movie"
-    ]
-   },
-   {
     "dst": "pyali.extract.extract_footprints",
-    "src": "pyali.extract.temporal_filter",
-    "vars": [
-     "filtered_movie"
-    ]
-   },
-   {
-    "dst": "pyali.extract.extract_footprints",
-    "src": "pyali.preprocess.clip_saturation",
+    "src": "pyali.movie.CorrectedMovie",
     "vars": [
      "movie"
     ]
@@ -4644,60 +5493,116 @@
     ]
    },
    {
-    "dst": "pyali.extract.extract_footprints",
-    "src": "pyali.utils.dog_kernel",
-    "vars": [
-     "dog"
-    ]
-   },
-   {
-    "dst": "pyali.extract.per_pixel_noise_map",
-    "src": "pyali.extract.temporal_filter",
-    "vars": [
-     "filtered_movie"
-    ]
-   },
-   {
-    "dst": "pyali.extract.extract_cell_traces",
+    "dst": "pyali.traces.noise_map_on_union",
     "src": "pyali.extract.extract_footprints",
     "vars": [
-     "footprint"
+     "footprints"
     ]
    },
    {
-    "dst": "pyali.extract.extract_cell_traces",
-    "src": "pyali.extract.per_pixel_noise_map",
-    "vars": [
-     "noise_map"
-    ]
-   },
-   {
-    "dst": "pyali.extract.extract_cell_traces",
-    "src": "pyali.preprocess.clip_saturation",
+    "dst": "pyali.traces.noise_map_on_union",
+    "src": "pyali.movie.CorrectedMovie",
     "vars": [
      "movie"
     ]
    },
    {
-    "dst": "pyali.io.save_mat_v73@108",
-    "src": "pyali.extract.extract_cell_traces",
+    "dst": "pyali.traces.extract_cell_traces",
+    "src": "pyali.extract.extract_footprints",
     "vars": [
-     "cell_traces"
+     "footprints"
     ]
    },
    {
-    "dst": "pyali.io.save_mat_v73@108",
+    "dst": "pyali.traces.extract_cell_traces",
+    "src": "pyali.movie.CorrectedMovie",
+    "vars": [
+     "movie"
+    ]
+   },
+   {
+    "dst": "pyali.traces.extract_cell_traces",
+    "src": "pyali.traces.noise_map_on_union",
+    "vars": [
+     "noise_map"
+    ]
+   },
+   {
+    "dst": "pyali.results.write_results",
     "src": "pyali.extract.extract_footprints",
     "vars": [
-     "footprint",
-     "footprint_center"
+     "APs",
+     "COMs",
+     "footprint_center",
+     "region_of_ap",
+     "region_of_footprint",
+     "region_of_spike",
+     "source_of_footprint",
+     "spike_cell_row"
+    ]
+   },
+   {
+    "dst": "pyali.results.write_results",
+    "src": "pyali.preprocess.focus_score",
+    "vars": [
+     "focus"
+    ]
+   },
+   {
+    "dst": "pyali.results.write_results",
+    "src": "pyali.preprocess.reference_and_correlation_image",
+    "vars": [
+     "reference_image"
+    ]
+   },
+   {
+    "dst": "pyali.results.write_results",
+    "src": "pyali.results.weighted_brightness",
+    "vars": [
+     "brightness"
+    ]
+   },
+   {
+    "dst": "pyali.results.write_results",
+    "src": "pyali.segmentation.drop_oversized_regions",
+    "vars": [
+     "binary_map"
+    ]
+   },
+   {
+    "dst": "pyali.results.write_results",
+    "src": "pyali.traces.extract_cell_traces",
+    "vars": [
+     "cell_traces"
     ]
    },
    {
     "dst": "pyali.metadata.write_metadata",
-    "src": "pyali.extract.extract_cell_traces",
+    "src": "pyali.extract.extract_footprints",
     "vars": [
-     "cell_traces"
+     "APs",
+     "COMs"
+    ]
+   },
+   {
+    "dst": "pyali.metadata.write_metadata",
+    "src": "pyali.movie.estimate_shift",
+    "vars": [
+     "shift"
+    ]
+   },
+   {
+    "dst": "pyali.metadata.write_metadata",
+    "src": "pyali.preprocess.focus_score",
+    "vars": [
+     "focus"
+    ]
+   },
+   {
+    "dst": "pyali.metadata.write_metadata",
+    "src": "pyali.segmentation.cell_segmentation",
+    "vars": [
+     "seg_info"
     ]
    },
    {
@@ -4709,8 +5614,8 @@
     ]
    },
    {
-    "dst": "pyali.figures.save_result_figures",
-    "src": "pyali.extract.extract_cell_traces",
+    "dst": "pyali.metadata.write_metadata",
+    "src": "pyali.traces.extract_cell_traces",
     "vars": [
      "cell_traces"
     ]
@@ -4720,8 +5625,8 @@
     "src": "pyali.extract.extract_footprints",
     "vars": [
      "COMs",
-     "footprint",
-     "footprint_center"
+     "footprint_center",
+     "footprints"
     ]
    },
    {
@@ -4737,6 +5642,13 @@
     "vars": [
      "binary_map",
      "regions"
+    ]
+   },
+   {
+    "dst": "pyali.figures.save_result_figures",
+    "src": "pyali.traces.extract_cell_traces",
+    "vars": [
+     "cell_traces"
     ]
    }
   ],
@@ -4755,19 +5667,18 @@
      "p"
     ],
     "kwargs": [
-     "out_dtype",
      "read_dtype"
     ],
-    "line": 35,
+    "line": 48,
     "module": "pyali.io",
     "outputs": [
-     "movie"
+     "raw"
     ],
     "reads": [
      "frames1.bin"
     ],
     "shapes": {
-     "movie": "(T, H, W)"
+     "raw": "(T, H, W)"
     },
     "writes": []
    },
@@ -4777,11 +5688,14 @@
     "id": "pyali.preprocess.reference_and_correlation_image",
     "inplace": [],
     "inputs": [
-     "movie",
-     "p"
+     "T",
+     "min",
+     "np",
+     "p",
+     "raw"
     ],
     "kwargs": [],
-    "line": 43,
+    "line": 55,
     "module": "pyali.preprocess",
     "outputs": [
      "reference_image",
@@ -4796,102 +5710,151 @@
    },
    {
     "cond": null,
-    "fq": "pyali.preprocess.sharpen",
-    "id": "pyali.preprocess.sharpen",
+    "fq": "pyali.preprocess.raw_mean_reference",
+    "id": "pyali.preprocess.raw_mean_reference",
+    "inplace": [],
+    "inputs": [
+     "T",
+     "min",
+     "np",
+     "p",
+     "raw"
+    ],
+    "kwargs": [],
+    "line": 61,
+    "module": "pyali.preprocess",
+    "outputs": [
+     "reference_raw"
+    ],
+    "reads": [],
+    "shapes": {},
+    "writes": []
+   },
+   {
+    "cond": null,
+    "fq": "pyali.preprocess.focus_score",
+    "id": "pyali.preprocess.focus_score",
+    "inplace": [],
+    "inputs": [
+     "reference_raw"
+    ],
+    "kwargs": [],
+    "line": 63,
+    "module": "pyali.preprocess",
+    "outputs": [
+     "focus"
+    ],
+    "reads": [],
+    "shapes": {},
+    "writes": []
+   },
+   {
+    "cond": null,
+    "fq": "pyali.preprocess.large_scale_background",
+    "id": "pyali.preprocess.large_scale_background",
     "inplace": [],
     "inputs": [
      "p",
-     "reference_image"
+     "reference_raw"
     ],
     "kwargs": [],
-    "line": 45,
+    "line": 65,
     "module": "pyali.preprocess",
     "outputs": [
-     "bkg",
-     "I2",
-     "blurred",
-     "h_lap",
-     "LoG",
-     "LoG_n",
-     "sharpened"
+     "background_map"
+    ],
+    "reads": [],
+    "shapes": {},
+    "writes": []
+   },
+   {
+    "cond": null,
+    "fq": "pyali.preprocess.background_samples",
+    "id": "pyali.preprocess.background_samples",
+    "inplace": [],
+    "inputs": [
+     "T",
+     "p",
+     "raw"
+    ],
+    "kwargs": [],
+    "line": 73,
+    "module": "pyali.preprocess",
+    "outputs": [
+     "samples",
+     "anchors"
     ],
     "reads": [],
     "shapes": {
-     "I2": "(H, W)",
-     "LoG": "(H, W)",
-     "LoG_n": "(H, W)",
-     "bkg": "(H, W)",
-     "blurred": "(H, W)",
-     "h_lap": "(H, W)",
-     "sharpened": "(H, W)"
+     "anchors": "(n,)",
+     "samples": "(n, H, W)"
     },
     "writes": []
    },
    {
     "cond": null,
-    "fq": "pyali.preprocess.adaptive_background",
-    "id": "pyali.preprocess.adaptive_background",
-    "inplace": [
-     "movie"
-    ],
+    "fq": "pyali.movie.interp_weights",
+    "id": "pyali.movie.interp_weights",
+    "inplace": [],
     "inputs": [
-     "movie",
-     "p"
+     "T",
+     "anchors"
     ],
     "kwargs": [],
-    "line": 50,
-    "module": "pyali.preprocess",
+    "line": 76,
+    "module": "pyali.movie",
     "outputs": [
-     "movie",
-     "_samples",
-     "_anchors"
+     "W_interp"
     ],
     "reads": [],
-    "shapes": {
-     "movie": "(T, H, W)"
-    },
+    "shapes": {},
     "writes": []
    },
    {
     "cond": null,
-    "fq": "pyali.preprocess.motion_correct",
-    "id": "pyali.preprocess.motion_correct",
-    "inplace": [
-     "movie"
-    ],
+    "fq": "pyali.movie.estimate_shift",
+    "id": "pyali.movie.estimate_shift",
+    "inplace": [],
     "inputs": [
-     "movie",
-     "p"
+     "T",
+     "W_interp",
+     "p",
+     "raw",
+     "samples"
     ],
     "kwargs": [],
-    "line": 52,
-    "module": "pyali.preprocess",
+    "line": 77,
+    "module": "pyali.movie",
     "outputs": [
-     "movie",
-     "_shift",
-     "_A",
+     "shift",
+     "A",
      "_f0"
     ],
     "reads": [],
-    "shapes": {
-     "movie": "(T, H, W)"
-    },
+    "shapes": {},
     "writes": []
    },
    {
-    "cond": "p.saturation_clip is not None",
-    "fq": "pyali.preprocess.clip_saturation",
-    "id": "pyali.preprocess.clip_saturation",
-    "inplace": [
-     "movie"
-    ],
+    "cond": null,
+    "fq": "pyali.movie.CorrectedMovie",
+    "id": "pyali.movie.CorrectedMovie",
+    "inplace": [],
     "inputs": [
-     "movie",
-     "p"
+     "A",
+     "T",
+     "anchors",
+     "getattr",
+     "p",
+     "raw",
+     "samples",
+     "shift"
     ],
-    "kwargs": [],
-    "line": 54,
-    "module": "pyali.preprocess",
+    "kwargs": [
+     "n_frames",
+     "saturation_clip"
+    ],
+    "line": 78,
+    "module": "pyali.params",
     "outputs": [
      "movie"
     ],
@@ -4905,17 +5868,18 @@
     "id": "pyali.segmentation.cell_segmentation",
     "inplace": [],
     "inputs": [
-     "getattr",
      "p",
-     "sharpened"
+     "reference_corrected",
+     "reference_raw"
     ],
     "kwargs": [],
-    "line": 58,
+    "line": 85,
     "module": "pyali.segmentation",
     "outputs": [
      "regions",
      "binary_map",
-     "spatial_footprints"
+     "spatial_footprints",
+     "seg_info"
     ],
     "reads": [],
     "shapes": {
@@ -4938,7 +5902,7 @@
      "regions"
     ],
     "kwargs": [],
-    "line": 61,
+    "line": 90,
     "module": "pyali.segmentation",
     "outputs": [
      "regions",
@@ -4952,83 +5916,6 @@
     "writes": []
    },
    {
-    "cond": "save and out_dir",
-    "fq": "pyali.io.save_mat_v73",
-    "id": "pyali.io.save_mat_v73@72",
-    "inplace": [],
-    "inputs": [
-     "I2",
-     "LoG",
-     "LoG_n",
-     "bkg",
-     "blurred",
-     "h_lap",
-     "os",
-     "out_dir",
-     "reference_image",
-     "sharpened"
-    ],
-    "kwargs": [
-     "I2",
-     "LoG_image",
-     "LoG_normalized",
-     "bkg",
-     "blurred",
-     "h_lap",
-     "reference_image",
-     "sharpened"
-    ],
-    "line": 72,
-    "module": "pyali.io",
-    "outputs": [],
-    "reads": [],
-    "shapes": {},
-    "writes": [
-     "ALI_Int_Result.mat"
-    ]
-   },
-   {
-    "cond": "need_global_filter",
-    "fq": "pyali.extract.temporal_filter",
-    "id": "pyali.extract.temporal_filter",
-    "inplace": [],
-    "inputs": [
-     "movie",
-     "p"
-    ],
-    "kwargs": [],
-    "line": 84,
-    "module": "pyali.extract",
-    "outputs": [
-     "filtered_movie"
-    ],
-    "reads": [],
-    "shapes": {
-     "filtered_movie": "(T, H, W)"
-    },
-    "writes": []
-   },
-   {
-    "cond": null,
-    "fq": "pyali.utils.dog_kernel",
-    "id": "pyali.utils.dog_kernel",
-    "inplace": [],
-    "inputs": [
-     "p"
-    ],
-    "kwargs": [],
-    "line": 87,
-    "module": "pyali.utils",
-    "outputs": [
-     "dog"
-    ],
-    "reads": [],
-    "shapes": {
-     "dog": "(width,)"
-    },
-    "writes": []
-   },
-   {
     "cond": null,
     "fq": "pyali.extract.extract_footprints",
     "id": "pyali.extract.extract_footprints",
@@ -5036,8 +5923,6 @@
     "inputs": [
      "H",
      "W",
-     "dog",
-     "filtered_movie",
      "movie",
      "p",
      "regions",
@@ -5047,93 +5932,145 @@
     "kwargs": [
      "verbose"
     ],
-    "line": 89,
+    "line": 103,
     "module": "pyali.extract",
     "outputs": [
      "APs",
      "COMs",
-     "footprint",
-     "footprint_center"
+     "footprints",
+     "footprint_center",
+     "region_of_footprint",
+     "region_of_ap",
+     "region_of_spike",
+     "spike_cell_row",
+     "source_of_footprint"
     ],
     "reads": [],
     "shapes": {
-     "footprint": "(H, W, N)",
-     "footprint_center": "(N, 2)"
+     "APs": "(nAP, 4)",
+     "COMs": "(nCOM, 3)",
+     "footprint_center": "(N, 2)",
+     "region_of_ap": "(nAP,)",
+     "region_of_footprint": "(N,)",
+     "region_of_spike": "(nCOM,)",
+     "spike_cell_row": "(nCOM,)"
     },
     "writes": []
    },
    {
     "cond": "p.whiten_traces",
-    "fq": "pyali.extract.per_pixel_noise_map",
-    "id": "pyali.extract.per_pixel_noise_map",
+    "fq": "pyali.traces.noise_map_on_union",
+    "id": "pyali.traces.noise_map_on_union",
     "inplace": [],
     "inputs": [
-     "filtered_movie",
-     "p"
+     "footprints",
+     "movie",
+     "p",
+     "traces"
     ],
     "kwargs": [],
-    "line": 96,
-    "module": "pyali.extract",
+    "line": 111,
+    "module": "pyali.traces",
     "outputs": [
      "noise_map"
     ],
     "reads": [],
-    "shapes": {
-     "noise_map": "(H, W)"
-    },
+    "shapes": {},
     "writes": []
    },
    {
     "cond": null,
-    "fq": "pyali.extract.extract_cell_traces",
-    "id": "pyali.extract.extract_cell_traces",
+    "fq": "pyali.traces.extract_cell_traces",
+    "id": "pyali.traces.extract_cell_traces",
     "inplace": [],
     "inputs": [
-     "footprint",
+     "footprints",
      "movie",
      "noise_map",
      "p",
+     "solve",
      "verbose"
     ],
     "kwargs": [
+     "diag",
      "noise_map",
      "verbose"
     ],
-    "line": 103,
-    "module": "pyali.extract",
+    "line": 118,
+    "module": "pyali.traces",
     "outputs": [
      "cell_traces"
     ],
     "reads": [],
-    "shapes": {
-     "cell_traces": "(N, T)"
-    },
+    "shapes": {},
+    "writes": []
+   },
+   {
+    "cond": null,
+    "fq": "pyali.results.weighted_brightness",
+    "id": "pyali.results.weighted_brightness",
+    "inplace": [],
+    "inputs": [
+     "reference_corrected",
+     "sparse_fp"
+    ],
+    "kwargs": [],
+    "line": 130,
+    "module": "pyali.results",
+    "outputs": [
+     "brightness"
+    ],
+    "reads": [],
+    "shapes": {},
     "writes": []
    },
    {
     "cond": "save and out_dir",
-    "fq": "pyali.io.save_mat_v73",
-    "id": "pyali.io.save_mat_v73@108",
+    "fq": "pyali.results.write_results",
+    "id": "pyali.results.write_results",
     "inplace": [],
     "inputs": [
+     "APs",
+     "COMs",
+     "binary_map",
+     "brightness",
      "cell_traces",
-     "footprint",
+     "dict",
+     "focus",
      "footprint_center",
-     "os",
-     "out_dir"
+     "identity",
+     "len",
+     "n_spikes",
+     "out_dir",
+     "p",
+     "profile",
+     "reference_corrected",
+     "reference_image",
+     "region_of_ap",
+     "region_of_footprint",
+     "region_of_spike",
+     "results",
+     "source_of_footprint",
+     "sparse_fp",
+     "spike_cell_row"
     ],
     "kwargs": [
-     "cell_traces",
-     "footprint",
-     "footprint_center"
+     "attrs",
+     "cells_df",
+     "footprints",
+     "images",
+     "spikes_df",
+     "traces"
     ],
-    "line": 108,
-    "module": "pyali.io",
+    "line": 136,
+    "module": "pyali.results",
     "outputs": [],
     "reads": [],
     "shapes": {},
     "writes": [
-     "ALI_Result.mat"
+     "cells.csv",
+     "cells.parquet",
+     "spikes.parquet"
     ]
    },
    {
@@ -5142,23 +6079,33 @@
     "id": "pyali.metadata.write_metadata",
     "inplace": [],
     "inputs": [
+     "APs",
+     "COMs",
      "T",
      "cell_traces",
      "day",
      "dict",
      "dropped",
+     "float",
+     "focus",
      "fov_dir",
      "fov_metadata",
+     "identity",
      "int",
-     "keep_row",
      "len",
+     "n_cells_by_source",
+     "np",
      "out_dir",
      "p",
      "profile",
-     "regions"
+     "regions",
+     "seg_info",
+     "shift",
+     "solve",
+     "telemetry"
     ],
     "kwargs": [],
-    "line": 114,
+    "line": 155,
     "module": "pyali.metadata",
     "outputs": [],
     "reads": [],
@@ -5176,8 +6123,8 @@
      "COMs",
      "binary_map",
      "cell_traces",
-     "footprint",
      "footprint_center",
+     "footprints",
      "out_dir",
      "p",
      "reference_image",
@@ -5187,7 +6134,7 @@
      "footprint",
      "fps"
     ],
-    "line": 123,
+    "line": 169,
     "module": "pyali.figures",
     "outputs": [],
     "reads": [],
@@ -5202,28 +6149,24 @@
    }
   ],
   "var_shape": {
-   "I2": "(H, W)",
-   "LoG": "(H, W)",
-   "LoG_image": "(H, W)",
-   "LoG_n": "(H, W)",
-   "LoG_normalized": "(H, W)",
+   "APs": "(nAP, 4)",
+   "COMs": "(nCOM, 3)",
+   "anchors": "(n,)",
    "binary_map": "(H, W)",
-   "bkg": "(H, W)",
-   "blurred": "(H, W)",
-   "cell_traces": "(N, T)",
    "corr_image": "(H, W)",
-   "dog": "(width,)",
-   "filtered_movie": "(T, H, W)",
-   "footprint": "(H, W, N)",
    "footprint_center": "(N, 2)",
-   "h_lap": "(H, W)",
-   "image": "(H, W)",
+   "mask": "(H, W)",
    "movie": "(T, H, W)",
-   "neighborhood": "(int, int)",
-   "noise_map": "(H, W)",
+   "raw": "(T, H, W)",
+   "ref_corrected": "(H, W)",
    "ref_frames": "(n_ref, H, W)",
+   "ref_raw": "(H, W)",
    "reference_image": "(H, W)",
-   "sharpened": "(H, W)"
+   "region_of_ap": "(nAP,)",
+   "region_of_footprint": "(N,)",
+   "region_of_spike": "(nCOM,)",
+   "samples": "(n, H, W)",
+   "spike_cell_row": "(nCOM,)"
   }
  },
  "entry": "pyali.pipeline.process_fov",
@@ -5483,7 +6426,7 @@
   {
    "dst": "pyali.pipeline",
    "lazy": true,
-   "line": 85,
+   "line": 84,
    "name": "pyali.pipeline",
    "src": "bench.profile_highN"
   },
@@ -5719,6 +6662,13 @@
    "src": "pyali"
   },
   {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 12,
+   "name": "pyali.results",
+   "src": "pyali"
+  },
+  {
    "dst": "pyali.segmentation",
    "lazy": false,
    "line": 12,
@@ -5733,31 +6683,31 @@
    "src": "pyali"
   },
   {
-   "dst": "pyali.utils",
+   "dst": "pyali.results",
    "lazy": false,
    "line": 9,
+   "name": "pyali.results.SparseBuilder",
+   "src": "pyali.extract"
+  },
+  {
+   "dst": "pyali.utils",
+   "lazy": false,
+   "line": 10,
    "name": "pyali.utils.findpeaks",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 9,
+   "line": 10,
    "name": "pyali.utils.movmedian_time",
    "src": "pyali.extract"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 9,
+   "line": 10,
    "name": "pyali.utils.round_half_away_from_zero",
-   "src": "pyali.extract"
-  },
-  {
-   "dst": "pyali.utils",
-   "lazy": false,
-   "line": 9,
-   "name": "pyali.utils.uniquetol_reps",
    "src": "pyali.extract"
   },
   {
@@ -5770,91 +6720,147 @@
   {
    "dst": "pyali._h5read",
    "lazy": true,
-   "line": 74,
+   "line": 79,
    "name": "pyali._h5read",
    "src": "pyali.io"
   },
   {
+   "dst": "pyali.results",
+   "lazy": true,
+   "line": 221,
+   "name": "pyali.results.git_sha",
+   "src": "pyali.metadata"
+  },
+  {
+   "dst": "pyali.preprocess",
+   "lazy": false,
+   "line": 26,
+   "name": "pyali.preprocess",
+   "src": "pyali.movie"
+  },
+  {
    "dst": "pyali.extract",
    "lazy": false,
-   "line": 13,
+   "line": 19,
    "name": "pyali.extract",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.figures",
    "lazy": true,
-   "line": 122,
+   "line": 168,
    "name": "pyali.figures.save_result_figures",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.io",
    "lazy": false,
-   "line": 13,
+   "line": 19,
    "name": "pyali.io",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 113,
+   "line": 154,
    "name": "pyali.metadata.fov_metadata",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 113,
+   "line": 33,
+   "name": "pyali.metadata.identity_from_dir_name",
+   "src": "pyali.pipeline"
+  },
+  {
+   "dst": "pyali.metadata",
+   "lazy": true,
+   "line": 154,
    "name": "pyali.metadata.write_metadata",
+   "src": "pyali.pipeline"
+  },
+  {
+   "dst": "pyali.movie",
+   "lazy": false,
+   "line": 20,
+   "name": "pyali.movie.CorrectedMovie",
+   "src": "pyali.pipeline"
+  },
+  {
+   "dst": "pyali.movie",
+   "lazy": false,
+   "line": 20,
+   "name": "pyali.movie.estimate_shift",
+   "src": "pyali.pipeline"
+  },
+  {
+   "dst": "pyali.movie",
+   "lazy": false,
+   "line": 20,
+   "name": "pyali.movie.interp_weights",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.params",
    "lazy": false,
-   "line": 12,
+   "line": 18,
    "name": "pyali.params.Params",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.preprocess",
    "lazy": false,
-   "line": 13,
+   "line": 19,
    "name": "pyali.preprocess",
+   "src": "pyali.pipeline"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 19,
+   "name": "pyali.results",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.segmentation",
    "lazy": false,
-   "line": 13,
+   "line": 19,
    "name": "pyali.segmentation",
    "src": "pyali.pipeline"
   },
   {
-   "dst": "pyali.utils",
+   "dst": "pyali.telemetry",
    "lazy": false,
-   "line": 14,
-   "name": "pyali.utils.dog_kernel",
+   "line": 21,
+   "name": "pyali.telemetry.StageMeter",
+   "src": "pyali.pipeline"
+  },
+  {
+   "dst": "pyali.traces",
+   "lazy": false,
+   "line": 19,
+   "name": "pyali.traces",
    "src": "pyali.pipeline"
   },
   {
    "dst": "pyali.utils",
-   "lazy": false,
-   "line": 9,
-   "name": "pyali.utils.fspecial_laplacian",
+   "lazy": true,
+   "line": 240,
+   "name": "pyali.utils.exact_disk",
    "src": "pyali.preprocess"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 9,
+   "line": 10,
    "name": "pyali.utils.round_half_away_from_zero",
    "src": "pyali.preprocess"
   },
   {
    "dst": "pyali.utils",
    "lazy": false,
-   "line": 9,
+   "line": 10,
    "name": "pyali.utils.strel_disk",
    "src": "pyali.preprocess"
   },
@@ -5952,29 +6958,43 @@
   {
    "dst": "pyali.io",
    "lazy": true,
-   "line": 75,
+   "line": 76,
    "name": "pyali.io.open_bin_memmap",
    "src": "pyali.registration.io"
   },
   {
    "dst": "pyali.metrics",
    "lazy": true,
-   "line": 117,
+   "line": 110,
+   "name": "pyali.metrics.per_cell_snr",
+   "src": "pyali.registration.io"
+  },
+  {
+   "dst": "pyali.metrics",
+   "lazy": true,
+   "line": 141,
    "name": "pyali.metrics.per_cell_snr",
    "src": "pyali.registration.io"
   },
   {
    "dst": "pyali.params",
    "lazy": false,
-   "line": 20,
+   "line": 21,
    "name": "pyali.params.Params",
    "src": "pyali.registration.io"
   },
   {
    "dst": "pyali.pipeline",
    "lazy": true,
-   "line": 116,
+   "line": 140,
    "name": "pyali.pipeline.process_fov",
+   "src": "pyali.registration.io"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": true,
+   "line": 111,
+   "name": "pyali.results.load_results",
    "src": "pyali.registration.io"
   },
   {
@@ -6148,22 +7168,85 @@
   {
    "dst": "pyali.preprocess",
    "lazy": false,
-   "line": 12,
-   "name": "pyali.preprocess.gaussian_kernel",
+   "line": 20,
+   "name": "pyali.preprocess.gaussian_matlab",
    "src": "pyali.segmentation"
   },
   {
-   "dst": "pyali.io",
+   "dst": "pyali.utils",
+   "lazy": true,
+   "line": 96,
+   "name": "pyali.utils.matlab_disk",
+   "src": "pyali.segmentation"
+  },
+  {
+   "dst": "pyali.results",
    "lazy": false,
-   "line": 69,
-   "name": "pyali.io.save_mat_v73",
+   "line": 26,
+   "name": "pyali.results.SparseFootprints",
+   "src": "pyali.traces"
+  },
+  {
+   "dst": "pyali.utils",
+   "lazy": false,
+   "line": 27,
+   "name": "pyali.utils.movmedian_time",
+   "src": "pyali.traces"
+  },
+  {
+   "dst": "pyali.metadata",
+   "lazy": false,
+   "line": 33,
+   "name": "pyali.metadata.parse_dir_name",
+   "src": "scripts.build_inventory"
+  },
+  {
+   "dst": "pyali.preprocess",
+   "lazy": true,
+   "line": 89,
+   "name": "pyali.preprocess.focus_score",
+   "src": "scripts.build_inventory"
+  },
+  {
+   "dst": "pyali.metadata",
+   "lazy": false,
+   "line": 74,
+   "name": "pyali.metadata.Identity",
    "src": "scripts.cell_profile_to_corpus"
   },
   {
    "dst": "pyali.metadata",
    "lazy": false,
-   "line": 70,
+   "line": 73,
    "name": "pyali.metadata.write_metadata",
+   "src": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 75,
+   "name": "pyali.results.SparseFootprints",
+   "src": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 75,
+   "name": "pyali.results.make_cells",
+   "src": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 75,
+   "name": "pyali.results.pack_spikes",
+   "src": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 75,
+   "name": "pyali.results.write_results",
    "src": "scripts.cell_profile_to_corpus"
   },
   {
@@ -6265,6 +7348,27 @@
    "src": "scripts.dev_smoke_registration"
   },
   {
+   "dst": "pyali.io",
+   "lazy": false,
+   "line": 38,
+   "name": "pyali.io.open_bin_memmap",
+   "src": "scripts.qc_footprints"
+  },
+  {
+   "dst": "pyali.metrics",
+   "lazy": false,
+   "line": 39,
+   "name": "pyali.metrics.per_cell_snr",
+   "src": "scripts.qc_footprints"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 40,
+   "name": "pyali.results.load_results",
+   "src": "scripts.qc_footprints"
+  },
+  {
    "dst": "scripts.build_manifest",
    "lazy": false,
    "line": 30,
@@ -6279,10 +7383,10 @@
    "src": "scripts.rename_to_convention"
   },
   {
-   "dst": "pyali.io",
+   "dst": "pyali.results",
    "lazy": false,
    "line": 41,
-   "name": "pyali.io.load_v73",
+   "name": "pyali.results.load_results",
    "src": "scripts.representative_traces"
   },
   {
@@ -6297,13 +7401,6 @@
    "lazy": false,
    "line": 43,
    "name": "scripts.snr_corpus.READ_ROOT_DEFAULT",
-   "src": "scripts.representative_traces"
-  },
-  {
-   "dst": "scripts.snr_corpus",
-   "lazy": false,
-   "line": 43,
-   "name": "scripts.snr_corpus.RESULT",
    "src": "scripts.representative_traces"
   },
   {
@@ -6328,24 +7425,38 @@
    "src": "scripts.representative_traces"
   },
   {
-   "dst": "pyali.params",
+   "dst": "pyali.metadata",
    "lazy": false,
-   "line": 35,
-   "name": "pyali.params.Params",
-   "src": "scripts.run_corpus"
-  },
-  {
-   "dst": "pyali.pipeline",
-   "lazy": false,
-   "line": 36,
-   "name": "pyali.pipeline.process_fov",
+   "line": 33,
+   "name": "pyali.metadata.Identity",
    "src": "scripts.run_corpus"
   },
   {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 200,
-   "name": "pyali.metadata.load_keep_index",
+   "line": 65,
+   "name": "pyali.metadata.parse_dir_name",
+   "src": "scripts.run_corpus"
+  },
+  {
+   "dst": "pyali.telemetry",
+   "lazy": false,
+   "line": 34,
+   "name": "pyali.telemetry.avail_ram_gb",
+   "src": "scripts.run_corpus"
+  },
+  {
+   "dst": "pyali.telemetry",
+   "lazy": false,
+   "line": 34,
+   "name": "pyali.telemetry.rss_gb",
+   "src": "scripts.run_corpus"
+  },
+  {
+   "dst": "pyali.metadata",
+   "lazy": true,
+   "line": 202,
+   "name": "pyali.metadata.identity_from_dir_name",
    "src": "scripts.run_pyali"
   },
   {
@@ -6419,17 +7530,31 @@
    "src": "scripts.snr_aggregate"
   },
   {
-   "dst": "pyali.io",
-   "lazy": false,
-   "line": 44,
-   "name": "pyali.io.load_v73",
-   "src": "scripts.snr_corpus"
-  },
-  {
    "dst": "pyali.metrics",
    "lazy": false,
    "line": 45,
    "name": "pyali.metrics.per_cell_snr",
+   "src": "scripts.snr_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 46,
+   "name": "pyali.results.CELLS_FILE",
+   "src": "scripts.snr_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 46,
+   "name": "pyali.results.SIGNALS_FILE",
+   "src": "scripts.snr_corpus"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": false,
+   "line": 46,
+   "name": "pyali.results.load_results",
    "src": "scripts.snr_corpus"
   },
   {
@@ -6445,13 +7570,6 @@
    "line": 68,
    "name": "scripts.snr_aggregate.OUT_DEFAULT",
    "src": "scripts.snr_figures"
-  },
-  {
-   "dst": "pyali.io",
-   "lazy": false,
-   "line": 41,
-   "name": "pyali.io.load_v73",
-   "src": "scripts.snr_sta"
   },
   {
    "dst": "pyali.io",
@@ -6475,51 +7593,51 @@
    "src": "scripts.snr_sta"
   },
   {
-   "dst": "scripts.snr_corpus",
+   "dst": "pyali.results",
    "lazy": false,
    "line": 43,
+   "name": "pyali.results.load_results",
+   "src": "scripts.snr_sta"
+  },
+  {
+   "dst": "scripts.snr_corpus",
+   "lazy": false,
+   "line": 44,
    "name": "scripts.snr_corpus.META",
    "src": "scripts.snr_sta"
   },
   {
    "dst": "scripts.snr_corpus",
    "lazy": false,
-   "line": 44,
+   "line": 45,
    "name": "scripts.snr_corpus.READ_ROOT_DEFAULT",
    "src": "scripts.snr_sta"
   },
   {
    "dst": "scripts.snr_corpus",
    "lazy": false,
-   "line": 43,
+   "line": 44,
    "name": "scripts.snr_corpus.REQUIRED",
    "src": "scripts.snr_sta"
   },
   {
    "dst": "scripts.snr_corpus",
    "lazy": false,
-   "line": 43,
-   "name": "scripts.snr_corpus.RESULT",
-   "src": "scripts.snr_sta"
-  },
-  {
-   "dst": "scripts.snr_corpus",
-   "lazy": false,
-   "line": 44,
+   "line": 45,
    "name": "scripts.snr_corpus.S3_DEFAULT",
    "src": "scripts.snr_sta"
   },
   {
    "dst": "scripts.snr_corpus",
    "lazy": false,
-   "line": 43,
+   "line": 44,
    "name": "scripts.snr_corpus._write",
    "src": "scripts.snr_sta"
   },
   {
    "dst": "scripts.snr_corpus",
    "lazy": false,
-   "line": 43,
+   "line": 44,
    "name": "scripts.snr_corpus.list_fovs",
    "src": "scripts.snr_sta"
   },
@@ -6718,6 +7836,20 @@
    "line": 52,
    "name": "scripts.snr_sta_figures.grid_dpi",
    "src": "scripts.snr_sta_variance"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": true,
+   "line": 113,
+   "name": "pyali.results.load_results",
+   "src": "snr_analysis.snr.snr_compare"
+  },
+  {
+   "dst": "pyali.results",
+   "lazy": true,
+   "line": 49,
+   "name": "pyali.results.load_results",
+   "src": "snr_analysis.snr.snr_postproc_demo"
   }
  ],
  "io_edges": [
@@ -6797,7 +7929,7 @@
    "file": "profile_highN.json",
    "func": "bench.profile_highN.main",
    "kind": "write",
-   "line": 142,
+   "line": 140,
    "loc": "summary",
    "module": "bench.profile_highN"
   },
@@ -7005,31 +8137,15 @@
    "file": "frames1.bin",
    "func": "pyali.pipeline.process_fov",
    "kind": "read",
-   "line": 35,
+   "line": 48,
    "loc": "per FOV",
-   "module": "pyali.pipeline"
-  },
-  {
-   "file": "ALI_Int_Result.mat",
-   "func": "pyali.pipeline.process_fov",
-   "kind": "write",
-   "line": 72,
-   "loc": "summary",
-   "module": "pyali.pipeline"
-  },
-  {
-   "file": "ALI_Result.mat",
-   "func": "pyali.pipeline.process_fov",
-   "kind": "write",
-   "line": 108,
-   "loc": "summary",
    "module": "pyali.pipeline"
   },
   {
    "file": "fov_metadata.json",
    "func": "pyali.pipeline.process_fov",
    "kind": "write",
-   "line": 114,
+   "line": 155,
    "loc": "summary",
    "module": "pyali.pipeline"
   },
@@ -7069,7 +8185,7 @@
    "file": "*.bin",
    "func": "pyali.registration.io.read_voltage_reference",
    "kind": "read",
-   "line": 96,
+   "line": 97,
    "loc": "per FOV",
    "module": "pyali.registration.io"
   },
@@ -7077,7 +8193,7 @@
    "file": "*.mat",
    "func": "pyali.registration.io.read_voltage_reference",
    "kind": "read",
-   "line": 97,
+   "line": 98,
    "loc": "per FOV",
    "module": "pyali.registration.io"
   },
@@ -7202,6 +8318,62 @@
    "module": "pyali.registration.viz"
   },
   {
+   "file": "cells.parquet",
+   "func": "pyali.results.load_results",
+   "kind": "read",
+   "line": 370,
+   "loc": "per FOV",
+   "module": "pyali.results"
+  },
+  {
+   "file": "spikes.parquet",
+   "func": "pyali.results.load_results",
+   "kind": "read",
+   "line": 371,
+   "loc": "per FOV",
+   "module": "pyali.results"
+  },
+  {
+   "file": "cells.csv",
+   "func": "pyali.results.write_results",
+   "kind": "write",
+   "line": 326,
+   "loc": "summary",
+   "module": "pyali.results"
+  },
+  {
+   "file": "cells.parquet",
+   "func": "pyali.results.write_results",
+   "kind": "write",
+   "line": 325,
+   "loc": "summary",
+   "module": "pyali.results"
+  },
+  {
+   "file": "spikes.parquet",
+   "func": "pyali.results.write_results",
+   "kind": "write",
+   "line": 327,
+   "loc": "summary",
+   "module": "pyali.results"
+  },
+  {
+   "file": "frames1.bin",
+   "func": "scripts.build_inventory.focus_of",
+   "kind": "read",
+   "line": 92,
+   "loc": "per FOV",
+   "module": "scripts.build_inventory"
+  },
+  {
+   "file": "frames1_dropped_frames.txt",
+   "func": "scripts.build_inventory.read_sidecar",
+   "kind": "read",
+   "line": 51,
+   "loc": "per FOV",
+   "module": "scripts.build_inventory"
+  },
+  {
    "file": "frames1_dropped_frames.txt",
    "func": "scripts.build_manifest._read_sidecar",
    "kind": "read",
@@ -7218,26 +8390,10 @@
    "module": "scripts.build_manifest"
   },
   {
-   "file": "ALI_Int_Result.mat",
-   "func": "scripts.cell_profile_to_corpus.convert",
-   "kind": "write",
-   "line": 116,
-   "loc": "per FOV",
-   "module": "scripts.cell_profile_to_corpus"
-  },
-  {
-   "file": "ALI_Result.mat",
-   "func": "scripts.cell_profile_to_corpus.convert",
-   "kind": "write",
-   "line": 112,
-   "loc": "per FOV",
-   "module": "scripts.cell_profile_to_corpus"
-  },
-  {
    "file": "conversion_manifest.json",
    "func": "scripts.cell_profile_to_corpus.main",
    "kind": "write",
-   "line": 167,
+   "line": 187,
    "loc": "summary",
    "module": "scripts.cell_profile_to_corpus"
   },
@@ -7245,9 +8401,41 @@
    "file": "fov_metadata.json",
    "func": "scripts.cell_profile_to_corpus.convert",
    "kind": "write",
-   "line": 139,
+   "line": 159,
    "loc": "per FOV",
    "module": "scripts.cell_profile_to_corpus"
+  },
+  {
+   "file": "fov_metadata.json",
+   "func": "scripts.qc_footprints.run",
+   "kind": "read",
+   "line": 254,
+   "loc": "per FOV",
+   "module": "scripts.qc_footprints"
+  },
+  {
+   "file": "frames1.bin",
+   "func": "scripts.qc_footprints.find_movie",
+   "kind": "read",
+   "line": 145,
+   "loc": "per FOV",
+   "module": "scripts.qc_footprints"
+  },
+  {
+   "file": "footprints_traces.csv",
+   "func": "scripts.qc_footprints.run",
+   "kind": "write",
+   "line": 272,
+   "loc": "summary",
+   "module": "scripts.qc_footprints"
+  },
+  {
+   "file": "footprints_traces.png",
+   "func": "scripts.qc_footprints.run",
+   "kind": "write",
+   "line": 271,
+   "loc": "summary",
+   "module": "scripts.qc_footprints"
   },
   {
    "file": "rename_plan.csv",
@@ -7256,14 +8444,6 @@
    "line": 70,
    "loc": "summary",
    "module": "scripts.rename_to_convention"
-  },
-  {
-   "file": "ALI_Result.mat",
-   "func": "scripts.representative_traces.main",
-   "kind": "read",
-   "line": 192,
-   "loc": "per FOV",
-   "module": "scripts.representative_traces"
   },
   {
    "file": "cells_all.parquet",
@@ -7285,7 +8465,7 @@
    "file": "*.png",
    "func": "scripts.representative_traces.main",
    "kind": "write",
-   "line": 212,
+   "line": 211,
    "loc": "summary",
    "module": "scripts.representative_traces"
   },
@@ -7293,15 +8473,39 @@
    "file": "selected_cells.csv",
    "func": "scripts.representative_traces.main",
    "kind": "write",
-   "line": 219,
+   "line": 218,
    "loc": "summary",
    "module": "scripts.representative_traces"
+  },
+  {
+   "file": "fov_metadata.json",
+   "func": "scripts.run_corpus.run_one",
+   "kind": "read",
+   "line": 199,
+   "loc": "summary",
+   "module": "scripts.run_corpus"
+  },
+  {
+   "file": "fov_index.csv",
+   "func": "scripts.run_corpus.main",
+   "kind": "write",
+   "line": 324,
+   "loc": "summary",
+   "module": "scripts.run_corpus"
+  },
+  {
+   "file": "manifest.jsonl",
+   "func": "scripts.run_corpus.main",
+   "kind": "write",
+   "line": 372,
+   "loc": "summary",
+   "module": "scripts.run_corpus"
   },
   {
    "file": "frames1.bin",
    "func": "scripts.run_pyali.main",
    "kind": "read",
-   "line": 142,
+   "line": 148,
    "loc": "summary",
    "module": "scripts.run_pyali"
   },
@@ -7378,18 +8582,10 @@
    "module": "scripts.snr_aggregate"
   },
   {
-   "file": "ALI_Result.mat",
-   "func": "scripts.snr_corpus._run_one",
-   "kind": "read",
-   "line": 149,
-   "loc": "per FOV",
-   "module": "scripts.snr_corpus"
-  },
-  {
    "file": "fov_metadata.json",
    "func": "scripts.snr_corpus._run_one",
    "kind": "read",
-   "line": 143,
+   "line": 144,
    "loc": "per FOV",
    "module": "scripts.snr_corpus"
   },
@@ -7434,18 +8630,10 @@
    "module": "scripts.snr_figures"
   },
   {
-   "file": "ALI_Result.mat",
-   "func": "scripts.snr_sta._run_one",
-   "kind": "read",
-   "line": 142,
-   "loc": "per FOV",
-   "module": "scripts.snr_sta"
-  },
-  {
    "file": "fov_metadata.json",
    "func": "scripts.snr_sta._run_one",
    "kind": "read",
-   "line": 140,
+   "line": 141,
    "loc": "per FOV",
    "module": "scripts.snr_sta"
   },
@@ -7453,7 +8641,7 @@
    "file": "sta.csv",
    "func": "scripts.snr_sta._run_one",
    "kind": "write",
-   "line": 161,
+   "line": 162,
    "loc": "per FOV",
    "module": "scripts.snr_sta"
   },
@@ -7461,7 +8649,7 @@
    "file": "sta_cells.mat",
    "func": "scripts.snr_sta._run_one",
    "kind": "write",
-   "line": 164,
+   "line": 165,
    "loc": "per FOV",
    "module": "scripts.snr_sta"
   },
@@ -7562,18 +8750,10 @@
    "module": "scripts.snr_sta_variance"
   },
   {
-   "file": "ALI_Result.mat",
-   "func": "snr_analysis.snr.snr_compare.load_result",
-   "kind": "read",
-   "line": 83,
-   "loc": "summary",
-   "module": "snr_analysis.snr.snr_compare"
-  },
-  {
    "file": "coherence.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 410,
+   "line": 435,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7581,7 +8761,7 @@
    "file": "corr_hist.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 442,
+   "line": 467,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7589,7 +8769,7 @@
    "file": "distributions.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 380,
+   "line": 405,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7597,7 +8777,7 @@
    "file": "example_matched_cell.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 433,
+   "line": 458,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7605,7 +8785,7 @@
    "file": "mean_psd.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 398,
+   "line": 423,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7613,7 +8793,7 @@
    "file": "per_cell_metrics.csv",
    "func": "snr_analysis.snr.snr_compare.main",
    "kind": "write",
-   "line": 294,
+   "line": 319,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7621,7 +8801,7 @@
    "file": "scatter_noise_sigma.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 370,
+   "line": 395,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7629,7 +8809,7 @@
    "file": "scatter_spectral_snr.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 370,
+   "line": 395,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7637,7 +8817,7 @@
    "file": "scatter_spike_snr.png",
    "func": "snr_analysis.snr.snr_compare.make_figures",
    "kind": "write",
-   "line": 370,
+   "line": 395,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7645,7 +8825,7 @@
    "file": "summary.json",
    "func": "snr_analysis.snr.snr_compare.main",
    "kind": "write",
-   "line": 292,
+   "line": 317,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
   },
@@ -7653,23 +8833,15 @@
    "file": "summary.txt",
    "func": "snr_analysis.snr.snr_compare.main",
    "kind": "write",
-   "line": 295,
+   "line": 320,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_compare"
-  },
-  {
-   "file": "ALI_Result.mat",
-   "func": "snr_analysis.snr.snr_postproc_demo._load",
-   "kind": "read",
-   "line": 47,
-   "loc": "summary",
-   "module": "snr_analysis.snr.snr_postproc_demo"
   },
   {
    "file": "postproc_snr.png",
    "func": "snr_analysis.snr.snr_postproc_demo.main",
    "kind": "write",
-   "line": 156,
+   "line": 158,
    "loc": "summary",
    "module": "snr_analysis.snr.snr_postproc_demo"
   }
@@ -7822,13 +8994,6 @@
     "path"
    ]
   },
-  "pyali.metadata.load_keep_index": {
-   "read": [
-    "keep_csv"
-   ],
-   "returns": [],
-   "write": []
-  },
   "pyali.metadata.write_metadata": {
    "read": [],
    "returns": [],
@@ -7893,14 +9058,27 @@
    "returns": [],
    "write": []
   },
+  "pyali.registration.io.read_voltage_cells": {
+   "read": [
+    "results_dir"
+   ],
+   "returns": [
+    "cells.parquet",
+    "spikes.parquet"
+   ],
+   "write": []
+  },
   "pyali.registration.io.read_voltage_fov": {
    "read": [
-    "fov_dir"
+    "fov_dir",
+    "results_dir"
    ],
    "returns": [
     "*.bin",
     "*.mat",
-    "frames1.bin"
+    "cells.parquet",
+    "frames1.bin",
+    "spikes.parquet"
    ],
    "write": []
   },
@@ -7934,6 +9112,73 @@
    "write": [
     "ctx"
    ]
+  },
+  "pyali.results.load_results": {
+   "read": [
+    "fov_dir"
+   ],
+   "returns": [
+    "cells.parquet",
+    "spikes.parquet"
+   ],
+   "write": []
+  },
+  "pyali.results.write_results": {
+   "read": [],
+   "returns": [],
+   "write": [
+    "out_dir"
+   ]
+  },
+  "pyali.telemetry.rss_gb": {
+   "read": [
+    "pid"
+   ],
+   "returns": [],
+   "write": []
+  },
+  "scripts.build_inventory.build_inventory": {
+   "read": [],
+   "returns": [
+    "frames1.bin",
+    "zero-byte frames1.bin"
+   ],
+   "write": [
+    "out_csv"
+   ]
+  },
+  "scripts.build_inventory.focus_of": {
+   "read": [
+    "fov_dir"
+   ],
+   "returns": [
+    "frames1.bin"
+   ],
+   "write": []
+  },
+  "scripts.build_inventory.inventory_row": {
+   "read": [
+    "fov_dir"
+   ],
+   "returns": [
+    "frames1.bin",
+    "zero-byte frames1.bin"
+   ],
+   "write": []
+  },
+  "scripts.build_inventory.main": {
+   "read": [],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
+  "scripts.build_inventory.read_sidecar": {
+   "read": [
+    "fov_dir"
+   ],
+   "returns": [],
+   "write": []
   },
   "scripts.build_manifest._read_sidecar": {
    "read": [
@@ -8002,6 +9247,45 @@
    "returns": [],
    "write": []
   },
+  "scripts.qc_footprints.find_movie": {
+   "read": [
+    "fov_dir",
+    "meta"
+   ],
+   "returns": [
+    "frames1.bin"
+   ],
+   "write": []
+  },
+  "scripts.qc_footprints.main": {
+   "read": [
+    "argv"
+   ],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
+  "scripts.qc_footprints.render": {
+   "read": [],
+   "returns": [],
+   "write": [
+    "out_png"
+   ]
+  },
+  "scripts.qc_footprints.run": {
+   "read": [
+    "fov_dir",
+    "results_dir"
+   ],
+   "returns": [
+    "cells.parquet",
+    "spikes.parquet"
+   ],
+   "write": [
+    "results_dir"
+   ]
+  },
   "scripts.rename_to_convention.main": {
    "read": [],
    "returns": [],
@@ -8039,6 +9323,47 @@
    "returns": [],
    "write": [
     "argv"
+   ]
+  },
+  "scripts.run_corpus.load_run": {
+   "read": [
+    "inventory_csv"
+   ],
+   "returns": [],
+   "write": []
+  },
+  "scripts.run_corpus.main": {
+   "read": [
+    "argv"
+   ],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
+  "scripts.run_corpus.run_one": {
+   "read": [
+    "cfg",
+    "r"
+   ],
+   "returns": [],
+   "write": [
+    "cfg",
+    "r"
+   ]
+  },
+  "scripts.run_corpus.watch_rss": {
+   "read": [
+    "proc"
+   ],
+   "returns": [],
+   "write": []
+  },
+  "scripts.run_corpus.write_fov_index": {
+   "read": [],
+   "returns": [],
+   "write": [
+    "path"
    ]
   },
   "scripts.run_pyali.detect_bit_depth": {
@@ -8166,6 +9491,13 @@
    ],
    "write": []
   },
+  "snr_analysis.snr.snr_compare._load_legacy_mat": {
+   "read": [
+    "mat"
+   ],
+   "returns": [],
+   "write": []
+  },
   "snr_analysis.snr.snr_compare._load_v73": {
    "read": [
     "path"
@@ -8173,7 +9505,7 @@
    "returns": [],
    "write": []
   },
-  "snr_analysis.snr.snr_compare._resolve_mat": {
+  "snr_analysis.snr.snr_compare._resolve": {
    "read": [],
    "returns": [
     "ALI_Result.mat"
@@ -8188,11 +9520,10 @@
    ]
   },
   "snr_analysis.snr.snr_compare.load_result": {
-   "read": [
-    "path"
-   ],
+   "read": [],
    "returns": [
-    "ALI_Result.mat"
+    "cells.parquet",
+    "spikes.parquet"
    ],
    "write": []
   },
@@ -8215,7 +9546,8 @@
     "path"
    ],
    "returns": [
-    "ALI_Result.mat"
+    "cells.parquet",
+    "spikes.parquet"
    ],
    "write": []
   }
@@ -9025,7 +10357,7 @@
     },
     {
      "doc": "",
-     "end": 143,
+     "end": 141,
      "kind": "function",
      "line": 47,
      "name": "main"
@@ -9096,11 +10428,11 @@
     },
     {
      "lazy": true,
-     "line": 85,
+     "line": 84,
      "target": "pyali.pipeline"
     }
    ],
-   "loc": 148,
+   "loc": 146,
    "path": "bench/profile_highN.py"
   },
   "bench.seg_analyze": {
@@ -9745,6 +11077,11 @@
     {
      "lazy": false,
      "line": 12,
+     "target": "pyali.results"
+    },
+    {
+     "lazy": false,
+     "line": 12,
      "target": "pyali.pipeline"
     }
    ],
@@ -9877,161 +11214,119 @@
   "pyali.extract": {
    "defs": [
     {
-     "doc": "Moving-median high-pass along time, sign-flipped so downward spikes become positive.",
-     "end": 37,
+     "doc": "Moving-median high-pass along time of one corrected patch ``(T, Hp, Wp)``, sign-flipped so",
+     "end": 22,
      "kind": "function",
-     "line": 15,
-     "name": "temporal_filter"
-    },
-    {
-     "doc": ":func:`temporal_filter` restricted to one spatial patch.",
-     "end": 61,
-     "kind": "function",
-     "line": 40,
+     "line": 16,
      "name": "temporal_filter_patch"
     },
     {
-     "doc": "Row/column index ranges of the analysis patch for a region (a fixed patch or its bbox).",
-     "end": 92,
+     "doc": "Corrected ``(T, r1 - r0, c1 - c0)`` block: ``movie.patch(...)`` for a",
+     "end": 30,
      "kind": "function",
-     "line": 67,
+     "line": 25,
+     "name": "read_patch"
+    },
+    {
+     "doc": "Row/column index ranges of the analysis patch for a region (a fixed patch or its bbox).",
+     "end": 61,
+     "kind": "function",
+     "line": 36,
      "name": "compute_patch"
     },
     {
      "doc": "Binary map of a region's pixels. ``pixel_list`` = ``[col, row]`` (1-indexed).",
-     "end": 101,
+     "end": 70,
      "kind": "function",
-     "line": 95,
+     "line": 64,
      "name": "build_selection_map"
     },
     {
-     "doc": "Scale a 1-D trace by the DOG kernel's center value (a unit gain for the normalized",
-     "end": 110,
+     "doc": "MATLAB ``medfilt1(x, n)`` with its default zero padding: output ``k`` is the median of",
+     "end": 88,
      "kind": "function",
-     "line": 107,
-     "name": "apply_dog_gain"
+     "line": 76,
+     "name": "median_filter_1d"
     },
     {
-     "doc": "Subtract, from each sample, the minimum of the next ``look`` samples.",
-     "end": 123,
+     "doc": "MATLAB/Octave ``mad(x)`` with the default flag 0: the mean absolute deviation about the",
+     "end": 95,
      "kind": "function",
-     "line": 113,
-     "name": "forward_rolling_min_subtract"
+     "line": 91,
+     "name": "mean_abs_dev"
     },
     {
-     "doc": "Detect action potentials in one region's filtered patch movie.",
-     "end": 187,
+     "doc": "Detect action potentials in one region from its raw patch's mean trace.",
+     "end": 155,
      "kind": "function",
-     "line": 129,
+     "line": 101,
      "name": "detect_region_aps"
     },
     {
-     "doc": "Remove APs whose frame is within ``min_interval`` of another.",
-     "end": 201,
+     "doc": "Keep the largest-amplitude AP within any ``min_interval``-frame window.",
+     "end": 189,
      "kind": "function",
-     "line": 190,
+     "line": 158,
      "name": "dedup_close_peaks"
     },
     {
-     "doc": "Build a 7-frame (+/-3) stack per AP, low-rank denoise it, and keep the center frames.",
-     "end": 238,
+     "doc": "Low-rank denoise the AP frames: one filtered frame per spike (Mini ALI",
+     "end": 222,
      "kind": "function",
-     "line": 207,
-     "name": "svd_denoise_ap_stack"
+     "line": 195,
+     "name": "svd_denoise_frames"
     },
     {
-     "doc": "Greedily grow ``n_pixels`` bright pixels outward from the max, within ``radius``.",
-     "end": 289,
+     "doc": "Greedily grow up to ``n_pixels`` bright pixels outward from the maximum, within ``radius``",
+     "end": 277,
      "kind": "function",
-     "line": 241,
+     "line": 225,
      "name": "region_grow_brightest"
     },
     {
-     "doc": "Intensity^2-weighted centroid over the row x column hull of the picked pixels.",
-     "end": 306,
+     "doc": "Intensity^2-weighted centroid of the picked pixels (``mini_ali_spk_fine`` lines 72-86).",
+     "end": 297,
      "kind": "function",
-     "line": 292,
+     "line": 280,
      "name": "_weighted_com"
     },
     {
-     "doc": "Center of mass per AP -> ``[nAP, 3]`` = ``[row, col, frame]`` (0-indexed frame).",
-     "end": 321,
+     "doc": "Center of mass per AP -> ``[k, 3]`` = ``[row, col, frame]`` (0-indexed frame), ``k <= nAP``.",
+     "end": 327,
      "kind": "function",
-     "line": 309,
+     "line": 300,
      "name": "com_via_svd"
     },
     {
      "doc": "Fallback footprint (no AP / no cluster): the region's per-pixel max projection.",
-     "end": 338,
+     "end": 344,
      "kind": "function",
-     "line": 327,
+     "line": 333,
      "name": "region_fallback_footprint"
     },
     {
-     "doc": "Per-cluster footprints: mean of each cluster's AP frames, masked to an 11x11 window",
-     "end": 367,
+     "doc": "Per-cluster footprints: mean of each cluster's AP frames, negatives clipped to zero, masked",
+     "end": 375,
      "kind": "function",
-     "line": 341,
+     "line": 347,
      "name": "cluster_footprints"
     },
     {
      "doc": "Per-region loop: AP detection -> center of mass -> DBSCAN clustering -> footprints.",
-     "end": 447,
+     "end": 485,
      "kind": "function",
-     "line": 370,
+     "line": 381,
      "name": "extract_footprints"
     },
     {
      "doc": "Region center as ``[row, col]`` from the region's Centroid ``[col, row]``.",
-     "end": 453,
+     "end": 491,
      "kind": "function",
-     "line": 450,
+     "line": 488,
      "name": "region_center_rowcol"
-    },
-    {
-     "doc": "Apply a ``[N, H*W]`` spatial operator to a ``[T, H, W]`` movie -> ``[N, T]``.",
-     "end": 494,
-     "kind": "function",
-     "line": 462,
-     "name": "project_movie"
-    },
-    {
-     "doc": "Extract per-footprint temporal traces via the spatial pseudoinverse.",
-     "end": 521,
-     "kind": "function",
-     "line": 497,
-     "name": "pinv_traces"
-    },
-    {
-     "doc": "Per-pixel high-frequency noise std from the baseline (no-stimulus) frames.",
-     "end": 552,
-     "kind": "function",
-     "line": 527,
-     "name": "per_pixel_noise_map"
-    },
-    {
-     "doc": "Boolean ``[N]`` mask: True where a footprint's support bounding box overlaps no other.",
-     "end": 583,
-     "kind": "function",
-     "line": 555,
-     "name": "footprint_isolated_mask"
-    },
-    {
-     "doc": "Noise-weighted (GLS/BLUE) trace extraction.",
-     "end": 620,
-     "kind": "function",
-     "line": 586,
-     "name": "whitened_gls_traces"
-    },
-    {
-     "doc": "Dispatch trace extraction per ``p.whiten_traces``.",
-     "end": 646,
-     "kind": "function",
-     "line": 623,
-     "name": "extract_cell_traces"
     }
    ],
-   "doc": "Waveform extraction: temporal filter, per-region AP detection, centers of mass,",
+   "doc": "Waveform extraction: temporal filter, per-region AP detection, centers of mass and spatial",
    "group": "core",
    "imports": [
     {
@@ -10042,30 +11337,35 @@
     {
      "lazy": false,
      "line": 9,
+     "target": "pyali.results.SparseBuilder"
+    },
+    {
+     "lazy": false,
+     "line": 10,
      "target": "pyali.utils.movmedian_time"
     },
     {
      "lazy": false,
-     "line": 9,
+     "line": 10,
      "target": "pyali.utils.findpeaks"
     },
     {
      "lazy": false,
-     "line": 9,
-     "target": "pyali.utils.uniquetol_reps"
-    },
-    {
-     "lazy": false,
-     "line": 9,
+     "line": 10,
      "target": "pyali.utils.round_half_away_from_zero"
     },
     {
      "lazy": true,
-     "line": 394,
+     "line": 81,
+     "target": "numpy.lib.stride_tricks.sliding_window_view"
+    },
+    {
+     "lazy": true,
+     "line": 414,
      "target": "sklearn.cluster.DBSCAN"
     }
    ],
-   "loc": 647,
+   "loc": 492,
    "path": "pyali/extract.py"
   },
   "pyali.figures": {
@@ -10204,65 +11504,65 @@
    "defs": [
     {
      "doc": "Read a raw ``frames1.bin`` movie into ``[T, H, W]``.",
-     "end": 38,
+     "end": 43,
      "kind": "function",
-     "line": 11,
+     "line": 16,
      "name": "read_bin_mov"
     },
     {
      "doc": "Memory-map ``frames1.bin`` as a read-only ``[T, H, W]`` integer view (no RAM cost).",
-     "end": 50,
+     "end": 55,
      "kind": "function",
-     "line": 41,
+     "line": 46,
      "name": "open_bin_memmap"
     },
     {
      "doc": "",
-     "end": 55,
+     "end": 60,
      "kind": "function",
-     "line": 53,
+     "line": 58,
      "name": "_from_h5"
     },
     {
      "doc": "Load variable(s) from a ``.mat`` (HDF5 v7.3) file.",
-     "end": 80,
+     "end": 85,
      "kind": "function",
-     "line": 58,
+     "line": 63,
      "name": "load_v73"
     },
     {
-     "doc": "Write arrays to a ``.mat`` (HDF5 v7.3) file.",
-     "end": 124,
+     "doc": "Write arrays to a ``.mat`` (HDF5 v7.3) file (legacy; not used for pipeline results).",
+     "end": 129,
      "kind": "function",
-     "line": 83,
+     "line": 88,
      "name": "save_mat_v73"
     }
    ],
-   "doc": "I/O: read the raw camera movie and read/write ``.mat`` (HDF5 v7.3) files.",
+   "doc": "I/O: read the raw camera movie, and read/write ``.mat`` (HDF5 v7.3) files.",
    "group": "core",
    "imports": [
     {
      "lazy": false,
-     "line": 5,
+     "line": 10,
      "target": "numpy"
     },
     {
      "lazy": true,
-     "line": 109,
+     "line": 114,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 72,
+     "line": 77,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 74,
+     "line": 79,
      "target": "pyali._h5read"
     }
    ],
-   "loc": 125,
+   "loc": 130,
    "path": "pyali/io.py"
   },
   "pyali.metadata": {
@@ -10282,25 +11582,60 @@
      "name": "parse_dir_name"
     },
     {
-     "doc": "Full metadata record for one FOV, ready to write beside its analysis outputs.",
-     "end": 187,
+     "doc": "Where a FOV sits in the experiment; the source of every ``fov_id`` / ``cell_id``.",
+     "end": 150,
+     "kind": "class",
+     "line": 125,
+     "name": "Identity"
+    },
+    {
+     "doc": "",
+     "end": 142,
      "kind": "function",
-     "line": 121,
+     "line": 141,
+     "name": "Identity.fov_id"
+    },
+    {
+     "doc": "",
+     "end": 145,
+     "kind": "function",
+     "line": 144,
+     "name": "Identity.cell_id"
+    },
+    {
+     "doc": "",
+     "end": 150,
+     "kind": "function",
+     "line": 147,
+     "name": "Identity.as_dict"
+    },
+    {
+     "doc": ":class:`Identity` from a FOV directory name, with explicit overrides.",
+     "end": 174,
+     "kind": "function",
+     "line": 153,
+     "name": "identity_from_dir_name"
+    },
+    {
+     "doc": "Tuples -> lists (recursively) so ``Params`` fields serialize as JSON arrays.",
+     "end": 183,
+     "kind": "function",
+     "line": 177,
+     "name": "_jsonable"
+    },
+    {
+     "doc": "Full metadata record for one FOV, ready to write beside its analysis outputs.",
+     "end": 234,
+     "kind": "function",
+     "line": 186,
      "name": "fov_metadata"
     },
     {
-     "doc": "Write ``meta`` into ``out_dir`` \u2014 the same directory as ``ALI_Result.mat``, so metadata",
-     "end": 197,
+     "doc": "Write ``meta`` into ``out_dir`` \u2014 the same directory as ``signals.h5`` / ``cells.parquet``,",
+     "end": 244,
      "kind": "function",
-     "line": 190,
+     "line": 237,
      "name": "write_metadata"
-    },
-    {
-     "doc": "``{(day, dir_name): row}`` from ``keep.csv``, for joining during a run.",
-     "end": 204,
-     "kind": "function",
-     "line": 200,
-     "name": "load_keep_index"
     }
    ],
    "doc": "Per-FOV acquisition metadata, parsed from the directory name.",
@@ -10308,26 +11643,36 @@
    "imports": [
     {
      "lazy": false,
-     "line": 28,
+     "line": 27,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 29,
+     "line": 28,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 30,
+     "line": 29,
      "target": "re"
     },
     {
+     "lazy": false,
+     "line": 30,
+     "target": "dataclasses.dataclass"
+    },
+    {
+     "lazy": false,
+     "line": 30,
+     "target": "dataclasses.asdict"
+    },
+    {
      "lazy": true,
-     "line": 202,
-     "target": "csv"
+     "line": 221,
+     "target": "pyali.results.git_sha"
     }
    ],
-   "loc": 205,
+   "loc": 245,
    "path": "pyali/metadata.py"
   },
   "pyali.metrics": {
@@ -10386,48 +11731,159 @@
    "loc": 62,
    "path": "pyali/metrics.py"
   },
+  "pyali.movie": {
+   "defs": [
+    {
+     "doc": "``(n_frames, len(anchors))`` float64 interpolation weights: row ``t`` (0-based frame)",
+     "end": 42,
+     "kind": "function",
+     "line": 29,
+     "name": "interp_weights"
+    },
+    {
+     "doc": "Per-frame rigid shift of the background-subtracted movie, as",
+     "end": 73,
+     "kind": "function",
+     "line": 45,
+     "name": "estimate_shift"
+    },
+    {
+     "doc": "Raw integer frames plus the background / motion corrections, applied on read.",
+     "end": 158,
+     "kind": "class",
+     "line": 76,
+     "name": "CorrectedMovie"
+    },
+    {
+     "doc": "",
+     "end": 104,
+     "kind": "function",
+     "line": 90,
+     "name": "CorrectedMovie.__init__"
+    },
+    {
+     "doc": "",
+     "end": 108,
+     "kind": "function",
+     "line": 107,
+     "name": "CorrectedMovie.shape"
+    },
+    {
+     "doc": "",
+     "end": 111,
+     "kind": "function",
+     "line": 110,
+     "name": "CorrectedMovie.__len__"
+    },
+    {
+     "doc": "Uncorrected frames ``[t0, t1)`` cast to ``dtype`` (exact for integer acquisitions).",
+     "end": 117,
+     "kind": "function",
+     "line": 114,
+     "name": "CorrectedMovie.frames"
+    },
+    {
+     "doc": "``(t1 - t0, len(pixels))`` float64: background + motion term at those pixels.",
+     "end": 123,
+     "kind": "function",
+     "line": 119,
+     "name": "CorrectedMovie._correction"
+    },
+    {
+     "doc": "",
+     "end": 128,
+     "kind": "function",
+     "line": 125,
+     "name": "CorrectedMovie._finish"
+    },
+    {
+     "doc": "Corrected values at flat pixel indices (``row * W + col``) for frames ``[t0, t1)``",
+     "end": 139,
+     "kind": "function",
+     "line": 130,
+     "name": "CorrectedMovie.gather"
+    },
+    {
+     "doc": "Corrected ``(t1 - t0, r1 - r0, c1 - c0)`` float64 block (0-indexed, half-open).",
+     "end": 150,
+     "kind": "function",
+     "line": 141,
+     "name": "CorrectedMovie.patch"
+    },
+    {
+     "doc": "The whole corrected movie ``(T, H, W)`` -- for tests and small movies only.",
+     "end": 158,
+     "kind": "function",
+     "line": 152,
+     "name": "CorrectedMovie.materialize"
+    },
+    {
+     "doc": "Build a :class:`CorrectedMovie` from raw frames and :class:`pyali.params.Params`: anchor",
+     "end": 171,
+     "kind": "function",
+     "line": 161,
+     "name": "corrected_movie"
+    }
+   ],
+   "doc": "The movie as acquired, with its linear corrections applied where pixels are read.",
+   "group": "core",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 24,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "pyali.preprocess"
+    }
+   ],
+   "loc": 172,
+   "path": "pyali/movie.py"
+  },
   "pyali.params": {
    "defs": [
     {
      "doc": "",
-     "end": 167,
+     "end": 174,
      "kind": "class",
      "line": 13,
      "name": "Params"
     },
     {
      "doc": "Baseline frames as a 0-indexed concatenated array (from ``std_ranges``).",
-     "end": 94,
+     "end": 99,
      "kind": "function",
-     "line": 91,
+     "line": 96,
      "name": "Params.std_frames_index"
     },
     {
      "doc": "Legacy **6GP002** batch: 312x1200, 16-bit, ~6389 frames. These are the dataclass",
-     "end": 103,
+     "end": 108,
      "kind": "function",
-     "line": 100,
+     "line": 105,
      "name": "Params.profile_6GP002"
     },
     {
      "doc": "**6GP002** 8-bit variant (the 20260401 ``*_8bit_*`` runs): 1080x1080, 6399 frames.",
-     "end": 116,
+     "end": 120,
      "kind": "function",
-     "line": 106,
+     "line": 111,
      "name": "Params.profile_6GP002_8bit"
     },
     {
      "doc": "**443screen1** batch (20260611/12; the directories name it ``443GP`` \u2014 same batch):",
-     "end": 135,
+     "end": 139,
      "kind": "function",
-     "line": 119,
+     "line": 123,
      "name": "Params.profile_443screen1"
     },
     {
      "doc": "**443screen2** batch: 800x800, 8-bit, fps=800, 8399 frames (~10.5 s), blue-stimulus.",
-     "end": 167,
+     "end": 174,
      "kind": "function",
-     "line": 138,
+     "line": 142,
      "name": "Params.profile_443screen2"
     }
    ],
@@ -10451,27 +11907,27 @@
     },
     {
      "lazy": true,
-     "line": 93,
+     "line": 98,
      "target": "numpy"
     }
    ],
-   "loc": 168,
+   "loc": 175,
    "path": "pyali/params.py"
   },
   "pyali.pipeline": {
    "defs": [
     {
      "doc": "Run the full extraction on one FOV; returns a dict of the key outputs.",
-     "end": 128,
+     "end": 180,
      "kind": "function",
-     "line": 17,
+     "line": 24,
      "name": "process_fov"
     },
     {
      "doc": "Process every sub-folder of ``root_path``, writing results into ``root_path/Analysis``.",
-     "end": 146,
+     "end": 198,
      "kind": "function",
-     "line": 131,
+     "line": 183,
      "name": "run_folder"
     }
    ],
@@ -10480,192 +11936,239 @@
    "imports": [
     {
      "lazy": false,
-     "line": 9,
+     "line": 15,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 10,
+     "line": 16,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 12,
+     "line": 18,
      "target": "pyali.params.Params"
     },
     {
      "lazy": false,
-     "line": 13,
+     "line": 19,
      "target": "pyali.io"
     },
     {
      "lazy": false,
-     "line": 13,
+     "line": 19,
      "target": "pyali.preprocess"
     },
     {
      "lazy": false,
-     "line": 13,
+     "line": 19,
      "target": "pyali.segmentation"
     },
     {
      "lazy": false,
-     "line": 13,
+     "line": 19,
      "target": "pyali.extract"
     },
     {
      "lazy": false,
-     "line": 14,
-     "target": "pyali.utils.dog_kernel"
+     "line": 19,
+     "target": "pyali.traces"
+    },
+    {
+     "lazy": false,
+     "line": 19,
+     "target": "pyali.results"
+    },
+    {
+     "lazy": false,
+     "line": 20,
+     "target": "pyali.movie.CorrectedMovie"
+    },
+    {
+     "lazy": false,
+     "line": 20,
+     "target": "pyali.movie.estimate_shift"
+    },
+    {
+     "lazy": false,
+     "line": 20,
+     "target": "pyali.movie.interp_weights"
+    },
+    {
+     "lazy": false,
+     "line": 21,
+     "target": "pyali.telemetry.StageMeter"
     },
     {
      "lazy": true,
-     "line": 113,
+     "line": 33,
+     "target": "pyali.metadata.identity_from_dir_name"
+    },
+    {
+     "lazy": true,
+     "line": 154,
      "target": "pyali.metadata.fov_metadata"
     },
     {
      "lazy": true,
-     "line": 113,
+     "line": 154,
      "target": "pyali.metadata.write_metadata"
     },
     {
      "lazy": true,
-     "line": 122,
+     "line": 168,
      "target": "pyali.figures.save_result_figures"
     }
    ],
-   "loc": 147,
+   "loc": 199,
    "path": "pyali/pipeline.py"
   },
   "pyali.preprocess": {
    "defs": [
     {
      "doc": "Mean image of the reference frames, weighted by a local-correlation image.",
-     "end": 36,
+     "end": 37,
      "kind": "function",
-     "line": 15,
+     "line": 16,
      "name": "reference_and_correlation_image"
     },
     {
      "doc": "Mean Pearson correlation of each interior pixel's time trace with its 4 orthogonal",
-     "end": 58,
+     "end": 59,
      "kind": "function",
-     "line": 39,
+     "line": 40,
      "name": "_correlation_image"
     },
     {
      "doc": "Straightforward per-pixel reference implementation of :func:`_correlation_image`.",
-     "end": 81,
+     "end": 82,
      "kind": "function",
-     "line": 61,
+     "line": 62,
      "name": "_correlation_image_literal"
     },
     {
      "doc": "Normalized 2-D Gaussian kernel of radius ``ceil(2*sigma)`` (size ``2*ceil(2*sigma)+1``).",
-     "end": 102,
+     "end": 103,
      "kind": "function",
-     "line": 87,
+     "line": 88,
      "name": "gaussian_kernel"
     },
     {
-     "doc": "Sharpen the reference image via a Laplacian-of-Gaussian unsharp mask.",
-     "end": 139,
-     "kind": "function",
-     "line": 105,
-     "name": "sharpen"
-    },
-    {
      "doc": "Morphological background estimate for each specified frame range.",
-     "end": 171,
+     "end": 141,
      "kind": "function",
-     "line": 145,
+     "line": 109,
      "name": "background_samples"
     },
     {
      "doc": "Linear-interpolation bracket for a 1-indexed frame: ``(idx_before, idx_after, w)``.",
-     "end": 187,
+     "end": 157,
      "kind": "function",
-     "line": 174,
+     "line": 144,
      "name": "_interp_weight"
     },
     {
      "doc": "Interpolated background over time at pixel ``(r, c)`` (0-indexed) -> ``(n_frames,)``.",
-     "end": 200,
+     "end": 170,
      "kind": "function",
-     "line": 190,
+     "line": 160,
      "name": "background_pixel_trace"
     },
     {
-     "doc": "Subtract a per-frame, linearly-interpolated morphological background, in place.",
-     "end": 228,
-     "kind": "function",
-     "line": 203,
-     "name": "adaptive_background"
-    },
-    {
      "doc": "Central-difference spatial gradients of ``f0`` [H,W], edge-replicated to full size.",
-     "end": 240,
+     "end": 182,
      "kind": "function",
-     "line": 234,
+     "line": 176,
      "name": "_edge_gradients"
     },
     {
      "doc": "Least-squares design matrix ``A = [dfdx(:), dfdy(:)]`` -> ``[H*W, 2]``.",
-     "end": 249,
+     "end": 191,
      "kind": "function",
-     "line": 243,
+     "line": 185,
      "name": "motion_operator"
     },
     {
-     "doc": "Estimate and remove a rigid 2-parameter (x, y) shift per frame, in place.",
-     "end": 279,
+     "doc": "``imgaussfilt(image, sigma)``: separable Gaussian with a ``2*ceil(2*sigma)+1`` kernel,",
+     "end": 206,
      "kind": "function",
-     "line": 252,
-     "name": "motion_correct"
+     "line": 197,
+     "name": "gaussian_matlab"
     },
     {
-     "doc": "Zero out pixels above ``threshold`` (saturated), in place.",
-     "end": 285,
+     "doc": "Flat grey opening in which only ``mask`` pixels contribute: the erosion sees masked-out",
+     "end": 228,
      "kind": "function",
-     "line": 282,
-     "name": "clip_saturation"
+     "line": 212,
+     "name": "masked_grey_opening"
+    },
+    {
+     "doc": "Illumination-scale background of a reference image: mask-aware grey opening with an",
+     "end": 251,
+     "kind": "function",
+     "line": 231,
+     "name": "large_scale_background"
+    },
+    {
+     "doc": "Mean of the first ``n_frames`` frames (clipped to ``T``) of the **raw** movie, in",
+     "end": 258,
+     "kind": "function",
+     "line": 254,
+     "name": "raw_mean_reference"
+    },
+    {
+     "doc": "Focus QC for a mean image: variance of the Laplacian of the Gaussian(``sigma``)-smoothed",
+     "end": 272,
+     "kind": "function",
+     "line": 261,
+     "name": "focus_score"
     }
    ],
-   "doc": "Preprocessing: reference/correlation image, sharpening, background subtraction, motion.",
+   "doc": "Preprocessing: reference/correlation image, large-scale background, time-varying background",
    "group": "core",
    "imports": [
     {
      "lazy": false,
-     "line": 7,
+     "line": 8,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 9,
-     "target": "pyali.utils.fspecial_laplacian"
-    },
-    {
-     "lazy": false,
-     "line": 9,
+     "line": 10,
      "target": "pyali.utils.strel_disk"
     },
     {
      "lazy": false,
-     "line": 9,
+     "line": 10,
      "target": "pyali.utils.round_half_away_from_zero"
     },
     {
      "lazy": true,
-     "line": 128,
+     "line": 125,
      "target": "scipy.ndimage"
     },
     {
      "lazy": true,
-     "line": 161,
+     "line": 200,
+     "target": "scipy.ndimage"
+    },
+    {
+     "lazy": true,
+     "line": 217,
+     "target": "scipy.ndimage"
+    },
+    {
+     "lazy": true,
+     "line": 240,
+     "target": "pyali.utils.exact_disk"
+    },
+    {
+     "lazy": true,
+     "line": 267,
      "target": "scipy.ndimage"
     }
    ],
-   "loc": 286,
+   "loc": 274,
    "path": "pyali/preprocess.py"
   },
   "pyali.registration": {
@@ -11043,72 +12546,79 @@
    "defs": [
     {
      "doc": "Decode an HDF5 (MATLAB v7.3) string dataset.",
-     "end": 37,
+     "end": 38,
      "kind": "function",
-     "line": 26,
+     "line": 27,
      "name": "_h5str"
     },
     {
      "doc": "Per-FOV absolute stage position ``(x, y)`` in microns, from ``output_data.mat`` (v7.3).",
-     "end": 63,
+     "end": 64,
      "kind": "function",
-     "line": 40,
+     "line": 41,
      "name": "read_stage_xy"
     },
     {
      "doc": "Raw-brightness anatomical reference = mean of the first ``n_ref`` frames.",
-     "end": 82,
+     "end": 83,
      "kind": "function",
-     "line": 66,
+     "line": 67,
      "name": "raw_mean_reference"
     },
     {
      "doc": "LIGHT voltage load \u2014 just the image + stage position (no cell extraction).",
-     "end": 98,
+     "end": 99,
      "kind": "function",
-     "line": 85,
+     "line": 86,
      "name": "read_voltage_reference"
     },
     {
-     "doc": "FULL voltage load \u2014 the light fields plus pyali's per-cell footprints/traces.",
-     "end": 128,
+     "doc": "pyali's per-cell fields from a written FOV output directory (:mod:`pyali.results`)::",
+     "end": 117,
      "kind": "function",
-     "line": 101,
+     "line": 102,
+     "name": "read_voltage_cells"
+    },
+    {
+     "doc": "FULL voltage load \u2014 the light fields plus pyali's per-cell footprints/traces.",
+     "end": 149,
+     "kind": "function",
+     "line": 120,
      "name": "read_voltage_fov"
     },
     {
      "doc": "JF608 anchor tile = channel ``[3]`` (the Cy5/A-base channel, where JF608 also lives) of the",
-     "end": 139,
+     "end": 160,
      "kind": "function",
-     "line": 134,
+     "line": 155,
      "name": "read_sbs_ref_tile"
     },
     {
      "doc": "Full SBS cycle image: ``(5, 1480, 1480)`` uint16.",
-     "end": 151,
+     "end": 172,
      "kind": "function",
-     "line": 142,
+     "line": 163,
      "name": "read_sbs_stack"
     },
     {
      "doc": "Reconciled cell mask; labels equal ``sbs_info.cell`` for that tile. On-disk dtype varies",
-     "end": 159,
+     "end": 180,
      "kind": "function",
-     "line": 154,
+     "line": 175,
      "name": "read_cells_mask"
     },
     {
      "doc": "Per-tile stage metadata (one row per tile; the 17 SBS cycles collapse via drop_duplicates).",
-     "end": 168,
+     "end": 189,
      "kind": "function",
-     "line": 162,
+     "line": 183,
      "name": "read_sbs_metadata"
     },
     {
      "doc": "``sbs_info \u27d5 cells`` on ``(plate, well, tile, cell)`` \u2014 nucleus geometry + genotype.",
-     "end": 182,
+     "end": 203,
      "kind": "function",
-     "line": 171,
+     "line": 192,
      "name": "read_sbs_cells"
     }
    ],
@@ -11117,61 +12627,71 @@
    "imports": [
     {
      "lazy": false,
-     "line": 15,
+     "line": 16,
      "target": "__future__.annotations"
     },
     {
      "lazy": false,
-     "line": 17,
+     "line": 18,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 18,
+     "line": 19,
      "target": "pandas"
     },
     {
      "lazy": false,
-     "line": 20,
+     "line": 21,
      "target": "pyali.params.Params"
     },
     {
      "lazy": true,
-     "line": 47,
+     "line": 48,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 75,
+     "line": 76,
      "target": "pyali.io.open_bin_memmap"
     },
     {
      "lazy": true,
-     "line": 116,
-     "target": "pyali.pipeline.process_fov"
-    },
-    {
-     "lazy": true,
-     "line": 117,
+     "line": 110,
      "target": "pyali.metrics.per_cell_snr"
     },
     {
      "lazy": true,
-     "line": 137,
+     "line": 111,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": true,
+     "line": 158,
      "target": "tifffile"
     },
     {
      "lazy": true,
-     "line": 149,
+     "line": 170,
      "target": "tifffile"
     },
     {
      "lazy": true,
-     "line": 157,
+     "line": 178,
      "target": "tifffile"
+    },
+    {
+     "lazy": true,
+     "line": 140,
+     "target": "pyali.pipeline.process_fov"
+    },
+    {
+     "lazy": true,
+     "line": 141,
+     "target": "pyali.metrics.per_cell_snr"
     }
    ],
-   "loc": 183,
+   "loc": 204,
    "path": "pyali/registration/io.py"
   },
   "pyali.registration.mosaic": {
@@ -12007,115 +13527,659 @@
    "loc": 483,
    "path": "pyali/registration/viz.py"
   },
-  "pyali.segmentation": {
+  "pyali.results": {
    "defs": [
     {
-     "doc": "Locally adaptive threshold surface based on the neighborhood mean.",
-     "end": 44,
-     "kind": "function",
-     "line": 15,
-     "name": "adaptive_threshold_mean"
+     "doc": "All cells' footprints as one COO list: ``values[offsets[k]:offsets[k+1]]`` at C-order",
+     "end": 128,
+     "kind": "class",
+     "line": 60,
+     "name": "SparseFootprints"
     },
     {
-     "doc": "Multiplier applied to the local mean, from a sensitivity in [0, 1).",
-     "end": 58,
+     "doc": "",
+     "end": 70,
      "kind": "function",
-     "line": 47,
-     "name": "_threshold_scale"
+     "line": 69,
+     "name": "SparseFootprints.n"
     },
     {
-     "doc": "Segment cells from a grayscale image.",
-     "end": 103,
+     "doc": "Dense ``(H, W)`` float32 plane of cell ``k``.",
+     "end": 79,
      "kind": "function",
-     "line": 61,
-     "name": "cell_segmentation"
+     "line": 72,
+     "name": "SparseFootprints.plane"
     },
     {
-     "doc": "Drop regions whose **bounding box** covers more than ``max_bbox_frac`` of the frame.",
-     "end": 147,
+     "doc": "``(N,)`` int: number of stored (nonzero) pixels of each cell.",
+     "end": 84,
      "kind": "function",
-     "line": 106,
-     "name": "drop_oversized_regions"
+     "line": 81,
+     "name": "SparseFootprints.nnz_per_cell"
     },
     {
-     "doc": "Connected-component region properties with column-major pixel ordering.",
-     "end": 174,
+     "doc": "Inclusive ``(r0, r1, c0, c1)`` bounding box of cell ``k``'s stored pixels, or ``None``",
+     "end": 94,
      "kind": "function",
-     "line": 150,
-     "name": "_regionprops"
+     "line": 86,
+     "name": "SparseFootprints.bbox"
+    },
+    {
+     "doc": "The same footprints with ``values`` cast to ``dtype`` (pixel / offsets shared).",
+     "end": 99,
+     "kind": "function",
+     "line": 96,
+     "name": "SparseFootprints.astype"
+    },
+    {
+     "doc": "``(H, W, N)`` float64, the old ``footprint`` array (registration is the only user).",
+     "end": 106,
+     "kind": "function",
+     "line": 101,
+     "name": "SparseFootprints.dense"
+    },
+    {
+     "doc": "Pack an ``(H, W, N)`` array; ``height``/``width`` are only needed when ``fp`` is empty",
+     "end": 128,
+     "kind": "function",
+     "line": 109,
+     "name": "SparseFootprints.from_dense"
+    },
+    {
+     "doc": "Accumulate footprints one plane at a time, straight into the COO form, so the dense",
+     "end": 166,
+     "kind": "class",
+     "line": 131,
+     "name": "SparseBuilder"
+    },
+    {
+     "doc": "",
+     "end": 138,
+     "kind": "function",
+     "line": 136,
+     "name": "SparseBuilder.__init__"
+    },
+    {
+     "doc": "",
+     "end": 141,
+     "kind": "function",
+     "line": 140,
+     "name": "SparseBuilder.n"
+    },
+    {
+     "doc": "Append one cell from its ``(H, W)`` plane (nonzeros in C order, ``row * W + col``).",
+     "end": 150,
+     "kind": "function",
+     "line": 143,
+     "name": "SparseBuilder.add_plane"
+    },
+    {
+     "doc": "Append one cell from flat pixel indices (C order) and their values.",
+     "end": 160,
+     "kind": "function",
+     "line": 152,
+     "name": "SparseBuilder.add_sparse"
+    },
+    {
+     "doc": "",
+     "end": 166,
+     "kind": "function",
+     "line": 162,
+     "name": "SparseBuilder.build"
+    },
+    {
+     "doc": "Per-cell footprint-weighted brightness: ``sum(w * x) / sum(w)`` over each cell's",
+     "end": 189,
+     "kind": "function",
+     "line": 169,
+     "name": "weighted_brightness"
+    },
+    {
+     "doc": "DataFrame with exactly ``dtypes``'s columns, cast; zero rows when ``columns`` is empty.",
+     "end": 199,
+     "kind": "function",
+     "line": 195,
+     "name": "_typed_frame"
+    },
+    {
+     "doc": "The ``cells`` table for ``N`` cells.",
+     "end": 230,
+     "kind": "function",
+     "line": 202,
+     "name": "make_cells"
+    },
+    {
+     "doc": "The ``spikes`` table: one row per localized spike (a ``COMs`` row), with the amplitude of",
+     "end": 257,
+     "kind": "function",
+     "line": 233,
+     "name": "pack_spikes"
+    },
+    {
+     "doc": "Everything in one FOV output directory (see the module docstring).",
+     "end": 272,
+     "kind": "class",
+     "line": 264,
+     "name": "Results"
+    },
+    {
+     "doc": "Commit of the checked-out pyali, or ``''`` when git is unavailable.",
+     "end": 284,
+     "kind": "function",
+     "line": 275,
+     "name": "git_sha"
+    },
+    {
+     "doc": "",
+     "end": 290,
+     "kind": "function",
+     "line": 287,
+     "name": "_check_frame"
+    },
+    {
+     "doc": "Write one FOV's results into ``out_dir`` (created if needed). Returns ``out_dir``.",
+     "end": 350,
+     "kind": "function",
+     "line": 293,
+     "name": "write_results"
+    },
+    {
+     "doc": "HDF5 attribute -> plain Python scalar / str.",
+     "end": 359,
+     "kind": "function",
+     "line": 353,
+     "name": "_py"
+    },
+    {
+     "doc": "Read a FOV output directory (or the path of its ``signals.h5``) back as :class:`Results`.",
+     "end": 386,
+     "kind": "function",
+     "line": 362,
+     "name": "load_results"
     }
    ],
-   "doc": "Cell segmentation.",
+   "doc": "Per-FOV results: the only writer and the only loader of pyali's on-disk outputs.",
    "group": "core",
    "imports": [
     {
      "lazy": false,
-     "line": 10,
+     "line": 33,
+     "target": "dataclasses.dataclass"
+    },
+    {
+     "lazy": false,
+     "line": 35,
+     "target": "numpy"
+    },
+    {
+     "lazy": true,
+     "line": 197,
+     "target": "pandas"
+    },
+    {
+     "lazy": true,
+     "line": 277,
+     "target": "os"
+    },
+    {
+     "lazy": true,
+     "line": 278,
+     "target": "subprocess"
+    },
+    {
+     "lazy": true,
+     "line": 304,
+     "target": "os"
+    },
+    {
+     "lazy": true,
+     "line": 305,
+     "target": "h5py"
+    },
+    {
+     "lazy": true,
+     "line": 364,
+     "target": "os"
+    },
+    {
+     "lazy": true,
+     "line": 365,
+     "target": "h5py"
+    },
+    {
+     "lazy": true,
+     "line": 366,
+     "target": "pandas"
+    }
+   ],
+   "loc": 387,
+   "path": "pyali/results.py"
+  },
+  "pyali.segmentation": {
+   "defs": [
+    {
+     "doc": "Foreground = pixels at least ``low_sigma`` background noise units above the background",
+     "end": 74,
+     "kind": "function",
+     "line": 28,
+     "name": "hysteresis_mask"
+    },
+    {
+     "doc": "Soma-scale mask split into one basin per local peak.",
+     "end": 118,
+     "kind": "function",
+     "line": 80,
+     "name": "soma_watershed_mask"
+    },
+    {
+     "doc": "Segment cells: ``hysteresis_mask(ref_corrected) & soma_watershed_mask(ref_raw)``.",
+     "end": 159,
+     "kind": "function",
+     "line": 124,
+     "name": "cell_segmentation"
+    },
+    {
+     "doc": "Drop regions whose **bounding box** covers more than ``max_bbox_frac`` of the frame.",
+     "end": 203,
+     "kind": "function",
+     "line": 162,
+     "name": "drop_oversized_regions"
+    },
+    {
+     "doc": "Connected-component region properties with column-major pixel ordering.",
+     "end": 230,
+     "kind": "function",
+     "line": 206,
+     "name": "_regionprops"
+    }
+   ],
+   "doc": "Cell segmentation (Mini ALI V2.2 \"better segmentation\", reproduced faithfully).",
+   "group": "core",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 18,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 12,
-     "target": "pyali.preprocess.gaussian_kernel"
+     "line": 20,
+     "target": "pyali.preprocess.gaussian_matlab"
     },
     {
      "lazy": true,
-     "line": 38,
-     "target": "scipy.ndimage"
-    },
-    {
-     "lazy": true,
-     "line": 90,
-     "target": "scipy.ndimage"
-    },
-    {
-     "lazy": true,
-     "line": 91,
+     "line": 41,
      "target": "skimage.morphology.remove_small_objects"
     },
     {
      "lazy": true,
-     "line": 157,
+     "line": 42,
+     "target": "scipy.ndimage"
+    },
+    {
+     "lazy": true,
+     "line": 93,
+     "target": "scipy.ndimage"
+    },
+    {
+     "lazy": true,
+     "line": 94,
+     "target": "skimage.morphology.h_maxima"
+    },
+    {
+     "lazy": true,
+     "line": 94,
+     "target": "skimage.morphology.remove_small_objects"
+    },
+    {
+     "lazy": true,
+     "line": 95,
+     "target": "skimage.segmentation.watershed"
+    },
+    {
+     "lazy": true,
+     "line": 96,
+     "target": "pyali.utils.matlab_disk"
+    },
+    {
+     "lazy": true,
+     "line": 213,
      "target": "skimage.measure.label"
     },
     {
      "lazy": true,
-     "line": 157,
+     "line": 213,
      "target": "skimage.measure.regionprops"
     }
    ],
-   "loc": 175,
+   "loc": 231,
    "path": "pyali/segmentation.py"
+  },
+  "pyali.telemetry": {
+   "defs": [
+    {
+     "doc": "Resident set size of ``pid`` (default: this process) in GB from ``/proc/<pid>/statm``;",
+     "end": 34,
+     "kind": "function",
+     "line": 27,
+     "name": "rss_gb"
+    },
+    {
+     "doc": "``MemAvailable`` from ``/proc/meminfo`` in GB (``inf`` when unreadable).",
+     "end": 46,
+     "kind": "function",
+     "line": 37,
+     "name": "avail_ram_gb"
+    },
+    {
+     "doc": "CPU count, ``OMP_NUM_THREADS`` and the BLAS thread pools in use (via ``threadpoolctl``",
+     "end": 60,
+     "kind": "function",
+     "line": 49,
+     "name": "thread_info"
+    },
+    {
+     "doc": "Record wall s, CPU s and RSS (start / end / peak) per named stage of this process.",
+     "end": 145,
+     "kind": "class",
+     "line": 63,
+     "name": "StageMeter"
+    },
+    {
+     "doc": "",
+     "end": 78,
+     "kind": "function",
+     "line": 66,
+     "name": "StageMeter.__init__"
+    },
+    {
+     "doc": "",
+     "end": 83,
+     "kind": "function",
+     "line": 81,
+     "name": "StageMeter._sample"
+    },
+    {
+     "doc": "",
+     "end": 89,
+     "kind": "function",
+     "line": 85,
+     "name": "StageMeter._observe"
+    },
+    {
+     "doc": "Time and meter the enclosed block as stage ``name`` (re-using a name overwrites).",
+     "end": 113,
+     "kind": "function",
+     "line": 93,
+     "name": "StageMeter.stage"
+    },
+    {
+     "doc": "",
+     "end": 120,
+     "kind": "function",
+     "line": 116,
+     "name": "StageMeter.close"
+    },
+    {
+     "doc": "",
+     "end": 123,
+     "kind": "function",
+     "line": 122,
+     "name": "StageMeter.__enter__"
+    },
+    {
+     "doc": "",
+     "end": 127,
+     "kind": "function",
+     "line": 125,
+     "name": "StageMeter.__exit__"
+    },
+    {
+     "doc": "",
+     "end": 131,
+     "kind": "function",
+     "line": 130,
+     "name": "StageMeter.elapsed_s"
+    },
+    {
+     "doc": "``{timing_s, cpu_s, memory_gb, peak_rss_gb, rss_start_gb, threads}``; ``timing_s`` also",
+     "end": 145,
+     "kind": "function",
+     "line": 133,
+     "name": "StageMeter.report"
+    }
+   ],
+   "doc": "Per-stage wall / CPU / memory telemetry for a pipeline run (Linux ``/proc``, no psutil).",
+   "group": "core",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 19,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 20,
+     "target": "threading"
+    },
+    {
+     "lazy": false,
+     "line": 21,
+     "target": "time"
+    },
+    {
+     "lazy": false,
+     "line": 22,
+     "target": "contextlib.contextmanager"
+    },
+    {
+     "lazy": true,
+     "line": 54,
+     "target": "threadpoolctl.threadpool_info"
+    }
+   ],
+   "loc": 146,
+   "path": "pyali/telemetry.py"
+  },
+  "pyali.traces": {
+   "defs": [
+    {
+     "doc": "``(t1 - t0, len(pixels))`` float64 block of the corrected movie at flat pixel indices;",
+     "end": 40,
+     "kind": "function",
+     "line": 34,
+     "name": "_gather"
+    },
+    {
+     "doc": "",
+     "end": 44,
+     "kind": "function",
+     "line": 43,
+     "name": "_n_frames"
+    },
+    {
+     "doc": "``F`` as a sparse ``(U x N)`` matrix over ``U`` = the sorted union of all footprint pixels.",
+     "end": 103,
+     "kind": "class",
+     "line": 50,
+     "name": "FootprintOperator"
+    },
+    {
+     "doc": "",
+     "end": 67,
+     "kind": "function",
+     "line": 53,
+     "name": "FootprintOperator.__init__"
+    },
+    {
+     "doc": "",
+     "end": 71,
+     "kind": "function",
+     "line": 70,
+     "name": "FootprintOperator.n_union"
+    },
+    {
+     "doc": "",
+     "end": 74,
+     "kind": "function",
+     "line": 73,
+     "name": "FootprintOperator._weights_on_union"
+    },
+    {
+     "doc": "``F^T W F`` as a dense ``(N, N)`` float64 array (``W = diag(w)``, ``w`` over all P pixels).",
+     "end": 80,
+     "kind": "function",
+     "line": 76,
+     "name": "FootprintOperator.gram"
+    },
+    {
+     "doc": "``F`` restricted to the union pixels as a dense ``(U, N)`` float64 array.",
+     "end": 84,
+     "kind": "function",
+     "line": 82,
+     "name": "FootprintOperator.dense_union"
+    },
+    {
+     "doc": "``op @ M_U`` over time in chunks -> ``(N, T)`` float64, where ``M_U`` is the corrected",
+     "end": 103,
+     "kind": "function",
+     "line": 86,
+     "name": "FootprintOperator.project"
+    },
+    {
+     "doc": "``np.linalg.pinv``'s default cutoff for a ``P x N`` matrix: ``max(P, N) * eps``.",
+     "end": 111,
+     "kind": "function",
+     "line": 109,
+     "name": "default_rcond"
+    },
+    {
+     "doc": "Eigendecomposition of ``G = F^T F`` with the truncation bookkeeping.",
+     "end": 139,
+     "kind": "function",
+     "line": 114,
+     "name": "gram_spectrum"
+    },
+    {
+     "doc": "",
+     "end": 144,
+     "kind": "function",
+     "line": 142,
+     "name": "_apply_spectrum"
+    },
+    {
+     "doc": "``G^+ B`` keeping the eigen-directions ``np.linalg.pinv(F, rcond)`` would keep (see",
+     "end": 157,
+     "kind": "function",
+     "line": 147,
+     "name": "truncated_gram_solve"
+    },
+    {
+     "doc": "``pinv(F) @ (-movie)`` -> ``(N, T)`` float64 through the sparse normal equations, with the",
+     "end": 182,
+     "kind": "function",
+     "line": 160,
+     "name": "pinv_traces"
+    },
+    {
+     "doc": "Per-pixel high-frequency noise std from the baseline (no-stimulus) frames of the",
+     "end": 197,
+     "kind": "function",
+     "line": 185,
+     "name": "per_pixel_noise_map"
+    },
+    {
+     "doc": ":func:`per_pixel_noise_map` evaluated only on ``pixels`` (flat indices): gathers the",
+     "end": 218,
+     "kind": "function",
+     "line": 200,
+     "name": "noise_map_on_union"
+    },
+    {
+     "doc": "Boolean ``(N,)``: True where a footprint's bounding box overlaps no other footprint's",
+     "end": 237,
+     "kind": "function",
+     "line": 221,
+     "name": "isolated_mask"
+    },
+    {
+     "doc": "Noise-weighted (GLS / BLUE) traces ``(F^T W F + lambda I)^-1 F^T W (-movie)`` with",
+     "end": 259,
+     "kind": "function",
+     "line": 240,
+     "name": "gls_traces"
+    },
+    {
+     "doc": "Pipeline entry: unweighted :func:`pinv_traces` by default; with ``p.whiten_traces`` the",
+     "end": 286,
+     "kind": "function",
+     "line": 265,
+     "name": "extract_cell_traces"
+    }
+   ],
+   "doc": "Trace extraction: the least-squares projection of the corrected movie onto the footprints.",
+   "group": "core",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 23,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 24,
+     "target": "scipy.sparse"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "pyali.results.SparseFootprints"
+    },
+    {
+     "lazy": false,
+     "line": 27,
+     "target": "pyali.utils.movmedian_time"
+    }
+   ],
+   "loc": 287,
+   "path": "pyali/traces.py"
   },
   "pyali.utils": {
    "defs": [
     {
      "doc": "Round to the nearest integer with ties rounded away from zero.",
-     "end": 23,
+     "end": 22,
      "kind": "function",
-     "line": 9,
+     "line": 8,
      "name": "round_half_away_from_zero"
     },
     {
      "doc": "3x3 Laplacian kernel parameterized by ``alpha`` in [0, 1].",
-     "end": 43,
+     "end": 42,
      "kind": "function",
-     "line": 26,
+     "line": 25,
      "name": "fspecial_laplacian"
     },
     {
      "doc": "Octagonal disk structuring element of the given ``radius`` (a polygonal approximation,",
-     "end": 65,
+     "end": 64,
      "kind": "function",
-     "line": 46,
+     "line": 45,
      "name": "strel_disk"
     },
     {
-     "doc": "Difference-of-Gaussians kernel, zero-summed via area normalization.",
+     "doc": "Euclidean disk ``x^2 + y^2 <= r^2`` on a ``(2r+1)^2`` grid (MATLAB ``strel('disk', r, 0)``).",
+     "end": 71,
+     "kind": "function",
+     "line": 67,
+     "name": "exact_disk"
+    },
+    {
+     "doc": "MATLAB ``strel('disk', r)`` with its default ``N = 4`` periodic-line approximation.",
      "end": 91,
      "kind": "function",
-     "line": 68,
-     "name": "dog_kernel"
+     "line": 74,
+     "name": "matlab_disk"
     },
     {
      "doc": "Median of 8 aligned arrays via a comparator network, written into ``out``.",
@@ -12157,6 +14221,117 @@
    ],
    "loc": 250,
    "path": "pyali/utils.py"
+  },
+  "scripts.build_inventory": {
+   "defs": [
+    {
+     "doc": "``key=value`` lines of the acquisition sidecar as a dict; integers are converted.",
+     "end": 61,
+     "kind": "function",
+     "line": 44,
+     "name": "read_sidecar"
+    },
+    {
+     "doc": "Every directory under ``root`` (inclusive) that holds a ``frames1.bin``, sorted.",
+     "end": 71,
+     "kind": "function",
+     "line": 64,
+     "name": "scan_fovs"
+    },
+    {
+     "doc": "``[\"20260715:P-1=5\", ...]`` -> ``{(\"20260715\", \"P-1\"): 5}``.",
+     "end": 82,
+     "kind": "function",
+     "line": 74,
+     "name": "parse_plate_map"
+    },
+    {
+     "doc": "Focus QC score of the mean of the first ``FOCUS_FRAMES`` frames (8-bit when",
+     "end": 95,
+     "kind": "function",
+     "line": 85,
+     "name": "focus_of"
+    },
+    {
+     "doc": "One inventory row for ``fov_dir`` (see the module docstring for the columns).",
+     "end": 141,
+     "kind": "function",
+     "line": 98,
+     "name": "inventory_row"
+    },
+    {
+     "doc": "Scan ``roots``, write ``out_csv`` and return the rows (sorted by plate, well, burst, name).",
+     "end": 157,
+     "kind": "function",
+     "line": 144,
+     "name": "build_inventory"
+    },
+    {
+     "doc": "``[(run_id, n_included, n_excluded)]`` in run order.",
+     "end": 166,
+     "kind": "function",
+     "line": 160,
+     "name": "summarize"
+    },
+    {
+     "doc": "",
+     "end": 199,
+     "kind": "function",
+     "line": 169,
+     "name": "main"
+    }
+   ],
+   "doc": "Build a corpus inventory: one CSV row per FOV directory (a directory holding ``frames1.bin``).",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 24,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 25,
+     "target": "csv"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 27,
+     "target": "re"
+    },
+    {
+     "lazy": false,
+     "line": 28,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 33,
+     "target": "pyali.metadata.parse_dir_name"
+    },
+    {
+     "lazy": true,
+     "line": 88,
+     "target": "numpy"
+    },
+    {
+     "lazy": true,
+     "line": 89,
+     "target": "pyali.preprocess.focus_score"
+    },
+    {
+     "lazy": true,
+     "line": 191,
+     "target": "statistics"
+    }
+   ],
+   "loc": 204,
+   "path": "scripts/build_inventory.py"
   },
   "scripts.build_manifest": {
    "defs": [
@@ -12249,23 +14424,23 @@
    "defs": [
     {
      "doc": "",
-     "end": 80,
+     "end": 85,
      "kind": "function",
-     "line": 75,
+     "line": 80,
      "name": "perturbation_id"
     },
     {
      "doc": "Write one perturbation's FOV directories under ``out_root``. Returns a summary dict.",
-     "end": 142,
+     "end": 162,
      "kind": "function",
-     "line": 83,
+     "line": 88,
      "name": "convert"
     },
     {
      "doc": "",
-     "end": 170,
+     "end": 190,
      "kind": "function",
-     "line": 145,
+     "line": 165,
      "name": "main"
     }
    ],
@@ -12274,56 +14449,76 @@
    "imports": [
     {
      "lazy": false,
-     "line": 56,
+     "line": 60,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 57,
+     "line": 61,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 58,
+     "line": 62,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 59,
+     "line": 63,
      "target": "re"
     },
     {
      "lazy": false,
-     "line": 60,
+     "line": 64,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 61,
+     "line": 65,
      "target": "time"
     },
     {
      "lazy": false,
-     "line": 63,
+     "line": 67,
      "target": "h5py"
     },
     {
      "lazy": false,
-     "line": 64,
+     "line": 68,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 69,
-     "target": "pyali.io.save_mat_v73"
+     "line": 73,
+     "target": "pyali.metadata.write_metadata"
     },
     {
      "lazy": false,
-     "line": 70,
-     "target": "pyali.metadata.write_metadata"
+     "line": 74,
+     "target": "pyali.metadata.Identity"
+    },
+    {
+     "lazy": false,
+     "line": 75,
+     "target": "pyali.results.SparseFootprints"
+    },
+    {
+     "lazy": false,
+     "line": 75,
+     "target": "pyali.results.make_cells"
+    },
+    {
+     "lazy": false,
+     "line": 75,
+     "target": "pyali.results.pack_spikes"
+    },
+    {
+     "lazy": false,
+     "line": 75,
+     "target": "pyali.results.write_results"
     }
    ],
-   "loc": 175,
+   "loc": 195,
    "path": "scripts/cell_profile_to_corpus.py"
   },
   "scripts.dev_smoke_registration": {
@@ -12570,6 +14765,136 @@
    "loc": 184,
    "path": "scripts/find_video_dims.py"
   },
+  "scripts.qc_footprints": {
+   "defs": [
+    {
+     "doc": "``R.cells`` plus ``snr_median`` / ``noise_sigma`` / ``qc_spikes`` (from",
+     "end": 70,
+     "kind": "function",
+     "line": 52,
+     "name": "cell_table"
+    },
+    {
+     "doc": "``n`` percentiles evenly spread over (0, 100): 5, 15, ..., 95 for ``n = 10``.",
+     "end": 75,
+     "kind": "function",
+     "line": 73,
+     "name": "percentiles"
+    },
+    {
+     "doc": "The rows nearest the :func:`percentiles` of ``snr_median`` among spiking cells with at",
+     "end": 96,
+     "kind": "function",
+     "line": 78,
+     "name": "select_cells"
+    },
+    {
+     "doc": "0-indexed top-left ``(r0, c0)`` of a ``size x size`` crop centred on the 1-indexed",
+     "end": 108,
+     "kind": "function",
+     "line": 102,
+     "name": "crop_window"
+    },
+    {
+     "doc": "``sign * (mean(F[t]) - mean(F[t - lag]))`` over the crop at the given spike frames",
+     "end": 132,
+     "kind": "function",
+     "line": 111,
+     "name": "sta_crop"
+    },
+    {
+     "doc": "Memmap of ``frames1.bin`` for this result (``fov_dir`` overrides the recorded one);",
+     "end": 146,
+     "kind": "function",
+     "line": 135,
+     "name": "find_movie"
+    },
+    {
+     "doc": "",
+     "end": 155,
+     "kind": "function",
+     "line": 152,
+     "name": "_stretch"
+    },
+    {
+     "doc": "Draw the ``len(picked) x 3`` panel figure and save it to ``out_png``.",
+     "end": 241,
+     "kind": "function",
+     "line": 158,
+     "name": "render"
+    },
+    {
+     "doc": "Build the QC for ``results_dir``; returns the picked-cell table (also written as CSV).",
+     "end": 278,
+     "kind": "function",
+     "line": 247,
+     "name": "run"
+    },
+    {
+     "doc": "",
+     "end": 293,
+     "kind": "function",
+     "line": 281,
+     "name": "main"
+    }
+   ],
+   "doc": "Footprint-on-pixels + trace QC for one result directory: 10 cells across the spike-amplitude-SNR",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 28,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 29,
+     "target": "json"
+    },
+    {
+     "lazy": false,
+     "line": 30,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 31,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 33,
+     "target": "numpy"
+    },
+    {
+     "lazy": false,
+     "line": 38,
+     "target": "pyali.io.open_bin_memmap"
+    },
+    {
+     "lazy": false,
+     "line": 39,
+     "target": "pyali.metrics.per_cell_snr"
+    },
+    {
+     "lazy": false,
+     "line": 40,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": true,
+     "line": 160,
+     "target": "matplotlib"
+    },
+    {
+     "lazy": true,
+     "line": 162,
+     "target": "matplotlib.pyplot"
+    }
+   ],
+   "loc": 298,
+   "path": "scripts/qc_footprints.py"
+  },
   "scripts.rename_to_convention": {
    "defs": [
     {
@@ -12649,7 +14974,7 @@
     },
     {
      "doc": "",
-     "end": 221,
+     "end": 220,
      "kind": "function",
      "line": 108,
      "name": "main"
@@ -12701,7 +15026,7 @@
     {
      "lazy": false,
      "line": 41,
-     "target": "pyali.io.load_v73"
+     "target": "pyali.results.load_results"
     },
     {
      "lazy": false,
@@ -12712,11 +15037,6 @@
      "lazy": false,
      "line": 43,
      "target": "scripts.snr_corpus.READ_ROOT_DEFAULT"
-    },
-    {
-     "lazy": false,
-     "line": 43,
-     "target": "scripts.snr_corpus.RESULT"
     },
     {
      "lazy": false,
@@ -12734,7 +15054,7 @@
      "target": "scripts.snr_figures.style"
     }
    ],
-   "loc": 226,
+   "loc": 225,
    "path": "scripts/representative_traces.py"
   },
   "scripts.review_ledger": {
@@ -12825,78 +15145,139 @@
   "scripts.run_corpus": {
    "defs": [
     {
-     "doc": "",
-     "end": 53,
+     "doc": "Re-root ``src_dir`` under ``src_root`` by the path from the ``day`` component onward",
+     "end": 54,
      "kind": "function",
-     "line": 52,
-     "name": "read_root"
+     "line": 45,
+     "name": "reroot"
+    },
+    {
+     "doc": "Rows of ``inventory_csv`` with ``run_id`` (included and excluded), sorted by",
+     "end": 81,
+     "kind": "function",
+     "line": 57,
+     "name": "load_run"
     },
     {
      "doc": "",
-     "end": 58,
+     "end": 85,
      "kind": "function",
-     "line": 56,
-     "name": "dir_size"
-    },
-    {
-     "doc": "Process one FOV, upload it, delete the local copy. Never raises.",
-     "end": 107,
-     "kind": "function",
-     "line": 61,
-     "name": "_run_one"
-    },
-    {
-     "doc": "Set of ``(day, dir_name)`` already carrying a RESULT under the prefix, for --resume.",
-     "end": 126,
-     "kind": "function",
-     "line": 110,
-     "name": "existing_keys"
+     "line": 84,
+     "name": "dest_prefix"
     },
     {
      "doc": "",
-     "end": 261,
+     "end": 92,
      "kind": "function",
-     "line": 129,
+     "line": 91,
+     "name": "sh"
+    },
+    {
+     "doc": "FOV names under ``<s3_prefix>/Plate_<plate>/Well_<well>/`` whose directory holds the",
+     "end": 106,
+     "kind": "function",
+     "line": 95,
+     "name": "existing_done"
+    },
+    {
+     "doc": "The ``run_pyali.py`` command line for one FOV.",
+     "end": 118,
+     "kind": "function",
+     "line": 109,
+     "name": "fov_command"
+    },
+    {
+     "doc": "Poll ``proc``'s RSS; record the peak in ``state['peak_gb']``; kill it above ``max_gb``",
+     "end": 134,
+     "kind": "function",
+     "line": 124,
+     "name": "watch_rss"
+    },
+    {
+     "doc": "Block until RAM and scratch disk are above the thresholds. ``False`` if halted.",
+     "end": 146,
+     "kind": "function",
+     "line": 137,
+     "name": "wait_for_slot"
+    },
+    {
+     "doc": "Process one inventory row: run_pyali subprocess -> upload -> verify -> delete local.",
+     "end": 231,
+     "kind": "function",
+     "line": 152,
+     "name": "run_one"
+    },
+    {
+     "doc": "",
+     "end": 241,
+     "kind": "function",
+     "line": 237,
+     "name": "git_sha"
+    },
+    {
+     "doc": "",
+     "end": 253,
+     "kind": "function",
+     "line": 244,
+     "name": "write_fov_index"
+    },
+    {
+     "doc": "Copy manifest.jsonl, fov_index.csv and logs/ to ``<s3_prefix>/_runs/<run_id>/``.",
+     "end": 270,
+     "kind": "function",
+     "line": 256,
+     "name": "archive_run"
+    },
+    {
+     "doc": "",
+     "end": 385,
+     "kind": "function",
+     "line": 273,
      "name": "main"
     }
    ],
-   "doc": "Run pyali across the corpus, streaming each FOV's outputs to S3 and freeing the local copy.",
+   "doc": "Run pyali over one run-id of an inventory, streaming each FOV's outputs to S3.",
    "group": "scripts",
    "imports": [
     {
      "lazy": false,
-     "line": 20,
+     "line": 19,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 21,
+     "line": 20,
      "target": "csv"
     },
     {
      "lazy": false,
-     "line": 22,
+     "line": 21,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 23,
+     "line": 22,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 24,
+     "line": 23,
      "target": "shutil"
     },
     {
      "lazy": false,
-     "line": 25,
+     "line": 24,
      "target": "subprocess"
     },
     {
      "lazy": false,
-     "line": 26,
+     "line": 25,
      "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "threading"
     },
     {
      "lazy": false,
@@ -12906,35 +15287,40 @@
     {
      "lazy": false,
      "line": 28,
-     "target": "traceback"
+     "target": "concurrent.futures.ThreadPoolExecutor"
     },
     {
      "lazy": false,
-     "line": 29,
-     "target": "concurrent.futures.ProcessPoolExecutor"
-    },
-    {
-     "lazy": false,
-     "line": 29,
+     "line": 28,
      "target": "concurrent.futures.as_completed"
     },
     {
      "lazy": false,
-     "line": 30,
-     "target": "concurrent.futures.process.BrokenProcessPool"
+     "line": 33,
+     "target": "pyali.metadata.Identity"
     },
     {
      "lazy": false,
-     "line": 35,
-     "target": "pyali.params.Params"
+     "line": 34,
+     "target": "pyali.telemetry.avail_ram_gb"
     },
     {
      "lazy": false,
-     "line": 36,
-     "target": "pyali.pipeline.process_fov"
+     "line": 34,
+     "target": "pyali.telemetry.rss_gb"
+    },
+    {
+     "lazy": true,
+     "line": 65,
+     "target": "pyali.metadata.parse_dir_name"
+    },
+    {
+     "lazy": true,
+     "line": 355,
+     "target": "types"
     }
    ],
-   "loc": 266,
+   "loc": 390,
    "path": "scripts/run_corpus.py"
   },
   "scripts.run_pyali": {
@@ -12955,7 +15341,7 @@
     },
     {
      "doc": "",
-     "end": 218,
+     "end": 214,
      "kind": "function",
      "line": 101,
      "name": "main"
@@ -13001,11 +15387,11 @@
     },
     {
      "lazy": true,
-     "line": 200,
-     "target": "pyali.metadata.load_keep_index"
+     "line": 202,
+     "target": "pyali.metadata.identity_from_dir_name"
     }
    ],
-   "loc": 223,
+   "loc": 219,
    "path": "scripts/run_pyali.py"
   },
   "scripts.snr_aggregate": {
@@ -13170,37 +15556,37 @@
    "defs": [
     {
      "doc": "Map ``(day, dir_name) -> set(filenames)`` from one recursive listing of the prefix.",
-     "end": 79,
+     "end": 80,
      "kind": "function",
-     "line": 58,
+     "line": 59,
      "name": "list_fovs"
     },
     {
      "doc": "Full-precision, round-trippable float; ``nan`` stays ``nan``.",
-     "end": 96,
+     "end": 97,
      "kind": "function",
-     "line": 82,
+     "line": 83,
      "name": "_fmt"
     },
     {
      "doc": "Render the per-cell metrics as CSV text. ``n_cells == 0`` yields a header-only file.",
-     "end": 108,
+     "end": 109,
      "kind": "function",
-     "line": 99,
+     "line": 100,
      "name": "build_csv"
     },
     {
      "doc": "Write a small per-FOV text file, either through the s3fs mount or via the aws CLI.",
-     "end": 133,
+     "end": 134,
      "kind": "function",
-     "line": 111,
+     "line": 112,
      "name": "_write"
     },
     {
      "doc": "Compute and write one FOV's metrics. Never raises.",
      "end": 171,
      "kind": "function",
-     "line": 136,
+     "line": 137,
      "name": "_run_one"
     },
     {
@@ -13216,73 +15602,83 @@
    "imports": [
     {
      "lazy": false,
-     "line": 28,
+     "line": 29,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 29,
+     "line": 30,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 30,
+     "line": 31,
      "target": "math"
     },
     {
      "lazy": false,
-     "line": 31,
+     "line": 32,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 32,
+     "line": 33,
      "target": "subprocess"
     },
     {
      "lazy": false,
-     "line": 33,
+     "line": 34,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 34,
+     "line": 35,
      "target": "tempfile"
     },
     {
      "lazy": false,
-     "line": 35,
+     "line": 36,
      "target": "time"
     },
     {
      "lazy": false,
-     "line": 36,
+     "line": 37,
      "target": "traceback"
     },
     {
      "lazy": false,
-     "line": 37,
+     "line": 38,
      "target": "concurrent.futures.ProcessPoolExecutor"
     },
     {
      "lazy": false,
-     "line": 37,
+     "line": 38,
      "target": "concurrent.futures.as_completed"
     },
     {
      "lazy": false,
-     "line": 39,
+     "line": 40,
      "target": "numpy"
-    },
-    {
-     "lazy": false,
-     "line": 44,
-     "target": "pyali.io.load_v73"
     },
     {
      "lazy": false,
      "line": 45,
      "target": "pyali.metrics.per_cell_snr"
+    },
+    {
+     "lazy": false,
+     "line": 46,
+     "target": "pyali.results.CELLS_FILE"
+    },
+    {
+     "lazy": false,
+     "line": 46,
+     "target": "pyali.results.SIGNALS_FILE"
+    },
+    {
+     "lazy": false,
+     "line": 46,
+     "target": "pyali.results.load_results"
     }
    ],
    "loc": 259,
@@ -13455,44 +15851,44 @@
    "defs": [
     {
      "doc": "Resample ``n`` points at fractional offset ``d`` using a Catmull-Rom cubic.",
-     "end": 70,
+     "end": 71,
      "kind": "function",
-     "line": 55,
+     "line": 56,
      "name": "_cubic_shift"
     },
     {
      "doc": "Mean waveform around this cell's spikes, in sigma units, or ``None``.",
-     "end": 108,
+     "end": 109,
      "kind": "function",
-     "line": 73,
+     "line": 74,
      "name": "cell_sta"
     },
     {
      "doc": "",
-     "end": 113,
+     "end": 114,
      "kind": "function",
-     "line": 111,
+     "line": 112,
      "name": "_fmt"
     },
     {
      "doc": "Across-cell summary as CSV text; a header-only file when no cell qualified.",
-     "end": 131,
+     "end": 132,
      "kind": "function",
-     "line": 116,
+     "line": 117,
      "name": "build_csv"
     },
     {
      "doc": "",
-     "end": 174,
+     "end": 175,
      "kind": "function",
-     "line": 134,
+     "line": 135,
      "name": "_run_one"
     },
     {
      "doc": "",
-     "end": 238,
+     "end": 239,
      "kind": "function",
-     "line": 177,
+     "line": 178,
      "name": "main"
     }
    ],
@@ -13557,11 +15953,6 @@
     {
      "lazy": false,
      "line": 41,
-     "target": "pyali.io.load_v73"
-    },
-    {
-     "lazy": false,
-     "line": 41,
      "target": "pyali.io.save_mat_v73"
     },
     {
@@ -13577,40 +15968,40 @@
     {
      "lazy": false,
      "line": 43,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": false,
+     "line": 44,
      "target": "scripts.snr_corpus.META"
     },
     {
      "lazy": false,
-     "line": 43,
+     "line": 44,
      "target": "scripts.snr_corpus.REQUIRED"
     },
     {
      "lazy": false,
-     "line": 43,
-     "target": "scripts.snr_corpus.RESULT"
-    },
-    {
-     "lazy": false,
-     "line": 43,
+     "line": 44,
      "target": "scripts.snr_corpus._write"
     },
     {
      "lazy": false,
-     "line": 43,
+     "line": 44,
      "target": "scripts.snr_corpus.list_fovs"
     },
     {
      "lazy": false,
-     "line": 44,
+     "line": 45,
      "target": "scripts.snr_corpus.READ_ROOT_DEFAULT"
     },
     {
      "lazy": false,
-     "line": 44,
+     "line": 45,
      "target": "scripts.snr_corpus.S3_DEFAULT"
     }
    ],
-   "loc": 243,
+   "loc": 244,
    "path": "scripts/snr_sta.py"
   },
   "scripts.snr_sta_figures": {
@@ -14022,107 +16413,114 @@
    "defs": [
     {
      "doc": "Read one variable from a v7.3 (HDF5) .mat, transposing 2-D+ to native orientation.",
-     "end": 66,
+     "end": 73,
      "kind": "function",
-     "line": 61,
+     "line": 68,
      "name": "_load_v73"
     },
     {
-     "doc": "Accept an ALI_Result.mat file or a directory containing one (also under analysis/).",
-     "end": 77,
-     "kind": "function",
-     "line": 69,
-     "name": "_resolve_mat"
-    },
-    {
-     "doc": "Return (cell_traces [N,T], footprint_center [N,2]=row,col) from an ALI_Result.mat.",
+     "doc": "``(\"results\", dir)`` for a pyali output directory (``signals.h5`` present, searched directly",
      "end": 90,
      "kind": "function",
-     "line": 80,
+     "line": 76,
+     "name": "_resolve"
+    },
+    {
+     "doc": "(cell_traces [N,T], footprint_center [N,2]=row,col) from an archived ``ALI_Result.mat``.",
+     "end": 102,
+     "kind": "function",
+     "line": 93,
+     "name": "_load_legacy_mat"
+    },
+    {
+     "doc": "Return ``(cell_traces [N,T] float64, footprint_center [N,2]=row,col, source)``.",
+     "end": 115,
+     "kind": "function",
+     "line": 105,
      "name": "load_result"
     },
     {
      "doc": "Hungarian one-to-one match of cells by footprint-center Euclidean distance.",
-     "end": 109,
+     "end": 134,
      "kind": "function",
-     "line": 96,
+     "line": 121,
      "name": "match_cells"
     },
     {
      "doc": "Zero-phase Butterworth high-pass; removes DC + slow drift, keeps the spike band.",
-     "end": 118,
+     "end": 143,
      "kind": "function",
-     "line": 115,
+     "line": 140,
      "name": "highpass"
     },
     {
      "doc": "Robust noise std via MAD (spike-insensitive).",
-     "end": 125,
+     "end": 150,
      "kind": "function",
-     "line": 121,
+     "line": 146,
      "name": "robust_sigma"
     },
     {
      "doc": "Detect positive spikes on the high-passed trace and summarise amplitude / sigma.",
-     "end": 140,
+     "end": 165,
      "kind": "function",
-     "line": 128,
+     "line": 153,
      "name": "spike_snr_metrics"
     },
     {
      "doc": "Welch-PSD high-frequency SNR.",
-     "end": 160,
+     "end": 185,
      "kind": "function",
-     "line": 143,
+     "line": 168,
      "name": "spectral_hf_snr"
     },
     {
      "doc": "Compute the full metric dict for every trace in ``traces`` [N,T].",
-     "end": 176,
+     "end": 201,
      "kind": "function",
-     "line": 163,
+     "line": 188,
      "name": "per_cell_metrics"
     },
     {
      "doc": "Pearson corr (raw + high-pass) and mean high-band coherence for one matched pair.",
-     "end": 192,
+     "end": 217,
      "kind": "function",
-     "line": 182,
+     "line": 207,
      "name": "paired_diagnostics"
     },
     {
      "doc": "",
-     "end": 204,
+     "end": 229,
      "kind": "function",
-     "line": 198,
+     "line": 223,
      "name": "_summ"
     },
     {
      "doc": "",
-     "end": 220,
+     "end": 245,
      "kind": "function",
-     "line": 207,
+     "line": 232,
      "name": "write_csv"
     },
     {
      "doc": "",
-     "end": 300,
+     "end": 325,
      "kind": "function",
-     "line": 223,
+     "line": 248,
      "name": "main"
     },
     {
      "doc": "",
-     "end": 346,
+     "end": 371,
      "kind": "function",
-     "line": 303,
+     "line": 328,
      "name": "_write_text_summary"
     },
     {
      "doc": "",
-     "end": 442,
+     "end": 467,
      "kind": "function",
-     "line": 349,
+     "line": 374,
      "name": "make_figures"
     }
    ],
@@ -14131,125 +16529,130 @@
    "imports": [
     {
      "lazy": false,
-     "line": 39,
+     "line": 42,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 40,
+     "line": 43,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 41,
+     "line": 44,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 42,
+     "line": 45,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 44,
+     "line": 47,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 45,
+     "line": 48,
      "target": "scipy.optimize.linear_sum_assignment"
     },
     {
      "lazy": false,
-     "line": 46,
+     "line": 49,
      "target": "scipy.signal.butter"
     },
     {
      "lazy": false,
-     "line": 46,
+     "line": 49,
      "target": "scipy.signal.filtfilt"
     },
     {
      "lazy": false,
-     "line": 46,
+     "line": 49,
      "target": "scipy.signal.find_peaks"
     },
     {
      "lazy": false,
-     "line": 46,
+     "line": 49,
      "target": "scipy.signal.welch"
     },
     {
      "lazy": false,
-     "line": 46,
+     "line": 49,
      "target": "scipy.signal.coherence"
     },
     {
      "lazy": true,
-     "line": 50,
+     "line": 57,
      "target": "matplotlib"
     },
     {
      "lazy": true,
-     "line": 52,
+     "line": 59,
      "target": "matplotlib.pyplot"
     },
     {
      "lazy": true,
-     "line": 63,
+     "line": 70,
      "target": "h5py"
     },
     {
      "lazy": true,
-     "line": 262,
+     "line": 113,
+     "target": "pyali.results.load_results"
+    },
+    {
+     "lazy": true,
+     "line": 287,
      "target": "scipy.stats.wilcoxon"
     }
    ],
-   "loc": 447,
+   "loc": 472,
    "path": "snr_analysis/snr/snr_compare.py"
   },
   "snr_analysis.snr.snr_postproc_demo": {
    "defs": [
     {
-     "doc": "",
-     "end": 49,
+     "doc": "``(cell_traces [N, T] float64, results_dir)`` via :func:`pyali.results.load_results`.",
+     "end": 54,
      "kind": "function",
-     "line": 39,
+     "line": 47,
      "name": "_load"
     },
     {
      "doc": "",
-     "end": 54,
+     "end": 59,
      "kind": "function",
-     "line": 52,
+     "line": 57,
      "name": "highpass"
     },
     {
      "doc": "",
-     "end": 64,
+     "end": 69,
      "kind": "function",
-     "line": 57,
+     "line": 62,
      "name": "notch_chain"
     },
     {
      "doc": "",
-     "end": 68,
+     "end": 73,
      "kind": "function",
-     "line": 67,
+     "line": 72,
      "name": "robust_sigma"
     },
     {
      "doc": "Robust noise floor + spike SNR + spike amplitudes for one trace.",
-     "end": 80,
+     "end": 85,
      "kind": "function",
-     "line": 71,
+     "line": 76,
      "name": "snr_of"
     },
     {
      "doc": "",
-     "end": 158,
+     "end": 160,
      "kind": "function",
-     "line": 83,
+     "line": 88,
      "name": "main"
     }
    ],
@@ -14258,56 +16661,61 @@
    "imports": [
     {
      "lazy": false,
-     "line": 24,
+     "line": 27,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 25,
+     "line": 28,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 27,
+     "line": 29,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 31,
      "target": "numpy"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 32,
      "target": "scipy.signal.butter"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 32,
      "target": "scipy.signal.filtfilt"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 32,
      "target": "scipy.signal.iirnotch"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 32,
      "target": "scipy.signal.find_peaks"
     },
     {
      "lazy": true,
-     "line": 31,
+     "line": 39,
      "target": "matplotlib"
     },
     {
      "lazy": true,
-     "line": 33,
+     "line": 41,
      "target": "matplotlib.pyplot"
     },
     {
      "lazy": true,
-     "line": 40,
-     "target": "h5py"
+     "line": 49,
+     "target": "pyali.results.load_results"
     }
    ],
-   "loc": 163,
+   "loc": 165,
    "path": "snr_analysis/snr/snr_postproc_demo.py"
   }
  },
@@ -14317,27 +16725,28 @@
   "n_ref",
   "fps",
   "truncate_last",
+  "reference_frames",
+  "background_radius",
+  "background_sigma",
   "read_dtype",
-  "compute_dtype",
   "disk_radius",
-  "gauss_sigma",
-  "lap_alpha",
-  "sharpen_k",
   "bkg_ranges",
   "std_ranges",
   "saturation_clip",
   "filter_window",
-  "patch_local_filter",
-  "dog_sigma1",
-  "dog_sigma2",
-  "dog_width",
+  "detect_median_window",
+  "detect_edge_frames",
   "threshold_factor",
   "min_peak_interval",
-  "seg_threshold",
-  "seg_gauss",
-  "seg_region_size",
-  "seg_threshold_mult",
-  "seg_neighborhood",
+  "seg_smooth_sigma",
+  "seg_high_sigma",
+  "seg_low_sigma",
+  "seg_min_area",
+  "ws_tophat_radius",
+  "ws_bg_sigma",
+  "ws_percentile",
+  "ws_close_radius",
+  "ws_h",
   "max_region_bbox_frac",
   "patch_size",
   "svd_rank",
@@ -14348,12 +16757,14 @@
   "whiten_traces",
   "whiten_ridge",
   "whiten_sigma_floor_pct",
-  "whiten_isolated_only"
+  "whiten_isolated_only",
+  "trace_rcond",
+  "trace_chunk_bytes",
+  "trace_cond_limit"
  ],
  "params_reads": {
   "bench.bench_pipeline.main": [
    "bkg_ranges",
-   "compute_dtype",
    "fps",
    "ncol",
    "nrow",
@@ -14374,34 +16785,24 @@
   ],
   "bench.fastpath_ab.run_one": [
    "bkg_ranges",
-   "compute_dtype",
    "fps",
    "ncol",
    "nrow",
-   "patch_local_filter",
    "read_dtype",
    "std_ranges",
    "truncate_last"
   ],
   "bench.guard_test_seg.run_one": [
-   "compute_dtype",
    "disk_radius",
-   "gauss_sigma",
-   "lap_alpha",
    "max_region_bbox_frac",
    "n_ref",
    "ncol",
    "nrow",
    "patch_size",
-   "read_dtype",
-   "seg_gauss",
-   "seg_region_size",
-   "seg_threshold",
-   "sharpen_k"
+   "read_dtype"
   ],
   "bench.pinv_shape_test.run_one": [
    "bkg_ranges",
-   "compute_dtype",
    "fps",
    "max_region_bbox_frac",
    "ncol",
@@ -14418,116 +16819,66 @@
    "truncate_last"
   ],
   "bench.seg_grid.run_one": [
-   "compute_dtype",
    "disk_radius",
-   "gauss_sigma",
-   "lap_alpha",
    "max_region_bbox_frac",
    "n_ref",
    "ncol",
    "nrow",
-   "read_dtype",
-   "seg_gauss",
-   "seg_region_size",
-   "seg_threshold"
+   "read_dtype"
   ],
   "bench.seg_nbhd.run_one": [
-   "compute_dtype",
    "disk_radius",
-   "gauss_sigma",
-   "lap_alpha",
    "max_region_bbox_frac",
    "n_ref",
    "ncol",
    "nrow",
-   "read_dtype",
-   "seg_gauss",
-   "seg_region_size",
-   "seg_threshold"
+   "read_dtype"
   ],
   "bench.seg_qc.run_one": [
-   "compute_dtype",
    "disk_radius",
-   "gauss_sigma",
-   "lap_alpha",
    "max_region_bbox_frac",
    "n_ref",
    "ncol",
    "nrow",
-   "read_dtype",
-   "seg_gauss",
-   "seg_region_size",
-   "seg_threshold",
-   "sharpen_k"
+   "read_dtype"
   ],
   "bench.seg_survey.survey_one": [
    "disk_radius",
-   "gauss_sigma",
-   "lap_alpha",
-   "patch_size",
-   "seg_gauss",
-   "seg_region_size",
-   "seg_threshold",
-   "sharpen_k"
-  ],
-  "pyali.extract.extract_cell_traces": [
-   "whiten_isolated_only",
-   "whiten_ridge",
-   "whiten_traces"
+   "patch_size"
   ],
   "pyali.extract.extract_footprints": [
    "com_n_pixels",
    "com_radius",
    "dbscan_eps",
    "dbscan_min_pts",
+   "detect_edge_frames",
+   "detect_median_window",
    "filter_window",
    "min_peak_interval",
    "patch_size",
    "svd_rank",
    "threshold_factor"
   ],
-  "pyali.metadata.fov_metadata": [
+  "pyali.movie.corrected_movie": [
    "bkg_ranges",
-   "compute_dtype",
-   "fps",
-   "max_region_bbox_frac",
-   "ncol",
-   "nrow",
-   "patch_local_filter",
-   "read_dtype",
-   "seg_neighborhood",
-   "seg_region_size",
-   "seg_threshold",
-   "seg_threshold_mult",
-   "sharpen_k",
-   "std_ranges",
-   "threshold_factor",
-   "whiten_traces"
+   "disk_radius",
+   "saturation_clip",
+   "truncate_last"
   ],
   "pyali.pipeline.process_fov": [
+   "background_radius",
+   "background_sigma",
    "bkg_ranges",
-   "compute_dtype",
    "disk_radius",
-   "dog_sigma1",
-   "dog_sigma2",
-   "dog_width",
    "filter_window",
    "fps",
-   "gauss_sigma",
-   "lap_alpha",
    "max_region_bbox_frac",
    "n_ref",
    "ncol",
    "nrow",
-   "patch_local_filter",
    "read_dtype",
+   "reference_frames",
    "saturation_clip",
-   "seg_gauss",
-   "seg_neighborhood",
-   "seg_region_size",
-   "seg_threshold",
-   "seg_threshold_mult",
-   "sharpen_k",
    "truncate_last",
    "whiten_sigma_floor_pct",
    "whiten_traces"
@@ -14540,18 +16891,28 @@
    "ncol",
    "nrow"
   ],
-  "scripts.run_corpus._run_one": [
-   "bkg_ranges",
-   "compute_dtype",
-   "ncol",
-   "nrow",
-   "read_dtype",
-   "std_ranges",
-   "truncate_last"
+  "pyali.segmentation.cell_segmentation": [
+   "background_radius",
+   "seg_high_sigma",
+   "seg_low_sigma",
+   "seg_min_area",
+   "seg_smooth_sigma",
+   "ws_bg_sigma",
+   "ws_close_radius",
+   "ws_h",
+   "ws_percentile",
+   "ws_tophat_radius"
+  ],
+  "pyali.traces.extract_cell_traces": [
+   "trace_chunk_bytes",
+   "trace_cond_limit",
+   "trace_rcond",
+   "whiten_isolated_only",
+   "whiten_ridge",
+   "whiten_traces"
   ],
   "scripts.run_pyali.main": [
    "bkg_ranges",
-   "compute_dtype",
    "max_region_bbox_frac",
    "ncol",
    "nrow",

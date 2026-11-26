@@ -26,8 +26,8 @@ class Params:
     background_sigma: float = 40.0           # px; 0 = opening only
 
     # movie dtype (memory): on-disk sample dtype and in-RAM working dtype
-    read_dtype: str = "uint16"               # "uint16" (6GP002 16-bit) | "uint8" (443screen2 8-bit)
-    compute_dtype: str = "float64"           # "float64" (faithful) | "float32" (~halves peak RAM)
+    read_dtype: str = "uint16"               # "uint16" (6GP002 16-bit) | "uint8" (443screen2 8-bit);
+                                             #   the movie is kept in this dtype and corrected on read
 
     # time-varying movie background (preprocess.adaptive_background): opening radius
     disk_radius: int = 15
@@ -38,13 +38,7 @@ class Params:
     saturation_clip: Optional[float] = 25000.0   # None => skip saturation clipping (8-bit has none)
 
     # filters
-    filter_window: int = 8
-    patch_local_filter: bool = True          # filter each region's patch on demand instead of
-                                             #   materializing a whole second movie. Bit-identical
-                                             #   (the filter is per-pixel along time) and avoids
-                                             #   filtering the ~98% of pixels no region reads.
-                                             #   Forced off when whiten_traces needs the global
-                                             #   array. False = the old global-filter path.
+    filter_window: int = 8                   # moving-median window of the per-patch high-pass
 
     # AP detection (Mini ALI V2.2 mini_ali_patch_detect_spike_times): the region trace is
     # medfilt1-filtered with `detect_median_window` frames (spikes positive), `detect_edge_frames`
@@ -90,6 +84,12 @@ class Params:
     whiten_ridge: float = 1e-3               # ridge lambda as a fraction of mean(diag(F^T W F))
     whiten_sigma_floor_pct: float = 5.0      # floor per-pixel noise at this percentile (guards 1/sigma^2)
     whiten_isolated_only: bool = True        # only whiten cells with no overlapping-footprint neighbor
+    # sparse solve (pyali.traces): pinv cutoff (None = numpy's max(P, N) * eps), the per-chunk
+    # gather size, and the G condition number above which the dense pseudoinverse on the pixel
+    # union is used instead of the normal equations
+    trace_rcond: Optional[float] = None
+    trace_chunk_bytes: int = 512 << 20
+    trace_cond_limit: float = 1e12
                                              #   (overlapping cells keep the faithful pinv row) -- guards
                                              #   against the neighbor-crosstalk backfire mode
 
@@ -113,10 +113,9 @@ class Params:
 
         Same stimulus protocol — and therefore the same background/baseline ranges — as
         :meth:`profile_6GP002`, but an 8-bit acquisition: ``saturation_clip=None`` (no ceiling to
-        clip) and ``compute_dtype='float32'`` (the 8-bit source is represented losslessly).
+        clip).
         """
-        base = dict(nrow=1080, ncol=1080, read_dtype="uint8", compute_dtype="float32",
-                    saturation_clip=None)
+        base = dict(nrow=1080, ncol=1080, read_dtype="uint8", saturation_clip=None)
         base.update(overrides)
         return cls(**base)
 
@@ -132,7 +131,7 @@ class Params:
         ranges = [(1, 750), (3750, 4000), (6000, 6250)]
         base = dict(
             nrow=1000, ncol=1000, n_ref=600, fps=800.0, truncate_last=10,
-            read_dtype="uint8", compute_dtype="float32",
+            read_dtype="uint8",
             bkg_ranges=list(ranges), std_ranges=list(ranges),
             saturation_clip=None,
         )
@@ -151,8 +150,7 @@ class Params:
         margins to every stimulus edge make the ±1 immaterial.)
 
         Notes:
-          * ``compute_dtype='float32'`` halves peak RAM (~43 GB vs ~86 GB) so an 800x800x8399 movie
-            fits; the 8-bit source is represented losslessly by float32.
+          * the movie stays uint8 in RAM (5.4 GB for 800x800x8399) and is corrected on read.
           * ``saturation_clip=None`` -- the 8-bit MATLAB miniALI (V1.3) does not clip saturation.
           * AP detection follows Mini ALI V2.2 (dataclass defaults): 32-frame median on the
             region trace, 16 edge frames zeroed, threshold 4 x the mean absolute deviation of
@@ -168,7 +166,7 @@ class Params:
         ranges = [(201, 601), (1321, 1481), (2881, 3041), (5841, 5993), (7841, 8241)]
         base = dict(
             nrow=800, ncol=800, n_ref=600, fps=800.0, truncate_last=10,
-            read_dtype="uint8", compute_dtype="float32",
+            read_dtype="uint8",
             bkg_ranges=list(ranges), std_ranges=list(ranges),
             saturation_clip=None,
         )

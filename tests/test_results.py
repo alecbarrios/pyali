@@ -3,6 +3,7 @@
 Run: ``/home/jovyan/.venvs/pyali/bin/python -m pytest tests/test_results.py -q``
 """
 import numpy as np
+import pytest
 
 from pyali.results import SparseFootprints
 
@@ -245,3 +246,62 @@ def test_write_results_rejects_inconsistent_inputs(tmp_path):
         write_results(str(tmp_path / "a"), **dict(kw, traces=s["traces"][:-1]))
     with pytest.raises(ValueError):
         write_results(str(tmp_path / "b"), **dict(kw, cells_df=s["cells"].drop(columns="n_spikes")))
+
+
+# --------------------------------------------------------------------------- #
+# SparseBuilder / bbox / astype (Cycle E1)
+# --------------------------------------------------------------------------- #
+def test_sparse_builder_matches_from_dense_and_keeps_float64():
+    from pyali.results import SparseBuilder
+    rng = np.random.default_rng(3)
+    H, W, N = 23, 31, 6
+    fp = _random_planes(rng, H, W, N)
+    fp[:, :, 2] = 0.0                                               # an empty cell in the middle
+    b = SparseBuilder(H, W)
+    for k in range(N):
+        b.add_plane(fp[:, :, k])
+    sp = b.build()
+    ref = SparseFootprints.from_dense(fp)
+    assert sp.n() == N and b.n() == N
+    assert sp.values.dtype == np.float64 and sp.pixel.dtype == np.uint32 and sp.offsets.dtype == np.uint32
+    assert np.array_equal(sp.pixel, ref.pixel) and np.array_equal(sp.offsets, ref.offsets)
+    assert np.array_equal(sp.values, fp.reshape(-1, N)[sp.pixel, np.repeat(np.arange(N), sp.nnz_per_cell())])
+    assert np.array_equal(sp.dense(), fp)                              # exact: no float32 cast
+    assert np.array_equal(sp.astype(np.float32).values, ref.values)
+    assert sp.astype(np.float32).pixel is sp.pixel
+    assert sp.nnz_per_cell().tolist() == ref.nnz_per_cell().tolist() and sp.nnz_per_cell()[2] == 0
+    with pytest.raises(ValueError):
+        b.add_plane(np.zeros((H, W + 1)))
+    with pytest.raises(ValueError):
+        b.add_sparse([1, 2], [1.0])
+    empty = SparseBuilder(H, W).build()
+    assert empty.n() == 0 and empty.values.dtype == np.float64 and empty.dense().shape == (H, W, 0)
+
+
+def test_sparse_bbox():
+    H, W = 9, 11
+    fp = np.zeros((H, W, 2))
+    fp[2, 3, 0] = 1.0
+    fp[5, 9, 0] = 2.0
+    fp[4, 1, 0] = 0.5
+    sp = SparseFootprints.from_dense(fp)
+    assert sp.bbox(0) == (2, 5, 1, 9)
+    assert sp.bbox(1) is None
+
+
+def test_write_results_stores_float64_builder_values_as_float32(tmp_path):
+    from pyali.results import SparseBuilder
+    rng = np.random.default_rng(5)
+    s = _synthetic_fov(rng)
+    H, W, N = s["fp"].shape
+    b = SparseBuilder(H, W)
+    for k in range(N):
+        b.add_plane(s["fp"][:, :, k] * 1.0000001)                      # not float32-representable
+    sp = b.build()
+    out = str(tmp_path / "a")
+    write_results(out, cells_df=s["cells"], traces=s["traces"], footprints=sp,
+                  spikes_df=s["spikes"], images=s["images"], attrs=s["attrs"])
+    r = load_results(out)
+    assert r.footprints.values.dtype == np.float32
+    assert np.array_equal(r.footprints.values, sp.values.astype(np.float32))
+    assert np.array_equal(r.footprints.pixel, sp.pixel)

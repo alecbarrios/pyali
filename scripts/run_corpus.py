@@ -31,6 +31,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
 from pyali.metadata import Identity                                      # noqa: E402
+from pyali.telemetry import avail_ram_gb, rss_gb                         # noqa: E402
 
 MARKER = "cells.parquet"                       # the done-marker, see pyali/results.py
 METADATA = "fov_metadata.json"
@@ -118,32 +119,8 @@ def fov_command(python, src, out_dir, identity, profile=None, figures=False, ext
 
 
 # --------------------------------------------------------------------------- #
-# Resources: RSS watchdog and launch gate (Linux /proc, no psutil)
+# Resources: RSS watchdog and launch gate (rss_gb / avail_ram_gb live in pyali.telemetry)
 # --------------------------------------------------------------------------- #
-_PAGE = os.sysconf("SC_PAGE_SIZE") if hasattr(os, "sysconf") else 4096
-
-
-def rss_gb(pid):
-    """Resident set size of ``pid`` in GB from ``/proc/<pid>/statm``; 0.0 once it is gone."""
-    try:
-        with open(f"/proc/{pid}/statm") as f:
-            return int(f.read().split()[1]) * _PAGE / 1e9
-    except (OSError, ValueError, IndexError):
-        return 0.0
-
-
-def avail_ram_gb():
-    """``MemAvailable`` from ``/proc/meminfo`` in GB (``inf`` when unreadable)."""
-    try:
-        with open("/proc/meminfo") as f:
-            for line in f:
-                if line.startswith("MemAvailable:"):
-                    return int(line.split()[1]) / 1e6
-    except OSError:
-        pass
-    return float("inf")
-
-
 def watch_rss(proc, max_gb, state, interval=10.0):
     """Poll ``proc``'s RSS; record the peak in ``state['peak_gb']``; kill it above ``max_gb``
     (``state['killed'] = True``). Runs until the process exits."""
@@ -225,6 +202,9 @@ def run_one(r, cfg):
             rec["n_cells_by_source"] = meta.get("n_cells_by_source")
             rec["n_regions"] = meta.get("n_regions_kept")
             rec["focus_score"] = meta.get("focus_score")             # QC: ~1e-4 or less = defocused
+            rec["timing_s"] = meta.get("timing_s")                   # per-stage wall seconds
+            rec["stage_peak_gb"] = {k: v.get("peak") for k, v in (meta.get("memory_gb") or {}).items()}
+            rec["process_peak_gb"] = meta.get("peak_rss_gb")         # in-process sampler (peak_rss_gb = watchdog)
         except (OSError, ValueError):
             pass
         fs = rec.get("focus_score")

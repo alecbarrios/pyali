@@ -130,22 +130,27 @@ def test_traces_carry_the_planted_spikes(fov):
 # --------------------------------------------------------------------------- #
 # 2-3. the repository's own claims
 # --------------------------------------------------------------------------- #
-def test_patch_local_filter_is_bit_identical(fov):
+def test_lazy_corrections_match_the_materialized_movie(fov):
+    """The pipeline reads corrected patches on demand; running extraction on the materialized
+    corrected movie (the dense path) gives the same spikes, footprints and traces."""
+    from pyali import extract, io, traces
+    from pyali.movie import corrected_movie
+    p = fov["params"]
+    raw = io.read_bin_mov(os.path.join(fov["dir"], "frames1.bin"), p.nrow, p.ncol,
+                          read_dtype=p.read_dtype)
+    T = raw.shape[0] - p.truncate_last
+    cm, _ = corrected_movie(raw, p, n_frames=T)
+    dense = cm.materialize(np.float32)              # the per-region working precision of patch()
     ref = fov["out"]
-    alt = run(fov["dir"], fov["params"], patch_local_filter=False)
-    for key in ("footprint", "footprint_center", "cell_traces"):
-        assert np.array_equal(np.asarray(ref[key]), np.asarray(alt[key])), key
-
-
-def test_float32_path_matches_float64(fov):
-    ref = fov["out"]
-    alt = run(fov["dir"], fov["params"], compute_dtype="float32")
-    assert np.asarray(alt["footprint_center"]).shape == np.asarray(ref["footprint_center"]).shape
-    assert np.abs(np.asarray(alt["footprint_center"]) - np.asarray(ref["footprint_center"])).max() <= 1.0
-    a, b = np.asarray(alt["cell_traces"], float), np.asarray(ref["cell_traces"], float)
-    assert a.shape == b.shape
-    scale = np.abs(b).max() or 1.0
-    assert np.allclose(a, b, rtol=1e-2, atol=1e-2 * scale)
+    out = extract.extract_footprints(dense, ref["regions"],
+                                     [r["PixelList"] for r in ref["regions"]], p, p.nrow, p.ncol)
+    assert np.array_equal(out[0], ref["APs"]) and np.array_equal(out[1], ref["COMs"])
+    assert np.array_equal(out[2].dense(), ref["footprints"].dense())
+    # the solve gathers unrounded float64 corrections from the lazy movie; from the float32
+    # materialization it sees float32-rounded values, so traces agree to float32 precision
+    tr = traces.extract_cell_traces(dense, out[2], p)
+    scale = np.abs(ref["cell_traces"]).max() or 1.0
+    assert np.allclose(tr, ref["cell_traces"], rtol=0, atol=1e-5 * scale)
 
 
 # --------------------------------------------------------------------------- #
@@ -164,7 +169,7 @@ def test_constant_movie_reaches_the_zero_cell_path(tmp_path):
     H, W = data["params"].nrow, data["params"].ncol
     T = data["movie"].shape[0] - data["params"].truncate_last
     assert len(out["regions"]) == 0
-    assert np.asarray(out["footprint"]).shape == (H, W, 0)
+    assert out["footprints"].dense().shape == (H, W, 0)
     assert np.asarray(out["cell_traces"]).shape == (0, T)
     r = load_results(out_dir)
     assert len(r.cells) == 0 and len(r.spikes) == 0
@@ -283,7 +288,7 @@ def test_written_results_round_trip(fov):
     r = load_results(out_dir)
     assert np.array_equal(r.traces, np.asarray(out["cell_traces"]).astype(np.float32))
     # values are stored float32 (exact for float32-computed FOVs)
-    assert np.array_equal(r.footprints.dense(), np.asarray(out["footprint"]).astype(np.float32))
+    assert np.array_equal(r.footprints.dense(), out["footprints"].dense().astype(np.float32))
     fc = np.asarray(out["footprint_center"], float).reshape(-1, 2)
     assert np.array_equal(r.centers, fc.astype(np.float32).astype(np.float64))
     N = len(fc)

@@ -131,7 +131,7 @@ from pyali.params import Params
 # frame dimensions and background/baseline frame ranges are configurable
 p = Params(nrow=312, ncol=1200)
 out = process_fov("/path/to/video_dir", out_dir="/path/to/analysis", p=p, make_figures=True)
-footprint, traces = out["footprint"], out["cell_traces"]
+footprints, traces = out["footprints"], out["cell_traces"]     # SparseFootprints, (N, T)
 ```
 
 `Params` holds all tunables (frame size, frame rate, background/baseline ranges, sharpening,
@@ -175,6 +175,16 @@ is auto-detected from the sidecar `.txt`:
 ```bash
 python scripts/find_video_dims.py FRAMES.bin
 ```
+
+## Memory and telemetry
+
+The movie stays in its acquisition dtype (uint8: 5.4 GB for 800x800x8399); the adaptive
+background and rigid motion corrections are estimated once and applied in float64 wherever pixels
+are read (`pyali.movie.CorrectedMovie`), footprints are packed sparse as they are produced, and the
+trace solve works on the footprint pixel union (`pyali.traces`). Every stage runs under
+`pyali.telemetry.StageMeter`: `fov_metadata.json` records per-stage wall seconds (`timing_s`), CPU
+seconds (`cpu_s`, so `cpu_s / wall_s` is the stage's effective parallelism), RSS start / end / peak
+(`memory_gb`) and `peak_rss_gb`, which is what to budget per concurrent field.
 
 ## Architecture
 

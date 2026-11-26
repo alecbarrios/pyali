@@ -129,7 +129,13 @@ def background_samples(movie, ranges, disk_radius=15):
     samples = np.zeros((n, H, W))
     anchors = np.zeros(n)
     for i, (a, b) in enumerate(ranges):
-        local_avg = movie[a - 1:b].mean(axis=0)               # 1-indexed inclusive -> python slice
+        block = movie[a - 1:b]                                 # 1-indexed inclusive -> python slice
+        if block.dtype.kind in "iu":
+            # integer acquisition: the exact mean rounded to float32 is what the float32 working
+            # movie's own mean was (its integer partial sums are exact), so the anchors match
+            local_avg = block.mean(axis=0, dtype=np.float64).astype(np.float32)
+        else:
+            local_avg = block.mean(axis=0)
         samples[i] = ndimage.grey_opening(local_avg, footprint=se, mode="reflect")
         anchors[i] = round_half_away_from_zero((a + b) / 2.0)  # center frame (1-indexed)
     return samples, anchors
@@ -164,34 +170,6 @@ def background_pixel_trace(samples, anchors, n_frames, r, c):
     return out
 
 
-def adaptive_background(movie, ranges, disk_radius=15):
-    """Subtract a per-frame, linearly-interpolated morphological background, in place.
-
-    Parameters
-    ----------
-    movie : (T, H, W) float array (modified in place)
-    ranges : list of (start, end)
-        1-indexed inclusive background frame ranges.
-    disk_radius : int
-
-    Returns
-    -------
-    (movie, samples, anchors)
-
-    Notes
-    -----
-    The interpolated background is applied frame by frame (never materialized as a full
-    ``[T, H, W]`` array) to keep memory low.
-    """
-    samples, anchors = background_samples(movie, ranges, disk_radius)
-    T = movie.shape[0]
-    for i in range(T):
-        ib, ia, w = _interp_weight(i + 1, anchors)
-        bkg_f = samples[ib] if ib == ia else (1.0 - w) * samples[ib] + w * samples[ia]
-        movie[i] -= bkg_f
-    return movie, samples, anchors
-
-
 # --------------------------------------------------------------------------- #
 # Rigid motion correction
 # --------------------------------------------------------------------------- #
@@ -211,42 +189,6 @@ def motion_operator(f0):
     """
     dfdx, dfdy = _edge_gradients(f0)
     return np.column_stack([dfdx.ravel(), dfdy.ravel()])
-
-
-def motion_correct(movie, truncate_last=10):
-    """Estimate and remove a rigid 2-parameter (x, y) shift per frame, in place.
-
-    A reference image ``f0`` (mean of all but the last ``truncate_last`` frames) defines the
-    two spatial-gradient regressors; each frame's shift is the least-squares fit and the
-    reconstructed motion is subtracted. Solved per frame with the pseudoinverse of ``A``,
-    streaming over frames so the full movie is never copied.
-
-    Parameters
-    ----------
-    movie : (T, H, W) float array (modified in place)
-    truncate_last : int
-
-    Returns
-    -------
-    (movie, shift, A, f0) : with ``shift`` shape ``(2, T)``
-    """
-    T, H, W = movie.shape
-    f0 = movie[:T - truncate_last].mean(axis=0)               # reference from all but last frames
-    A = motion_operator(f0)                                   # [H*W, 2]
-    pinvA = np.linalg.pinv(A)                                 # [2, H*W]
-    shift = np.zeros((2, T))
-    for t in range(T):
-        b = movie[t].ravel()
-        s = pinvA @ b                                         # least-squares [x; y] shift
-        shift[:, t] = s
-        movie[t] = (b - A @ s).reshape(H, W)                 # remove reconstructed motion
-    return movie, shift, A, f0
-
-
-def clip_saturation(movie, threshold=25000.0):
-    """Zero out pixels above ``threshold`` (saturated), in place."""
-    movie[movie > threshold] = 0.0
-    return movie
 
 
 # --------------------------------------------------------------------------- #

@@ -71,7 +71,7 @@ def test_source_planted_cells_are_spiking(synthetic_fov):
     d, data = synthetic_fov
     out = _run(d, data["params"])
     src = out["source_of_footprint"]
-    N = np.asarray(out["footprint"]).shape[2]
+    N = out["footprints"].dense().shape[2]
     assert len(src) == N and set(src) <= set(SOURCES)
     n_spk = np.bincount(out["spike_cell_row"][out["spike_cell_row"] >= 0], minlength=N)
     # a footprint has spikes assigned iff it is a DBSCAN cluster footprint
@@ -180,7 +180,7 @@ def test_pipeline_writes_identity_source_brightness_and_metadata(synthetic_fov, 
                       identity=ident)
     r = load_results(out_dir)
     N = len(r.cells)
-    assert N == np.asarray(out["footprint"]).shape[2]
+    assert N == out["footprints"].dense().shape[2]
     assert r.cells["cell_id"].tolist() == [f"exp_P05_A2_F012_C{i:04d}" for i in range(1, N + 1)]
     assert set(r.cells["fov_index"]) == {7} and set(r.cells["plate"]) == {5}
     assert set(r.cells["source"]) <= set(SOURCES) and "spiking" in set(r.cells["source"])

@@ -36,7 +36,7 @@ def synthetic_params(H=96, W=96, **overrides):
     the global minimum (``background_radius`` 10, ``background_sigma`` / ``ws_bg_sigma`` 8).
     """
     base = dict(nrow=H, ncol=W, n_ref=600, fps=800.0, truncate_last=10,
-                read_dtype="uint16", compute_dtype="float64",
+                read_dtype="uint16",
                 bkg_ranges=[(1, 100), (380, 440), (740, 800)],
                 std_ranges=[(1, 100), (380, 440), (740, 800)],
                 saturation_clip=None, max_region_bbox_frac=0.05,

@@ -76,7 +76,7 @@ def test_snr_compare_legacy_mat_fallback(corpus, tmp_path):
     legacy = tmp_path / "legacy"
     legacy.mkdir()
     mat = str(legacy / "ALI_Result.mat")
-    save_mat_v73(mat, footprint=np.asarray(out["footprint"]), footprint_center=fc0, cell_traces=ct0)
+    save_mat_v73(mat, footprint=out["footprints"].dense(), footprint_center=fc0, cell_traces=ct0)
     for arg in (str(legacy), mat):                       # dir with the .mat and no signals.h5; the file
         ct, fc, src = sc.load_result(arg)
         assert src == mat
@@ -148,7 +148,7 @@ def test_registration_reads_cells_from_results(corpus):
     from pyali.registration.io import read_voltage_cells
     out, p = corpus["out"], corpus["params"]
     v = read_voltage_cells(corpus["out_dir"], p.fps)
-    assert np.array_equal(v["footprint"], np.asarray(out["footprint"]).astype(np.float32))
+    assert np.array_equal(v["footprint"], out["footprints"].dense().astype(np.float32))
     fc = np.asarray(out["footprint_center"], float).reshape(-1, 2)
     assert np.array_equal(v["center_rc"], fc.astype(np.float32).astype(np.float64) - 1.0)
     assert v["traces"].dtype == np.float64 and v["traces"].shape == np.asarray(out["cell_traces"]).shape

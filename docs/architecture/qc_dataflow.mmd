@@ -9,7 +9,7 @@ flowchart TD
   snr_analysis_snr_snr_compare["snr_compare.py<br/><i>snr_analysis/snr/</i>"]
   mod_pyali_io(["pyali.io<br/><i>package module</i>"])
   mod_pyali_metrics(["pyali.metrics<br/><i>package module</i>"])
-  file_ALI_Result_mat[/"ALI_Result.mat<br/><i>per FOV</i>"/]
+  mod_pyali_results(["pyali.results<br/><i>package module</i>"])
   file_cells_all_parquet[/"cells_all.parquet<br/><i>summary</i>"/]
   file_fov_metadata_json[/"fov_metadata.json<br/><i>per FOV</i>"/]
   file_fov_summary_csv[/"fov_summary.csv<br/><i>summary</i>"/]
@@ -29,7 +29,6 @@ flowchart TD
   file_sta_variance_by_fov_csv[/"sta_variance_by_fov.csv<br/><i>summary</i>"/]
   files_scripts_snr_aggregate[/"4 output files<br/><i>summary</i>"/]
   files_snr_analysis_snr_snr_compare[/"11 output files<br/><i>summary</i>"/]
-  file_ALI_Result_mat --> scripts_representative_traces
   file_cells_all_parquet --> scripts_representative_traces
   file_sta_cell_features_parquet --> scripts_representative_traces
   scripts_representative_traces --> file_scripts_representative_traces___png
@@ -40,14 +39,12 @@ flowchart TD
   scripts_snr_aggregate --> files_scripts_snr_aggregate
   scripts_snr_aggregate --> file_fov_summary_csv
   scripts_snr_aggregate --> file_manifest_json
-  file_ALI_Result_mat --> scripts_snr_corpus
   file_fov_metadata_json --> scripts_snr_corpus
   scripts_snr_corpus --> file_snr_metrics_csv
   file_fov_summary_csv --> scripts_snr_figures
   file_manifest_json --> scripts_snr_figures
   scripts_snr_figures --> file_scripts_snr_figures___png
   scripts_snr_figures --> file_index_html
-  file_ALI_Result_mat --> scripts_snr_sta
   file_fov_metadata_json --> scripts_snr_sta
   scripts_snr_sta --> file_sta_csv
   scripts_snr_sta --> file_sta_cells_mat
@@ -63,12 +60,13 @@ flowchart TD
   scripts_snr_sta_variance --> file_scripts_snr_sta_variance___png
   scripts_snr_sta_variance --> file_sta_cell_features_parquet
   scripts_snr_sta_variance --> file_sta_variance_by_fov_csv
-  file_ALI_Result_mat --> snr_analysis_snr_snr_compare
   snr_analysis_snr_snr_compare --> files_snr_analysis_snr_snr_compare
-  mod_pyali_io -.->|load_v73| scripts_representative_traces
-  mod_pyali_io -.->|load_v73| scripts_snr_corpus
-  mod_pyali_io -.->|load_v73, save_mat_v73| scripts_snr_sta
+  mod_pyali_io -.->|save_mat_v73| scripts_snr_sta
   mod_pyali_io -.->|load_v73| scripts_snr_sta_variance
   mod_pyali_metrics -.->|metrics| scripts_snr_aggregate
   mod_pyali_metrics -.->|per_cell_snr| scripts_snr_corpus
   mod_pyali_metrics -.->|highpass, robust_sigma| scripts_snr_sta
+  mod_pyali_results -.->|load_results| scripts_representative_traces
+  mod_pyali_results -.->|CELLS_FILE, SIGNALS_FILE, load_results| scripts_snr_corpus
+  mod_pyali_results -.->|load_results| scripts_snr_sta
+  mod_pyali_results -.->|load_results| snr_analysis_snr_snr_compare

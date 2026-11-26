@@ -221,7 +221,7 @@ def test_extract_footprints_falls_back_when_no_com_survives(tmp_path, monkeypatc
     out = process_fov(str(tmp_path), out_dir=None, p=data["params"], save=False, verbose=False)
     assert len(out["regions"]) > 0
     assert np.asarray(out["COMs"]).shape == (0, 3)
-    assert np.asarray(out["footprint"]).shape[2] == len(out["regions"])   # one fallback plane each
+    assert out["footprints"].dense().shape[2] == len(out["regions"])   # one fallback plane each
     assert np.isfinite(np.asarray(out["cell_traces"], float)).all()
     assert out["region_of_footprint"].tolist() == list(range(len(out["regions"])))
     assert out["region_of_ap"].shape == (len(out["APs"]),)
@@ -252,6 +252,6 @@ def test_pipeline_footprints_are_non_negative(tmp_path):
     data = make_movie(seed=0)
     write_fov(tmp_path, data["movie"])
     out = process_fov(str(tmp_path), out_dir=None, p=data["params"], save=False, verbose=False)
-    fp = np.asarray(out["footprint"])
+    fp = out["footprints"].dense()
     assert fp.shape[2] > 0
     assert fp.min() >= 0.0
