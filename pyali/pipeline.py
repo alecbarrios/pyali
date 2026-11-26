@@ -14,7 +14,7 @@ import os
 import numpy as np
 
 from .params import Params
-from . import io, preprocess, segmentation, extract, results
+from . import io, preprocess, segmentation, extract, traces, results
 from .telemetry import StageMeter
 
 
@@ -104,7 +104,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             filtered_movie = None
         log(f"extracting footprints from {len(regions)} regions ...")
         with meter.stage("extract_footprints"):
-            (APs, COMs, footprint, footprint_center, region_of_footprint, region_of_ap,
+            (APs, COMs, footprints, footprint_center, region_of_footprint, region_of_ap,
              region_of_spike, spike_cell_row, source_of_footprint) = extract.extract_footprints(
                 movie, filtered_movie, regions, spatial_footprints, p, H, W,
                 verbose=verbose)
@@ -112,21 +112,27 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         noise_map = None
         if getattr(p, "whiten_traces", False):
             log("building per-pixel noise map for whitened GLS ...")
-            noise_map = extract.per_pixel_noise_map(filtered_movie, p.std_frames_index(),
-                                                    p.whiten_sigma_floor_pct)
+            noise_map = traces.per_pixel_noise_map(filtered_movie, p.std_frames_index(),
+                                                   p.whiten_sigma_floor_pct)
         del filtered_movie
 
-        # ---- trace extraction ----
+        # ---- trace extraction (sparse normal equations on the footprint pixel union) ----
         method = "whitened GLS" if getattr(p, "whiten_traces", False) else "pinv"
-        log(f"trace extraction ({method}) for {footprint.shape[2]} footprints ...")
+        log(f"trace extraction ({method}) for {footprints.n()} footprints ...")
+        solve = {}
         with meter.stage("trace_extraction"):
-            cell_traces = extract.extract_cell_traces(movie, footprint, p, noise_map=noise_map,
-                                                      verbose=verbose)
+            cell_traces = traces.extract_cell_traces(movie, footprints, p, noise_map=noise_map,
+                                                     verbose=verbose, diag=solve)
+        log(f"solve: {solve.get('method')} on {solve.get('n_union')} union pixels, "
+            f"cond {solve.get('cond', float('nan')):.2e}, {solve.get('n_dropped')} dropped, "
+            f"{solve.get('n_unresolved')} unresolved direction(s)")
+        solve = {k: (None if isinstance(v, float) and not np.isfinite(v) else v)
+                 for k, v in solve.items()}
 
         # ---- cells table: identity, source, brightness ----
-        N = footprint.shape[2]
+        N = footprints.n()
         n_spikes = np.bincount(spike_cell_row[spike_cell_row >= 0], minlength=N)
-        sparse_fp = results.SparseFootprints.from_dense(footprint)
+        sparse_fp = footprints.astype(np.float32)                  # as stored (brightness, signals.h5)
         brightness = results.weighted_brightness(sparse_fp, reference_corrected)
         n_cells_by_source = {s: int(source_of_footprint.count(s)) for s in results.SOURCES}
         log("done.")
@@ -157,7 +163,7 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
             identity=identity, telemetry=telemetry,
             extras=dict(focus_score=focus,
                         n_regions_kept=len(regions), n_regions_dropped=len(dropped),
-                        segmentation=seg_info,
+                        segmentation=seg_info, trace_solve=solve,
                         n_cells=int(cell_traces.shape[0]), n_cells_by_source=n_cells_by_source,
                         n_ap_detected=int(len(APs)), n_ap_localized=int(len(COMs)),
                         n_frames_analyzed=int(T))))
@@ -166,12 +172,12 @@ def process_fov(fov_dir, out_dir=None, p=Params(), save=True, verbose=True, make
         log("saving result figures ...")
         from .figures import save_result_figures
         save_result_figures(out_dir, reference_image, regions, binary_map, COMs,
-                            footprint_center, cell_traces, fps=p.fps, footprint=footprint)
+                            footprint_center, cell_traces, fps=p.fps, footprint=footprints.dense())
 
     return dict(reference_image=reference_image, corr_image=corr_image,
                 reference_raw=reference_raw, reference_corrected=reference_corrected,
                 background_map=background_map, seg_info=seg_info, focus_score=focus,
-                regions=regions, binary_map=binary_map, footprint=footprint,
+                regions=regions, binary_map=binary_map, footprints=footprints,
                 footprint_center=footprint_center, cell_traces=cell_traces, APs=APs, COMs=COMs,
                 region_of_footprint=region_of_footprint, region_of_ap=region_of_ap,
                 region_of_spike=region_of_spike, spike_cell_row=spike_cell_row,

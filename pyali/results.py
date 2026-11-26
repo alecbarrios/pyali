@@ -74,9 +74,29 @@ class SparseFootprints:
         if not 0 <= k < self.n():
             raise IndexError(f"cell {k} out of range for {self.n()} cells")
         a, b = int(self.offsets[k]), int(self.offsets[k + 1])
-        out = np.zeros(self.height * self.width, np.float32)
+        out = np.zeros(self.height * self.width, self.values.dtype)
         out[self.pixel[a:b]] = self.values[a:b]
         return out.reshape(self.height, self.width)
+
+    def nnz_per_cell(self):
+        """``(N,)`` int: number of stored (nonzero) pixels of each cell."""
+        off = np.asarray(self.offsets, np.int64)
+        return off[1:] - off[:-1]
+
+    def bbox(self, k):
+        """Inclusive ``(r0, r1, c0, c1)`` bounding box of cell ``k``'s stored pixels, or ``None``
+        when the cell has none."""
+        a, b = int(self.offsets[k]), int(self.offsets[k + 1])
+        if b == a:
+            return None
+        px = self.pixel[a:b].astype(np.int64)
+        rows, cols = px // self.width, px % self.width
+        return int(rows.min()), int(rows.max()), int(cols.min()), int(cols.max())
+
+    def astype(self, dtype):
+        """The same footprints with ``values`` cast to ``dtype`` (pixel / offsets shared)."""
+        return SparseFootprints(values=np.asarray(self.values, dtype), pixel=self.pixel,
+                                offsets=self.offsets, height=self.height, width=self.width)
 
     def dense(self):
         """``(H, W, N)`` float64, the old ``footprint`` array (registration is the only user)."""
@@ -106,6 +126,44 @@ class SparseFootprints:
             values=np.concatenate(values) if values else np.zeros(0, np.float32),
             pixel=np.concatenate(pixel) if pixel else np.zeros(0, np.uint32),
             offsets=np.asarray(offsets, np.uint32), height=height, width=width)
+
+
+class SparseBuilder:
+    """Accumulate footprints one plane at a time, straight into the COO form, so the dense
+    ``(H, W, N)`` stack is never materialized. ``values`` keep ``dtype`` (float64 by default:
+    the solve uses them as produced; :func:`write_results` stores float32)."""
+
+    def __init__(self, height, width, dtype=np.float64):
+        self.height, self.width, self.dtype = int(height), int(width), np.dtype(dtype)
+        self._values, self._pixel, self._offsets = [], [], [0]
+
+    def n(self):
+        return len(self._offsets) - 1
+
+    def add_plane(self, plane):
+        """Append one cell from its ``(H, W)`` plane (nonzeros in C order, ``row * W + col``)."""
+        plane = np.asarray(plane)
+        if plane.shape != (self.height, self.width):
+            raise ValueError(f"plane shape {plane.shape} != ({self.height}, {self.width})")
+        flat = np.ascontiguousarray(plane).ravel()
+        nz = np.flatnonzero(flat)
+        self.add_sparse(nz, flat[nz])
+
+    def add_sparse(self, pixel, values):
+        """Append one cell from flat pixel indices (C order) and their values."""
+        pixel = np.asarray(pixel, np.uint32).ravel()
+        values = np.asarray(values, self.dtype).ravel()
+        if pixel.shape != values.shape:
+            raise ValueError(f"{pixel.size} pixels but {values.size} values")
+        self._pixel.append(pixel)
+        self._values.append(values)
+        self._offsets.append(self._offsets[-1] + pixel.size)
+
+    def build(self):
+        return SparseFootprints(
+            values=np.concatenate(self._values) if self._values else np.zeros(0, self.dtype),
+            pixel=np.concatenate(self._pixel) if self._pixel else np.zeros(0, np.uint32),
+            offsets=np.asarray(self._offsets, np.uint32), height=self.height, width=self.width)
 
 
 def weighted_brightness(sp, ref):
@@ -274,7 +332,7 @@ def write_results(out_dir, *, cells_df, traces, footprints, spikes_df, images, a
             kw = dict(chunks=(min(2048, T), min(256, N)), compression="gzip",
                       compression_opts=4)
         f.create_dataset("/traces/raw", data=np.ascontiguousarray(traces.T, np.float32), **kw)
-        f.create_dataset("/footprints/values", data=sp.values)
+        f.create_dataset("/footprints/values", data=np.asarray(sp.values, np.float32))
         f.create_dataset("/footprints/pixel", data=sp.pixel)
         f.create_dataset("/footprints/offsets", data=sp.offsets)
         f.create_dataset("/images/reference", data=np.asarray(images["reference"], np.float32),

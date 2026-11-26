@@ -75,7 +75,7 @@ def real_dark_dir():
 def test_real_crop_produces_cells(real):
     out, p = real["out"], real["p"]
     H, W = p.nrow, p.ncol
-    fp = np.asarray(out["footprint"])
+    fp = out["footprints"].dense()
     fc = np.asarray(out["footprint_center"], float).reshape(-1, 2)
     ct = np.asarray(out["cell_traces"])
     assert len(out["regions"]) > 0
@@ -92,7 +92,8 @@ def test_real_patch_local_filter_is_bit_identical(real):
     ref = real["out"]
     alt, seconds = _run(real["dir"], real["p"], patch_local_filter=False)
     _record(_metrics(alt, seconds, real["meta"], "cells_global_filter"))
-    for key in ("footprint", "footprint_center", "cell_traces"):
+    assert np.array_equal(ref["footprints"].dense(), alt["footprints"].dense())
+    for key in ("footprint_center", "cell_traces"):
         assert np.array_equal(np.asarray(ref[key]), np.asarray(alt[key])), key
 
 
@@ -103,7 +104,7 @@ def test_real_dark_crop_runs_with_few_or_no_regions(real_dark_dir, tmp_path):
     m = _metrics(out, seconds, meta, "dark")
     _record(m)
     ct = np.asarray(out["cell_traces"])
-    assert np.asarray(out["footprint"]).shape[2] == ct.shape[0]
+    assert out["footprints"].dense().shape[2] == ct.shape[0]
     assert np.isfinite(ct).all()
     r = load_results(out_dir)
     assert np.array_equal(r.traces, ct.astype(np.float32))
@@ -117,7 +118,7 @@ def test_real_written_results_round_trip(real):
     r = load_results(out_dir)
     assert np.array_equal(r.traces, np.asarray(out["cell_traces"]).astype(np.float32))
     # values are stored float32 (exact for float32-computed FOVs)
-    assert np.array_equal(r.footprints.dense(), np.asarray(out["footprint"]).astype(np.float32))
+    assert np.array_equal(r.footprints.dense(), out["footprints"].dense().astype(np.float32))
     fc = np.asarray(out["footprint_center"], float).reshape(-1, 2)
     assert np.array_equal(r.centers, fc.astype(np.float32).astype(np.float64))
     assert len(r.spikes) == len(np.asarray(out["COMs"]).reshape(-1, 3))

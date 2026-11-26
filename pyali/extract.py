@@ -1,11 +1,12 @@
-"""Waveform extraction: temporal filter, per-region AP detection, centers of mass,
-spatial footprints, and per-cell trace extraction.
+"""Waveform extraction: temporal filter, per-region AP detection, centers of mass and spatial
+footprints (per-cell traces are solved in :mod:`pyali.traces`).
 
 Movies are ``[T, H, W]``; patch movies ``[T, Hp, Wp]``. Frame/pixel indices in
 ``region_AP`` are 0-based.
 """
 import numpy as np
 
+from .results import SparseBuilder
 from .utils import movmedian_time, findpeaks, round_half_away_from_zero
 
 
@@ -428,12 +429,14 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, p,
 
     Returns
     -------
-    (APs, COMs, footprint, footprint_center, region_of_footprint, region_of_ap,
+    (APs, COMs, footprints, footprint_center, region_of_footprint, region_of_ap,
      region_of_spike, spike_cell_row, source_of_footprint)
         ``APs`` : (nAP, 4) = ``[row, col, frame, amplitude]`` (0-indexed);
         ``COMs`` : (nCOM, 3) = ``[row, col, frame]`` (1-indexed row/col) -- ``nCOM <= nAP``
         because :func:`com_via_svd` drops APs whose centroid is undefined or off-mask;
-        ``footprint`` : (H, W, N); ``footprint_center`` : (N, 2) = ``[row, col]``;
+        ``footprints`` : :class:`pyali.results.SparseFootprints` (N cells, float64 values, packed
+        as each plane is produced so no ``(H, W, N)`` stack exists);
+        ``footprint_center`` : (N, 2) = ``[row, col]``;
         ``region_of_footprint`` : (N,) int, the segmentation region each footprint came from;
         ``region_of_ap`` : (nAP,) int, the region of each ``APs`` row;
         ``region_of_spike`` : (nCOM,) int, the region of each ``COMs`` row;
@@ -449,12 +452,13 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, p,
     T = movie.shape[0]
     fw = p.filter_window
     half = int(round_half_away_from_zero(fw / 2))
-    APs, COMs, planes, centers = [], [], [], []
+    APs, COMs, centers = [], [], []
+    footprints = SparseBuilder(height, width)                 # planes packed as they are made
     region_of_footprint, region_of_ap, region_of_spike, spike_cell_row = [], [], [], []
     source_of_footprint = []
 
     def _fallback(sel_full, sel_patch, pm_max, region, c, reason):
-        planes.append(region_fallback_footprint(sel_full, sel_patch, pm_max, height, width))
+        footprints.add_plane(region_fallback_footprint(sel_full, sel_patch, pm_max, height, width))
         cen = region_center_rowcol(region)
         centers.append(cen)
         region_of_footprint.append(c)
@@ -502,17 +506,18 @@ def extract_footprints(movie, filtered_movie, regions, spatial_footprints, p,
         cluster_times = [region_COMs[labels == k, 2].astype(int) for k in kept]
         pl, ce = cluster_footprints(pm, cluster_times, sel_patch, patch_rows, patch_cols,
                                     height, width)
-        row_of_label = {k: len(planes) + i for i, k in enumerate(kept)}
+        row_of_label = {k: footprints.n() + i for i, k in enumerate(kept)}
         spike_cell_row.extend(row_of_label.get(int(lab), -1) for lab in labels)
-        planes.extend(pl); centers.extend(ce)
+        for plane in pl:
+            footprints.add_plane(plane)
+        centers.extend(ce)
         region_of_footprint.extend([c] * len(pl))
         source_of_footprint.extend(["spiking"] * len(pl))
 
-    footprint = np.stack(planes, axis=2) if planes else np.zeros((height, width, 0))
     footprint_center = np.array(centers, dtype=float).reshape(-1, 2)
     APs = np.vstack(APs) if APs else np.zeros((0, 4))
     COMs = np.vstack(COMs) if COMs else np.zeros((0, 3))
-    return (APs, COMs, footprint, footprint_center,
+    return (APs, COMs, footprints.build(), footprint_center,
             np.asarray(region_of_footprint, int), np.asarray(region_of_ap, int),
             np.asarray(region_of_spike, int), np.asarray(spike_cell_row, int),
             source_of_footprint)
@@ -522,196 +527,3 @@ def region_center_rowcol(region):
     """Region center as ``[row, col]`` from the region's Centroid ``[col, row]``."""
     cx, cy = float(region["Centroid"][0]), float(region["Centroid"][1])
     return [cy, cx]
-
-
-# --------------------------------------------------------------------------- #
-# Trace extraction
-# --------------------------------------------------------------------------- #
-_PROJECT_CHUNK_BYTES = 2 << 30       # cap on the promoted per-chunk temporary (~2 GB)
-
-
-def project_movie(op, movie, chunk_bytes=_PROJECT_CHUNK_BYTES):
-    """Apply a ``[N, H*W]`` spatial operator to a ``[T, H, W]`` movie -> ``[N, T]``.
-
-    Evaluated in chunks along time. Footprint planes are built with ``np.zeros(...)`` and so are
-    always float64, which makes ``op`` float64; a ``float32`` movie (``compute_dtype='float32'``)
-    would then be promoted to float64 by the matmul **in one piece** — a full second copy of the
-    movie, 43 GB for an 800x800x8389 acquisition, silently undoing the point of float32. Chunking
-    bounds that temporary to roughly ``chunk_bytes``.
-
-    Time is an *output* axis, not the contracted one: every output element is still the full
-    ``H*W`` dot product, so the result is arithmetically identical to the unchunked form.
-
-    Parameters
-    ----------
-    op : (N, H*W) float array
-    movie : (T, H, W) float array
-    chunk_bytes : int
-        Approximate ceiling on the temporary materialized per chunk.
-
-    Returns
-    -------
-    (N, T) ndarray of ``op.dtype``
-    """
-    T, H, W = movie.shape
-    N = op.shape[0]
-    flat = movie.reshape(T, H * W)                              # view, C-order
-    out = np.empty((N, T), dtype=op.dtype)
-    per_frame = H * W * np.dtype(op.dtype).itemsize
-    step = max(1, min(T, int(chunk_bytes // max(per_frame, 1))))
-    for t0 in range(0, T, step):
-        t1 = min(T, t0 + step)
-        out[:, t0:t1] = op @ flat[t0:t1].T                      # [N, H*W] @ [H*W, chunk]
-    return out
-
-
-def pinv_traces(movie, footprint):
-    """Extract per-footprint temporal traces via the spatial pseudoinverse.
-
-    ``cell_traces = pinv(footprint) @ (-movie)``.
-
-    Parameters
-    ----------
-    movie : (T, H, W) float array (processed)
-    footprint : (H, W, N) float array
-
-    Returns
-    -------
-    (N, T) ndarray
-
-    Notes
-    -----
-    Footprint and movie are flattened with a consistent C-order pixel ordering. The contraction
-    runs through :func:`project_movie`, which chunks over time so a float32 movie is never
-    promoted to float64 all at once.
-    """
-    H, W = movie.shape[1], movie.shape[2]
-    flat_fp = footprint.reshape(H * W, footprint.shape[2])      # pixel = row*W + col
-    rcond = max(flat_fp.shape) * np.finfo(np.float64).eps       # pseudoinverse tolerance
-    pinv_fp = np.linalg.pinv(flat_fp, rcond=rcond)             # [N, H*W]
-    return -project_movie(pinv_fp, movie)                       # negate the small result
-
-
-# --------------------------------------------------------------------------- #
-# Whitened GLS trace extraction (opt-in; Params.whiten_traces)
-# --------------------------------------------------------------------------- #
-def per_pixel_noise_map(filtered_movie, std_frames, floor_pct=5.0):
-    """Per-pixel high-frequency noise std from the baseline (no-stimulus) frames.
-
-    ``sigma_pix[h, w] = 1.4826 * MAD_over_time( filtered_movie[std_frames, h, w] )`` — the same
-    moving-median high-pass band the SNR metric scores. Floored at the ``floor_pct`` percentile
-    of the positive values so that ``1/sigma^2`` weights never explode.
-
-    Parameters
-    ----------
-    filtered_movie : (T, H, W) float array (from :func:`temporal_filter`)
-    std_frames : array of int (0-indexed baseline frames)
-    floor_pct : float
-
-    Returns
-    -------
-    (H, W) ndarray of per-pixel noise std.
-    """
-    base = filtered_movie[np.asarray(std_frames, int)]                 # [n_base, H, W]
-    med = np.median(base, axis=0)
-    sigma = 1.4826 * np.median(np.abs(base - med[None]), axis=0)       # [H, W]
-    pos = sigma[sigma > 0]
-    if pos.size:
-        sigma = np.maximum(sigma, np.percentile(pos, floor_pct))
-    else:                                                              # degenerate: uniform weights
-        sigma = np.ones_like(sigma)
-    return sigma
-
-
-def footprint_isolated_mask(footprint):
-    """Boolean ``[N]`` mask: True where a footprint's support bounding box overlaps no other.
-
-    Uses nonzero-pixel bounding boxes (conservative: touching boxes count as overlapping), so
-    cells that share any spatial support fall back to the faithful pinv row.
-    """
-    H, W, N = footprint.shape
-    boxes = np.zeros((N, 4))                                           # rmin, rmax, cmin, cmax
-    for n in range(N):
-        rows = np.any(footprint[:, :, n] != 0, axis=1)
-        cols = np.any(footprint[:, :, n] != 0, axis=0)
-        if not rows.any():
-            boxes[n] = (-1, -1, -1, -1)                               # empty footprint
-            continue
-        rr = np.where(rows)[0]; cc = np.where(cols)[0]
-        boxes[n] = (rr[0], rr[-1], cc[0], cc[-1])
-    isolated = np.ones(N, bool)
-    for i in range(N):
-        ri0, ri1, ci0, ci1 = boxes[i]
-        if ri0 < 0:
-            continue
-        for j in range(N):
-            if j == i or boxes[j, 0] < 0:
-                continue
-            rj0, rj1, cj0, cj1 = boxes[j]
-            if ri0 <= rj1 and rj0 <= ri1 and ci0 <= cj1 and cj0 <= ci1:   # boxes intersect
-                isolated[i] = False
-                break
-    return isolated
-
-
-def whitened_gls_traces(movie, footprint, noise_map, ridge_frac=1e-3):
-    """Noise-weighted (GLS/BLUE) trace extraction.
-
-    ``cell_traces = (Fᵀ W F + λI)⁻¹ Fᵀ W (-movie)`` with ``W = diag(1/sigma_pix²)`` — the
-    minimum-variance estimator under spatially heteroscedastic pixel noise, versus the unweighted
-    :func:`pinv_traces` which implicitly assumes equal per-pixel noise.
-
-    Parameters
-    ----------
-    movie : (T, H, W) float array (processed)
-    footprint : (H, W, N) float array
-    noise_map : (H, W) per-pixel noise std (see :func:`per_pixel_noise_map`)
-    ridge_frac : float
-        Ridge ``λ`` as a fraction of ``mean(diag(FᵀWF))`` (scale-invariant safety margin).
-
-    Returns
-    -------
-    (N, T) ndarray
-
-    Notes
-    -----
-    Same C-order pixel flattening as :func:`pinv_traces`. Uses the true single-``W`` GLS operator
-    (not "divide the footprint by variance then pinv", which would apply ``W`` twice). The movie
-    contraction goes through :func:`project_movie`, which chunks over time so a float32 movie is
-    never promoted to float64 all at once.
-    """
-    H, W = movie.shape[1], movie.shape[2]
-    N = footprint.shape[2]
-    flat_fp = footprint.reshape(H * W, N)                             # [H*W, N]
-    w = 1.0 / (noise_map.reshape(H * W) ** 2)                         # [H*W] inverse-variance
-    FtW = flat_fp.T * w[None, :]                                      # [N, H*W]
-    A = FtW @ flat_fp                                                 # [N, N]
-    A = A + ridge_frac * np.mean(np.diag(A)) * np.eye(N)              # ridge (relative)
-    B = -project_movie(FtW, movie)                                    # [N, T]
-    return np.linalg.solve(A, B)                                     # [N, T]
-
-
-def extract_cell_traces(movie, footprint, p, noise_map=None, verbose=False):
-    """Dispatch trace extraction per ``p.whiten_traces``.
-
-    Default (``whiten_traces=False``): the baseline unweighted :func:`pinv_traces`.
-    When enabled: whitened GLS (:func:`whitened_gls_traces`); if ``p.whiten_isolated_only`` the
-    GLS rows are used only for cells whose footprints overlap no other, and overlapping cells keep
-    the faithful pinv row (guards against neighbor-crosstalk). Requires a precomputed
-    ``noise_map`` (see :func:`per_pixel_noise_map`) built from the baseline frames.
-    """
-    if not getattr(p, "whiten_traces", False):
-        return pinv_traces(movie, footprint)
-    if noise_map is None:
-        raise ValueError("whiten_traces=True requires a noise_map (per_pixel_noise_map)")
-    gls = whitened_gls_traces(movie, footprint, noise_map, p.whiten_ridge)
-    if not getattr(p, "whiten_isolated_only", True):
-        return gls
-    ols = pinv_traces(movie, footprint)                              # faithful rows for overlappers
-    isolated = footprint_isolated_mask(footprint)
-    if verbose:
-        print(f"[pyali]   whitened {int(isolated.sum())}/{len(isolated)} isolated cells; "
-              f"{int((~isolated).sum())} overlapping cells kept faithful pinv", flush=True)
-    out = ols.copy()
-    out[isolated] = gls[isolated]
-    return out

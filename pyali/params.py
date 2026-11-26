@@ -90,6 +90,12 @@ class Params:
     whiten_ridge: float = 1e-3               # ridge lambda as a fraction of mean(diag(F^T W F))
     whiten_sigma_floor_pct: float = 5.0      # floor per-pixel noise at this percentile (guards 1/sigma^2)
     whiten_isolated_only: bool = True        # only whiten cells with no overlapping-footprint neighbor
+    # sparse solve (pyali.traces): pinv cutoff (None = numpy's max(P, N) * eps), the per-chunk
+    # gather size, and the G condition number above which the dense pseudoinverse on the pixel
+    # union is used instead of the normal equations
+    trace_rcond: Optional[float] = None
+    trace_chunk_bytes: int = 512 << 20
+    trace_cond_limit: float = 1e12
                                              #   (overlapping cells keep the faithful pinv row) -- guards
                                              #   against the neighbor-crosstalk backfire mode
 

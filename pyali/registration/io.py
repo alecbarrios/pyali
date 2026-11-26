@@ -141,7 +141,7 @@ def read_voltage_fov(fov_dir, plate, well, fov, p: Params = None, results_dir=No
         from ..metrics import per_cell_snr
 
         res = process_fov(fov_dir, save=False, p=p)
-        cells = dict(footprint=res["footprint"],
+        cells = dict(footprint=res["footprints"].dense(),
                      center_rc=np.asarray(res["footprint_center"], float) - 1.0,
                      traces=res["cell_traces"], snr=per_cell_snr(res["cell_traces"], p.fps))
     light = read_voltage_reference(fov_dir, p)

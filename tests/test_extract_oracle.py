@@ -133,7 +133,8 @@ def test_traces_carry_the_planted_spikes(fov):
 def test_patch_local_filter_is_bit_identical(fov):
     ref = fov["out"]
     alt = run(fov["dir"], fov["params"], patch_local_filter=False)
-    for key in ("footprint", "footprint_center", "cell_traces"):
+    assert np.array_equal(ref["footprints"].dense(), alt["footprints"].dense())
+    for key in ("footprint_center", "cell_traces"):
         assert np.array_equal(np.asarray(ref[key]), np.asarray(alt[key])), key
 
 
@@ -164,7 +165,7 @@ def test_constant_movie_reaches_the_zero_cell_path(tmp_path):
     H, W = data["params"].nrow, data["params"].ncol
     T = data["movie"].shape[0] - data["params"].truncate_last
     assert len(out["regions"]) == 0
-    assert np.asarray(out["footprint"]).shape == (H, W, 0)
+    assert out["footprints"].dense().shape == (H, W, 0)
     assert np.asarray(out["cell_traces"]).shape == (0, T)
     r = load_results(out_dir)
     assert len(r.cells) == 0 and len(r.spikes) == 0
@@ -283,7 +284,7 @@ def test_written_results_round_trip(fov):
     r = load_results(out_dir)
     assert np.array_equal(r.traces, np.asarray(out["cell_traces"]).astype(np.float32))
     # values are stored float32 (exact for float32-computed FOVs)
-    assert np.array_equal(r.footprints.dense(), np.asarray(out["footprint"]).astype(np.float32))
+    assert np.array_equal(r.footprints.dense(), out["footprints"].dense().astype(np.float32))
     fc = np.asarray(out["footprint_center"], float).reshape(-1, 2)
     assert np.array_equal(r.centers, fc.astype(np.float32).astype(np.float64))
     N = len(fc)
