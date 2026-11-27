@@ -41,8 +41,8 @@ class FakeS3:
     def __call__(self, cmd, stdin=None):
         import subprocess
         if cmd[:3] == ["aws", "s3", "ls"]:
-            lines = [f"2026-11-27 10:00:00 100 AB/x/plate_3/Well_{w}/{n}/cells.parquet" for w, n in self.done]
-            lines.append("2026-11-27 10:00:00 100 AB/x/plate_3/_runs/P3_A1/manifest.jsonl")
+            lines = [f"2026-11-27 10:00:00 100 AB/x/plate_3/raw/Well_{w}/{n}/cells.parquet" for w, n in self.done]
+            lines.append("2026-11-27 10:00:00 100 AB/x/plate_3/raw/_runs/P3_A1/manifest.jsonl")
             return subprocess.CompletedProcess(cmd, 0, "\n".join(lines), "")
         if cmd[:3] == ["aws", "s3", "cp"] and cmd[4] == "-":
             name = cmd[3].split("/")[-2]
@@ -58,9 +58,9 @@ def test_plate_rows_and_done_listing(tmp_path, monkeypatch):
     rows = _inventory(inv)
     pr = rp.plate_rows(inv, 3)
     assert len(pr) == 6 and [r["well"] for r in pr] == ["A1"] * 3 + ["A2"] * 3
-    fake = FakeS3("s3://b/AB/x/plate_3", {("A1", rows[0]["fov_name"])}, {})
+    fake = FakeS3("s3://b/AB/x/plate_3/raw", {("A1", rows[0]["fov_name"])}, {})
     monkeypatch.setattr(rp, "sh", fake)
-    assert rp.done_fovs("s3://b/AB/x/plate_3") == {("A1", rows[0]["fov_name"])}
+    assert rp.done_fovs("s3://b/AB/x/plate_3/raw") == {("A1", rows[0]["fov_name"])}
 
 
 def test_focus_report_flags_absolute_and_relative():
@@ -79,28 +79,53 @@ def test_main_runs_each_well_then_verifies_and_writes_the_record(tmp_path, monke
     calls = []
     monkeypatch.setattr(rp.run_corpus, "main", lambda args: calls.append(args) or 0)
     inc = [r for r in rows if r["plate"] == 3 and r["include"]]
-    fake = FakeS3("s3://b/AB/x/plate_3", {(r["well"], r["fov_name"]) for r in inc},
+    fake = FakeS3("s3://b/AB/x/plate_3/raw", {(r["well"], r["fov_name"]) for r in inc},
                   {r["fov_name"]: 2e-3 for r in inc})
     monkeypatch.setattr(rp, "sh", fake)
     scratch = tmp_path / "scratch"
-    (scratch / "P3_A1" / "Analysis" / "logs").mkdir(parents=True)
-    (scratch / "keep_me").mkdir()
-    rc = rp.main(["--inventory", inv, "--plate", "3", "--out-root", "s3://b/AB/x", "--profile", "443screen2",
+    (scratch / "raw" / "P3_A1" / "Analysis" / "logs").mkdir(parents=True)
+    (scratch / "raw" / "keep_me").mkdir()
+    (scratch / "denoised-cellmincer" / "P3_A1").mkdir(parents=True)      # the other variant's scratch
+    rc = rp.main(["--inventory", inv, "--plate", "3", "--variant", "raw", "--out-root", "s3://b/AB/x",
+                  "--src-root", "/mnt/s3ab/AB", "--profile", "443screen2",
                   "--workers", "4", "--threads", "8", "--scratch", str(scratch),
                   "--", "--max-region-bbox-frac", "0.01"])
     assert rc == 0
-    assert not (scratch / "P3_A1").exists() and (scratch / "keep_me").exists()   # only the plate's wells
+    assert not (scratch / "raw" / "P3_A1").exists() and (scratch / "raw" / "keep_me").exists()  # plate's wells only
+    assert (scratch / "denoised-cellmincer" / "P3_A1").exists()           # never another variant's files
     assert [c[c.index("--run-id") + 1] for c in calls] == ["P3_A1", "P3_A2"]   # well order, plate 3 only
     first = calls[0]
-    assert first[first.index("--s3-prefix") + 1] == "s3://b/AB/x/plate_3"
+    assert first[first.index("--s3-prefix") + 1] == "s3://b/AB/x/plate_3/raw"
+    assert first[first.index("--scratch") + 1] == str(scratch / "raw")
+    assert first[first.index("--src-root") + 1] == "/mnt/s3ab/AB"
     assert first[first.index("--layout") + 1] == "well" and first[first.index("--profile") + 1] == "443screen2"
     assert first[-3:] == ["--", "--max-region-bbox-frac", "0.01"]
-    summ = json.loads(fake.uploads["s3://b/AB/x/plate_3/_runs/plate_summary.json"])
+    summ = json.loads(fake.uploads["s3://b/AB/x/plate_3/raw/_runs/plate_summary.json"])
     assert summ["complete"] and summ["n_included"] == 5 and summ["n_done"] == 5 and summ["missing"] == []
+    assert summ["variant"] == "raw" and summ["src_root"] == "/mnt/s3ab/AB"
+    assert summ["out"] == "s3://b/AB/x/plate_3/raw"
     assert summ["wells"]["P3_A2"] == dict(rows=3, included=2, done=2, run_corpus_rc=0)
-    inv_up = fake.uploads["s3://b/AB/x/plate_3/_runs/inventory_plate_3.csv"]
+    inv_up = fake.uploads["s3://b/AB/x/plate_3/raw/_runs/inventory_plate_3.csv"]
     assert inv_up.count("\n") == 7                                 # header + 6 plate-3 rows
-    assert "s3://b/AB/x/plate_3/_runs/focus_report.csv" in fake.uploads
+    assert "s3://b/AB/x/plate_3/raw/_runs/focus_report.csv" in fake.uploads
+    assert not [k for k in fake.uploads if "/raw/" not in k]       # nothing lands in the flat plate folder
+
+
+def test_variant_is_required_and_src_root_is_optional(tmp_path, monkeypatch):
+    import pytest
+    inv = str(tmp_path / "inv.csv")
+    _inventory(inv)
+    calls = []
+    monkeypatch.setattr(rp.run_corpus, "main", lambda args: calls.append(args) or 0)
+    with pytest.raises(SystemExit):                                # no --variant: refuse, run nothing
+        rp.main(["--inventory", inv, "--plate", "3", "--out-root", "s3://b/AB/x"])
+    with pytest.raises(SystemExit):                                # unknown variant
+        rp.main(["--inventory", inv, "--plate", "3", "--variant", "denoised", "--out-root", "s3://b/AB/x"])
+    assert calls == []
+    assert rp.main(["--inventory", inv, "--plate", "3", "--variant", "denoised-cellmincer",
+                    "--out-root", "s3://b/AB/x", "--scratch", str(tmp_path / "s"), "--dry-run"]) == 0
+    assert all("--src-root" not in c for c in calls)               # inventory paths used as written
+    assert calls[0][calls[0].index("--s3-prefix") + 1] == "s3://b/AB/x/plate_3/denoised-cellmincer"
 
 
 def test_missing_fov_fails_and_verify_only_does_not_run(tmp_path, monkeypatch):
@@ -109,10 +134,11 @@ def test_missing_fov_fails_and_verify_only_does_not_run(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(rp.run_corpus, "main", lambda args: calls.append(args) or 0)
     inc = [r for r in rows if r["plate"] == 3 and r["include"]]
-    fake = FakeS3("s3://b/AB/x/plate_3", {(r["well"], r["fov_name"]) for r in inc[1:]}, {})
+    fake = FakeS3("s3://b/AB/x/plate_3/raw", {(r["well"], r["fov_name"]) for r in inc[1:]}, {})
     monkeypatch.setattr(rp, "sh", fake)
-    rc = rp.main(["--inventory", inv, "--plate", "3", "--out-root", "s3://b/AB/x", "--verify-only"])
+    rc = rp.main(["--inventory", inv, "--plate", "3", "--variant", "raw", "--out-root", "s3://b/AB/x",
+                  "--verify-only"])
     assert rc == 1 and calls == []
-    summ = json.loads(fake.uploads["s3://b/AB/x/plate_3/_runs/plate_summary.json"])
+    summ = json.loads(fake.uploads["s3://b/AB/x/plate_3/raw/_runs/plate_summary.json"])
     assert not summ["complete"] and summ["missing"] == [f"A1/{inc[0]['fov_name']}"]
-    assert rp.main(["--inventory", inv, "--plate", "9", "--out-root", "s3://b/AB/x"]) == 2
+    assert rp.main(["--inventory", inv, "--plate", "9", "--variant", "raw", "--out-root", "s3://b/AB/x"]) == 2
