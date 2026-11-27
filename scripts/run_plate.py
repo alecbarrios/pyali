@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 """Run every well of one plate, then verify the plate is complete before anything else starts.
 
-    python scripts/run_plate.py --inventory inventory_443screen2.csv --plate 3 \\
+    python scripts/run_plate.py --inventory inventory_443screen2.csv --plate 3 --variant raw \\
         --out-root s3://spatial-technology-platform/AB/pyali/443screen2/analysis_outputs \\
-        --profile 443screen2 --workers 8 --threads 8 [--dry-run | --verify-only] [-- <run_pyali args>]
+        --src-root /mnt/s3ab/AB --profile 443screen2 --workers 8 --threads 8 \\
+        [--dry-run | --verify-only] [-- <run_pyali args>]
+
+``--variant`` names the version of the movies being analysed (``raw``, or ``denoised-cellmincer`` for
+the CellMincer-denoised copies of the same fields); each variant has its own folder under the
+plate, so ``<out_root>/plate_<plate>/<variant>/`` is the plate folder below. ``--src-root`` re-roots
+every inventory ``src_dir`` from its day component onward (``run_corpus.reroot``): the Mountpoint
+mount of the raw movies, or the root of the denoised day folders.
 
 For each well of the plate (inventory ``run_id`` P<plate>_<well>, in well order) it runs
-``scripts/run_corpus.py`` with ``--layout well`` into ``<out_root>/plate_<plate>/``, so a FOV lands
-at ``plate_<plate>/Well_<well>/<fov_name>/`` and each well's manifest and logs at
-``plate_<plate>/_runs/<run_id>/``. Then it lists the plate folder once and checks that every
-included inventory row has its ``cells.parquet``, and writes to ``plate_<plate>/_runs/``:
+``scripts/run_corpus.py`` with ``--layout well`` into the plate folder, so a FOV lands at
+``plate_<plate>/<variant>/Well_<well>/<fov_name>/`` and each well's manifest and logs at
+``plate_<plate>/<variant>/_runs/<run_id>/``. Then it lists the plate folder once and checks that
+every included inventory row has its ``cells.parquet``, and writes to
+``plate_<plate>/<variant>/_runs/``:
 
 * ``plate_summary.json`` -- git commit, command, timing, per-well included / done / exit code,
   every missing FOV, the focus-flag count;
@@ -18,8 +26,9 @@ included inventory row has its ``cells.parquet``, and writes to ``plate_<plate>/
   ``suspect_defocus`` = score < ``--focus-abs`` or < ``--focus-rel`` x its well's median. Flags are
   for review only; nothing is excluded on focus grounds.
 
-Exit code 0 only when every included FOV is present; the wells' local scratch folders (logs
-already archived to ``_runs/``) are then removed. Re-running resumes (done FOVs are skipped).
+Exit code 0 only when every included FOV is present; the wells' local scratch folders
+(``<scratch>/<variant>/<run_id>``, logs already archived to ``_runs/``) are then removed.
+Re-running resumes (done FOVs are skipped).
 """
 import argparse
 import csv
@@ -39,6 +48,7 @@ import run_corpus                                                         # noqa
 
 MARKER = "cells.parquet"
 METADATA = "fov_metadata.json"
+VARIANTS = ("raw", "denoised-cellmincer")      # one folder per movie version under plate_<N>/
 _TRUE = {"true", "1", "yes"}
 
 
@@ -131,6 +141,11 @@ def main(argv=None):
     ap.add_argument("--inventory", required=True)
     ap.add_argument("--plate", type=int, required=True)
     ap.add_argument("--out-root", required=True, help="s3://... folder holding plate_<N>/")
+    ap.add_argument("--variant", required=True, choices=VARIANTS,
+                    help="movie version: outputs go to <out-root>/plate_<N>/<variant>/")
+    ap.add_argument("--src-root", default=None,
+                    help="re-root each inventory src_dir from its day component onward (run_corpus --src-root), "
+                         "e.g. /mnt/s3ab/AB for the Mountpoint mount; default: the inventory paths as written")
     ap.add_argument("--profile", default=None, help="run_pyali --profile (e.g. 443screen2)")
     ap.add_argument("--workers", type=int, default=8, help="FOVs processed at once")
     ap.add_argument("--threads", type=int, default=8, help="CPU budget per FOV (BLAS threads and region workers)")
@@ -144,7 +159,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     from pyali.results import git_sha
-    prefix = f"{a.out_root.rstrip('/')}/plate_{a.plate}"
+    prefix = f"{a.out_root.rstrip('/')}/plate_{a.plate}/{a.variant}"
+    scratch = os.path.join(a.scratch, a.variant)        # raw and denoised runs never share local files
     rows = plate_rows(a.inventory, a.plate)
     if not rows:
         print(f"[plate {a.plate}] no inventory rows", flush=True)
@@ -160,8 +176,10 @@ def main(argv=None):
         for rid in run_ids:
             args = ["--inventory", a.inventory, "--run-id", rid, "--s3-prefix", prefix,
                     "--layout", "well", "--workers", str(a.workers), "--threads", str(a.threads),
-                    "--scratch", a.scratch, "--max-fov-rss-gb", str(a.max_fov_rss_gb),
+                    "--scratch", scratch, "--max-fov-rss-gb", str(a.max_fov_rss_gb),
                     "--min-avail-gb", str(a.min_avail_gb)]
+            if a.src_root:
+                args += ["--src-root", a.src_root]
             if a.profile:
                 args += ["--profile", a.profile]
             if a.dry_run:
@@ -184,7 +202,8 @@ def main(argv=None):
         wells[rid] = dict(rows=len(w_rows), included=len(w_inc),
                           done=sum((r["well"], r["fov_name"]) in done for r in w_inc),
                           run_corpus_rc=rc_of.get(rid))
-    summary = dict(plate=a.plate, out=prefix, pyali_git=git_sha(), started=started,
+    summary = dict(plate=a.plate, variant=a.variant, out=prefix, src_root=a.src_root, pyali_git=git_sha(),
+                   started=started,
                    finished=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                    hours=round((time.perf_counter() - t0) / 3600, 3), command=sys.argv, profile=a.profile,
                    run_pyali_extra=extra, workers=a.workers, threads=a.threads, wells=wells,
@@ -199,8 +218,8 @@ def main(argv=None):
     if not missing and not a.verify_only:                # logs are archived in _runs/: leave no local copy
         import shutil
         for rid in run_ids:
-            local = os.path.join(a.scratch, rid)
-            if os.path.isdir(local) and os.path.realpath(local).startswith(os.path.realpath(a.scratch) + os.sep):
+            local = os.path.join(scratch, rid)
+            if os.path.isdir(local) and os.path.realpath(local).startswith(os.path.realpath(scratch) + os.sep):
                 shutil.rmtree(local, ignore_errors=True)
     print(f"[plate {a.plate}] {summary['n_done']}/{len(inc)} FOVs present, {len(missing)} missing, "
           f"{n_flag} focus suspects -> {prefix}/_runs/plate_summary.json", flush=True)
