@@ -3926,10 +3926,28 @@
   },
   {
    "defined": true,
+   "dst": "scripts.build_inventory.focus_of",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 182,
+   "src": "scripts.build_inventory.build_inventory",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
    "dst": "scripts.build_inventory.inventory_row",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 146,
+   "line": 177,
+   "src": "scripts.build_inventory.build_inventory",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.mark_duplicates",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 177,
    "src": "scripts.build_inventory.build_inventory",
    "src_module": "scripts.build_inventory"
   },
@@ -3938,7 +3956,7 @@
    "dst": "scripts.build_inventory.scan_fovs",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 147,
+   "line": 178,
    "src": "scripts.build_inventory.build_inventory",
    "src_module": "scripts.build_inventory"
   },
@@ -3947,7 +3965,7 @@
    "dst": "pyali.preprocess.focus_score",
    "dst_module": "pyali.preprocess",
    "lazy": true,
-   "line": 95,
+   "line": 109,
    "src": "scripts.build_inventory.focus_of",
    "src_module": "scripts.build_inventory"
   },
@@ -3956,7 +3974,7 @@
    "dst": "pyali.metadata.parse_dir_name",
    "dst_module": "pyali.metadata",
    "lazy": false,
-   "line": 107,
+   "line": 122,
    "src": "scripts.build_inventory.inventory_row",
    "src_module": "scripts.build_inventory"
   },
@@ -3965,7 +3983,7 @@
    "dst": "scripts.build_inventory.focus_of",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 136,
+   "line": 151,
    "src": "scripts.build_inventory.inventory_row",
    "src_module": "scripts.build_inventory"
   },
@@ -3974,7 +3992,7 @@
    "dst": "scripts.build_inventory.read_sidecar",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 115,
+   "line": 130,
    "src": "scripts.build_inventory.inventory_row",
    "src_module": "scripts.build_inventory"
   },
@@ -3983,7 +4001,16 @@
    "dst": "scripts.build_inventory.build_inventory",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 183,
+   "line": 222,
+   "src": "scripts.build_inventory.main",
+   "src_module": "scripts.build_inventory"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.build_inventory.parse_batch_map",
+   "dst_module": "scripts.build_inventory",
+   "lazy": false,
+   "line": 223,
    "src": "scripts.build_inventory.main",
    "src_module": "scripts.build_inventory"
   },
@@ -3992,7 +4019,7 @@
    "dst": "scripts.build_inventory.parse_plate_map",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 183,
+   "line": 222,
    "src": "scripts.build_inventory.main",
    "src_module": "scripts.build_inventory"
   },
@@ -4001,7 +4028,7 @@
    "dst": "scripts.build_inventory.summarize",
    "dst_module": "scripts.build_inventory",
    "lazy": false,
-   "line": 186,
+   "line": 225,
    "src": "scripts.build_inventory.main",
    "src_module": "scripts.build_inventory"
   },
@@ -4712,7 +4739,7 @@
    "dst": "scripts.run_corpus.sh",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 271,
+   "line": 278,
    "src": "scripts.run_corpus.archive_run",
    "src_module": "scripts.run_corpus"
   },
@@ -4721,7 +4748,7 @@
    "dst": "scripts.run_corpus.dest_prefix",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 98,
+   "line": 103,
    "src": "scripts.run_corpus.existing_done",
    "src_module": "scripts.run_corpus"
   },
@@ -4730,7 +4757,7 @@
    "dst": "scripts.run_corpus.sh",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 98,
+   "line": 103,
    "src": "scripts.run_corpus.existing_done",
    "src_module": "scripts.run_corpus"
   },
@@ -4739,7 +4766,7 @@
    "dst": "scripts.run_corpus.sh",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 242,
+   "line": 249,
    "src": "scripts.run_corpus.git_sha",
    "src_module": "scripts.run_corpus"
   },
@@ -4748,7 +4775,7 @@
    "dst": "pyali.metadata.Identity",
    "dst_module": "pyali.metadata",
    "lazy": false,
-   "line": 78,
+   "line": 79,
    "src": "scripts.run_corpus.load_run",
    "src_module": "scripts.run_corpus"
   },
@@ -4757,7 +4784,7 @@
    "dst": "pyali.metadata.parse_dir_name",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 77,
+   "line": 78,
    "src": "scripts.run_corpus.load_run",
    "src_module": "scripts.run_corpus"
   },
@@ -4766,7 +4793,7 @@
    "dst": "scripts.run_corpus.reroot",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 76,
+   "line": 77,
    "src": "scripts.run_corpus.load_run",
    "src_module": "scripts.run_corpus"
   },
@@ -4775,7 +4802,7 @@
    "dst": "scripts.run_corpus.archive_run",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 389,
+   "line": 399,
    "src": "scripts.run_corpus.main",
    "src_module": "scripts.run_corpus"
   },
@@ -4784,7 +4811,7 @@
    "dst": "scripts.run_corpus.existing_done",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 333,
+   "line": 343,
    "src": "scripts.run_corpus.main",
    "src_module": "scripts.run_corpus"
   },
@@ -4793,7 +4820,7 @@
    "dst": "scripts.run_corpus.git_sha",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 339,
+   "line": 349,
    "src": "scripts.run_corpus.main",
    "src_module": "scripts.run_corpus"
   },
@@ -4802,7 +4829,7 @@
    "dst": "scripts.run_corpus.load_run",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 326,
+   "line": 336,
    "src": "scripts.run_corpus.main",
    "src_module": "scripts.run_corpus"
   },
@@ -4811,7 +4838,7 @@
    "dst": "scripts.run_corpus.write_fov_index",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 329,
+   "line": 339,
    "src": "scripts.run_corpus.main",
    "src_module": "scripts.run_corpus"
   },
@@ -4820,7 +4847,7 @@
    "dst": "scripts.run_corpus.dest_prefix",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 160,
+   "line": 167,
    "src": "scripts.run_corpus.run_one",
    "src_module": "scripts.run_corpus"
   },
@@ -4829,7 +4856,7 @@
    "dst": "scripts.run_corpus.fov_command",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 180,
+   "line": 187,
    "src": "scripts.run_corpus.run_one",
    "src_module": "scripts.run_corpus"
   },
@@ -4838,7 +4865,7 @@
    "dst": "scripts.run_corpus.sh",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 221,
+   "line": 228,
    "src": "scripts.run_corpus.run_one",
    "src_module": "scripts.run_corpus"
   },
@@ -4847,7 +4874,7 @@
    "dst": "scripts.run_corpus.wait_for_slot",
    "dst_module": "scripts.run_corpus",
    "lazy": false,
-   "line": 169,
+   "line": 176,
    "src": "scripts.run_corpus.run_one",
    "src_module": "scripts.run_corpus"
   },
@@ -4856,7 +4883,7 @@
    "dst": "pyali.telemetry.avail_ram_gb",
    "dst_module": "pyali.telemetry",
    "lazy": false,
-   "line": 140,
+   "line": 147,
    "src": "scripts.run_corpus.wait_for_slot",
    "src_module": "scripts.run_corpus"
   },
@@ -4865,16 +4892,124 @@
    "dst": "pyali.telemetry.rss_gb",
    "dst_module": "pyali.telemetry",
    "lazy": false,
-   "line": 128,
+   "line": 135,
    "src": "scripts.run_corpus.watch_rss",
    "src_module": "scripts.run_corpus"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.sh",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 63,
+   "src": "scripts.run_plate.done_fovs",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "pyali.results.git_sha",
+   "dst_module": "pyali.results",
+   "lazy": true,
+   "line": 187,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_corpus.main",
+   "dst_module": "scripts.run_corpus",
+   "lazy": false,
+   "line": 171,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate._csv_text",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 196,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.done_fovs",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 175,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.focus_report",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 178,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.included",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 152,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.plate_rows",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 148,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.read_focus",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 177,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.upload_text",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 195,
+   "src": "scripts.run_plate.main",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.sh",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 78,
+   "src": "scripts.run_plate.read_focus",
+   "src_module": "scripts.run_plate"
+  },
+  {
+   "defined": true,
+   "dst": "scripts.run_plate.sh",
+   "dst_module": "scripts.run_plate",
+   "lazy": false,
+   "line": 111,
+   "src": "scripts.run_plate.upload_text",
+   "src_module": "scripts.run_plate"
   },
   {
    "defined": true,
    "dst": "pyali.metadata.identity_from_dir_name",
    "dst_module": "pyali.metadata",
    "lazy": true,
-   "line": 208,
+   "line": 211,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -4883,7 +5018,7 @@
    "dst": "pyali.pipeline.process_fov",
    "dst_module": "pyali.pipeline",
    "lazy": false,
-   "line": 213,
+   "line": 219,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -4892,7 +5027,7 @@
    "dst": "scripts.find_video_dims.detect_pixels_per_frame",
    "dst_module": "scripts.find_video_dims",
    "lazy": false,
-   "line": 164,
+   "line": 167,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -4901,7 +5036,7 @@
    "dst": "scripts.find_video_dims.recover_dims",
    "dst_module": "scripts.find_video_dims",
    "lazy": false,
-   "line": 167,
+   "line": 170,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -4910,7 +5045,7 @@
    "dst": "scripts.run_pyali._clamp_ranges",
    "dst_module": "scripts.run_pyali",
    "lazy": false,
-   "line": 196,
+   "line": 199,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -4919,7 +5054,7 @@
    "dst": "scripts.run_pyali.detect_bit_depth",
    "dst_module": "scripts.run_pyali",
    "lazy": false,
-   "line": 151,
+   "line": 154,
    "src": "scripts.run_pyali.main",
    "src_module": "scripts.run_pyali"
   },
@@ -7870,14 +8005,14 @@
   {
    "dst": "pyali.metadata",
    "lazy": false,
-   "line": 33,
+   "line": 36,
    "name": "pyali.metadata.parse_dir_name",
    "src": "scripts.build_inventory"
   },
   {
    "dst": "pyali.preprocess",
    "lazy": true,
-   "line": 89,
+   "line": 103,
    "name": "pyali.preprocess.focus_score",
    "src": "scripts.build_inventory"
   },
@@ -8227,35 +8362,49 @@
   {
    "dst": "pyali.metadata",
    "lazy": false,
-   "line": 33,
+   "line": 34,
    "name": "pyali.metadata.Identity",
    "src": "scripts.run_corpus"
   },
   {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 65,
+   "line": 66,
    "name": "pyali.metadata.parse_dir_name",
    "src": "scripts.run_corpus"
   },
   {
    "dst": "pyali.telemetry",
    "lazy": false,
-   "line": 34,
+   "line": 35,
    "name": "pyali.telemetry.avail_ram_gb",
    "src": "scripts.run_corpus"
   },
   {
    "dst": "pyali.telemetry",
    "lazy": false,
-   "line": 34,
+   "line": 35,
    "name": "pyali.telemetry.rss_gb",
    "src": "scripts.run_corpus"
   },
   {
+   "dst": "pyali.results",
+   "lazy": true,
+   "line": 146,
+   "name": "pyali.results.git_sha",
+   "src": "scripts.run_plate"
+  },
+  {
+   "dst": "scripts.run_corpus",
+   "lazy": false,
+   "line": 38,
+   "name": "scripts.run_corpus",
+   "src": "scripts.run_plate"
+  },
+  {
    "dst": "pyali.metadata",
    "lazy": true,
-   "line": 207,
+   "line": 210,
    "name": "pyali.metadata.identity_from_dir_name",
    "src": "scripts.run_pyali"
   },
@@ -9161,7 +9310,7 @@
    "file": "frames1.bin",
    "func": "scripts.build_inventory.focus_of",
    "kind": "read",
-   "line": 92,
+   "line": 106,
    "loc": "per FOV",
    "module": "scripts.build_inventory"
   },
@@ -9169,7 +9318,7 @@
    "file": "frames1_dropped_frames.txt",
    "func": "scripts.build_inventory.read_sidecar",
    "kind": "read",
-   "line": 51,
+   "line": 54,
    "loc": "per FOV",
    "module": "scripts.build_inventory"
   },
@@ -9337,7 +9486,7 @@
    "file": "fov_metadata.json",
    "func": "scripts.run_corpus.run_one",
    "kind": "read",
-   "line": 202,
+   "line": 209,
    "loc": "summary",
    "module": "scripts.run_corpus"
   },
@@ -9345,7 +9494,7 @@
    "file": "fov_index.csv",
    "func": "scripts.run_corpus.main",
    "kind": "write",
-   "line": 329,
+   "line": 339,
    "loc": "summary",
    "module": "scripts.run_corpus"
   },
@@ -9353,7 +9502,7 @@
    "file": "manifest.jsonl",
    "func": "scripts.run_corpus.main",
    "kind": "write",
-   "line": 377,
+   "line": 387,
    "loc": "summary",
    "module": "scripts.run_corpus"
   },
@@ -9361,7 +9510,7 @@
    "file": "frames1.bin",
    "func": "scripts.run_pyali.main",
    "kind": "read",
-   "line": 151,
+   "line": 154,
    "loc": "summary",
    "module": "scripts.run_pyali"
   },
@@ -10319,6 +10468,29 @@
    "write": [
     "path"
    ]
+  },
+  "scripts.run_plate.main": {
+   "read": [
+    "argv"
+   ],
+   "returns": [],
+   "write": [
+    "argv"
+   ]
+  },
+  "scripts.run_plate.plate_rows": {
+   "read": [
+    "inventory_csv"
+   ],
+   "returns": [],
+   "write": []
+  },
+  "scripts.run_plate.read_focus": {
+   "read": [],
+   "returns": [
+    "fov_metadata.json"
+   ],
+   "write": []
   },
   "scripts.run_pyali.detect_bit_depth": {
    "read": [
@@ -15598,58 +15770,72 @@
    "defs": [
     {
      "doc": "``key=value`` lines of the acquisition sidecar as a dict; integers are converted.",
-     "end": 61,
+     "end": 64,
      "kind": "function",
-     "line": 44,
+     "line": 47,
      "name": "read_sidecar"
     },
     {
      "doc": "Every directory under ``root`` (inclusive) that holds a ``frames1.bin``, sorted.",
-     "end": 71,
+     "end": 74,
      "kind": "function",
-     "line": 64,
+     "line": 67,
      "name": "scan_fovs"
     },
     {
-     "doc": "``[\"20260715:P-1=5\", ...]`` -> ``{(\"20260715\", \"P-1\"): 5}``.",
-     "end": 82,
+     "doc": "``[\"20260715:P-1:A1=443-2\", ...]`` -> ``{(\"20260715\", \"P-1\", \"A1\"): \"443-2\"}``.",
+     "end": 85,
      "kind": "function",
-     "line": 74,
+     "line": 77,
+     "name": "parse_batch_map"
+    },
+    {
+     "doc": "``[\"20260715:P-1=5\", ...]`` -> ``{(\"20260715\", \"P-1\"): 5}``.",
+     "end": 96,
+     "kind": "function",
+     "line": 88,
      "name": "parse_plate_map"
     },
     {
      "doc": "Focus QC score of the mean of the first ``FOCUS_FRAMES`` frames (8-bit when",
-     "end": 95,
+     "end": 109,
      "kind": "function",
-     "line": 85,
+     "line": 99,
      "name": "focus_of"
     },
     {
      "doc": "One inventory row for ``fov_dir`` (see the module docstring for the columns).",
-     "end": 141,
+     "end": 156,
      "kind": "function",
-     "line": 98,
+     "line": 112,
      "name": "inventory_row"
     },
     {
-     "doc": "Scan ``roots``, write ``out_csv`` and return the rows (sorted by plate, well, burst, name).",
-     "end": 157,
+     "doc": "Exclude every row whose ``fov_name`` was already listed at a shallower path (the same",
+     "end": 171,
      "kind": "function",
-     "line": 144,
+     "line": 159,
+     "name": "mark_duplicates"
+    },
+    {
+     "doc": "Scan ``roots``, write ``out_csv`` and return the rows (sorted by plate, well, burst, name).",
+     "end": 193,
+     "kind": "function",
+     "line": 174,
      "name": "build_inventory"
     },
     {
      "doc": "``[(run_id, n_included, n_excluded)]`` in run order.",
-     "end": 166,
+     "end": 202,
      "kind": "function",
-     "line": 160,
+     "line": 196,
      "name": "summarize"
     },
     {
      "doc": "",
-     "end": 199,
+     "end": 238,
      "kind": "function",
-     "line": 169,
+     "line": 205,
      "name": "main"
     }
    ],
@@ -15658,51 +15844,51 @@
    "imports": [
     {
      "lazy": false,
-     "line": 24,
+     "line": 27,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 25,
+     "line": 28,
      "target": "csv"
     },
     {
      "lazy": false,
-     "line": 26,
+     "line": 29,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 27,
+     "line": 30,
      "target": "re"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 31,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 33,
+     "line": 36,
      "target": "pyali.metadata.parse_dir_name"
     },
     {
      "lazy": true,
-     "line": 88,
+     "line": 102,
      "target": "numpy"
     },
     {
      "lazy": true,
-     "line": 89,
+     "line": 103,
      "target": "pyali.preprocess.focus_score"
     },
     {
      "lazy": true,
-     "line": 191,
+     "line": 230,
      "target": "statistics"
     }
    ],
-   "loc": 204,
+   "loc": 243,
    "path": "scripts/build_inventory.py"
   },
   "scripts.build_manifest": {
@@ -16946,93 +17132,93 @@
    "defs": [
     {
      "doc": "Re-root ``src_dir`` under ``src_root`` by the path from the ``day`` component onward",
-     "end": 54,
+     "end": 55,
      "kind": "function",
-     "line": 45,
+     "line": 46,
      "name": "reroot"
     },
     {
      "doc": "Rows of ``inventory_csv`` with ``run_id`` (included and excluded), sorted by",
-     "end": 81,
+     "end": 82,
      "kind": "function",
-     "line": 57,
+     "line": 58,
      "name": "load_run"
     },
     {
-     "doc": "",
-     "end": 85,
+     "doc": "Where a well's FOV folders go: ``<prefix>/Plate_<plate>/Well_<well>`` (``plate_well``) or",
+     "end": 90,
      "kind": "function",
-     "line": 84,
+     "line": 85,
      "name": "dest_prefix"
     },
     {
      "doc": "",
-     "end": 92,
+     "end": 97,
      "kind": "function",
-     "line": 91,
+     "line": 96,
      "name": "sh"
     },
     {
-     "doc": "FOV names under ``<s3_prefix>/Plate_<plate>/Well_<well>/`` whose directory holds the",
-     "end": 106,
+     "doc": "FOV names under the well's destination (:func:`dest_prefix`) whose directory holds the",
+     "end": 111,
      "kind": "function",
-     "line": 95,
+     "line": 100,
      "name": "existing_done"
     },
     {
      "doc": "The ``run_pyali.py`` command line for one FOV.",
-     "end": 118,
+     "end": 125,
      "kind": "function",
-     "line": 109,
+     "line": 114,
      "name": "fov_command"
     },
     {
      "doc": "Poll ``proc``'s RSS; record the peak in ``state['peak_gb']``; kill it above ``max_gb``",
-     "end": 134,
+     "end": 141,
      "kind": "function",
-     "line": 124,
+     "line": 131,
      "name": "watch_rss"
     },
     {
      "doc": "Block until RAM and scratch disk are above the thresholds. ``False`` if halted.",
-     "end": 146,
+     "end": 153,
      "kind": "function",
-     "line": 137,
+     "line": 144,
      "name": "wait_for_slot"
     },
     {
      "doc": "Process one inventory row: run_pyali subprocess -> upload -> verify -> delete local.",
-     "end": 235,
+     "end": 242,
      "kind": "function",
-     "line": 152,
+     "line": 159,
      "name": "run_one"
     },
     {
      "doc": "",
-     "end": 245,
+     "end": 252,
      "kind": "function",
-     "line": 241,
+     "line": 248,
      "name": "git_sha"
     },
     {
      "doc": "",
-     "end": 257,
+     "end": 264,
      "kind": "function",
-     "line": 248,
+     "line": 255,
      "name": "write_fov_index"
     },
     {
      "doc": "Copy manifest.jsonl, fov_index.csv and logs/ to ``<s3_prefix>/_runs/<run_id>/``.",
-     "end": 274,
+     "end": 281,
      "kind": "function",
-     "line": 260,
+     "line": 267,
      "name": "archive_run"
     },
     {
      "doc": "",
-     "end": 390,
+     "end": 400,
      "kind": "function",
-     "line": 277,
+     "line": 284,
      "name": "main"
     }
    ],
@@ -17041,87 +17227,225 @@
    "imports": [
     {
      "lazy": false,
-     "line": 19,
+     "line": 20,
      "target": "argparse"
     },
     {
      "lazy": false,
-     "line": 20,
+     "line": 21,
      "target": "csv"
     },
     {
      "lazy": false,
-     "line": 21,
+     "line": 22,
      "target": "json"
     },
     {
      "lazy": false,
-     "line": 22,
+     "line": 23,
      "target": "os"
     },
     {
      "lazy": false,
-     "line": 23,
+     "line": 24,
      "target": "shutil"
     },
     {
      "lazy": false,
-     "line": 24,
+     "line": 25,
      "target": "subprocess"
     },
     {
      "lazy": false,
-     "line": 25,
+     "line": 26,
      "target": "sys"
     },
     {
      "lazy": false,
-     "line": 26,
+     "line": 27,
      "target": "threading"
     },
     {
      "lazy": false,
-     "line": 27,
+     "line": 28,
      "target": "time"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 29,
      "target": "concurrent.futures.ThreadPoolExecutor"
     },
     {
      "lazy": false,
-     "line": 28,
+     "line": 29,
      "target": "concurrent.futures.as_completed"
     },
     {
      "lazy": false,
-     "line": 33,
+     "line": 34,
      "target": "pyali.metadata.Identity"
     },
     {
      "lazy": false,
-     "line": 34,
+     "line": 35,
      "target": "pyali.telemetry.avail_ram_gb"
     },
     {
      "lazy": false,
-     "line": 34,
+     "line": 35,
      "target": "pyali.telemetry.rss_gb"
     },
     {
      "lazy": true,
-     "line": 65,
+     "line": 66,
      "target": "pyali.metadata.parse_dir_name"
     },
     {
      "lazy": true,
-     "line": 360,
+     "line": 370,
      "target": "types"
     }
    ],
-   "loc": 395,
+   "loc": 405,
    "path": "scripts/run_corpus.py"
+  },
+  "scripts.run_plate": {
+   "defs": [
+    {
+     "doc": "",
+     "end": 46,
+     "kind": "function",
+     "line": 45,
+     "name": "sh"
+    },
+    {
+     "doc": "The plate's inventory rows (all, included or not), sorted by well, burst, name.",
+     "end": 54,
+     "kind": "function",
+     "line": 49,
+     "name": "plate_rows"
+    },
+    {
+     "doc": "",
+     "end": 58,
+     "kind": "function",
+     "line": 57,
+     "name": "included"
+    },
+    {
+     "doc": "``{(well, fov_name)}`` with a done-marker under ``<prefix>/Well_<well>/<fov_name>/``.",
+     "end": 72,
+     "kind": "function",
+     "line": 61,
+     "name": "done_fovs"
+    },
+    {
+     "doc": "``{fov_name: focus_score or None}`` from each FOV's ``fov_metadata.json``.",
+     "end": 84,
+     "kind": "function",
+     "line": 75,
+     "name": "read_focus"
+    },
+    {
+     "doc": "Rows ``(well, burst, fov_name, focus, well_median, suspect_defocus)``.",
+     "end": 107,
+     "kind": "function",
+     "line": 87,
+     "name": "focus_report"
+    },
+    {
+     "doc": "",
+     "end": 113,
+     "kind": "function",
+     "line": 110,
+     "name": "upload_text"
+    },
+    {
+     "doc": "",
+     "end": 121,
+     "kind": "function",
+     "line": 116,
+     "name": "_csv_text"
+    },
+    {
+     "doc": "",
+     "end": 209,
+     "kind": "function",
+     "line": 124,
+     "name": "main"
+    }
+   ],
+   "doc": "Run every well of one plate, then verify the plate is complete before anything else starts.",
+   "group": "scripts",
+   "imports": [
+    {
+     "lazy": false,
+     "line": 24,
+     "target": "argparse"
+    },
+    {
+     "lazy": false,
+     "line": 25,
+     "target": "csv"
+    },
+    {
+     "lazy": false,
+     "line": 26,
+     "target": "io"
+    },
+    {
+     "lazy": false,
+     "line": 27,
+     "target": "json"
+    },
+    {
+     "lazy": false,
+     "line": 28,
+     "target": "os"
+    },
+    {
+     "lazy": false,
+     "line": 29,
+     "target": "subprocess"
+    },
+    {
+     "lazy": false,
+     "line": 30,
+     "target": "sys"
+    },
+    {
+     "lazy": false,
+     "line": 31,
+     "target": "time"
+    },
+    {
+     "lazy": false,
+     "line": 32,
+     "target": "concurrent.futures.ThreadPoolExecutor"
+    },
+    {
+     "lazy": false,
+     "line": 38,
+     "target": "scripts.run_corpus"
+    },
+    {
+     "lazy": true,
+     "line": 89,
+     "target": "statistics"
+    },
+    {
+     "lazy": true,
+     "line": 146,
+     "target": "pyali.results.git_sha"
+    },
+    {
+     "lazy": true,
+     "line": 200,
+     "target": "shutil"
+    }
+   ],
+   "loc": 214,
+   "path": "scripts/run_plate.py"
   },
   "scripts.run_pyali": {
    "defs": [
@@ -17141,7 +17465,7 @@
     },
     {
      "doc": "",
-     "end": 219,
+     "end": 225,
      "kind": "function",
      "line": 101,
      "name": "main"
@@ -17187,11 +17511,16 @@
     },
     {
      "lazy": true,
-     "line": 207,
+     "line": 210,
      "target": "pyali.metadata.identity_from_dir_name"
+    },
+    {
+     "lazy": true,
+     "line": 214,
+     "target": "dataclasses"
     }
    ],
-   "loc": 224,
+   "loc": 230,
    "path": "scripts/run_pyali.py"
   },
   "scripts.snr_aggregate": {
@@ -18561,10 +18890,10 @@
   "whiten_ridge",
   "whiten_sigma_floor_pct",
   "whiten_isolated_only",
-  "region_workers",
   "trace_rcond",
   "trace_chunk_bytes",
-  "trace_cond_limit"
+  "trace_cond_limit",
+  "region_workers"
  ],
  "params_reads": {
   "bench.bench_pipeline.main": [

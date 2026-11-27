@@ -17,9 +17,12 @@ Columns (row order = plate, well, burst, fov_name)::
 ``run_id = P<plate>_<well>`` groups the FOVs ``run_corpus`` processes together. ``day`` is the
 first path component under ``--root`` (or the root's own name when the FOV directories sit
 directly in it). Identity fields come from the directory name via ``pyali.metadata``; the plate
-can be remapped per day with ``--plate-map DAY:TOKEN=PLATE`` for relabelled acquisitions.
-Excluded rows (zero-byte or partial movies, no ``burstN`` token, unparseable names) stay in the
-inventory with a reason, so they keep their place in the numbering and the record.
+can be remapped per day with ``--plate-map DAY:TOKEN=PLATE`` for relabelled acquisitions, and a
+well's cell-line label (``batch``: the ``443-1`` / ``443-2`` token, else the genotype, ``WT``)
+corrected with ``--batch-map DAY:TOKEN:WELL=LINE``. Excluded rows (zero-byte or partial movies,
+no ``burstN`` token, unparseable names, a second copy of a directory already listed -- e.g. a
+day folder nested inside itself) stay in the inventory with a reason, so they keep their place
+in the numbering and the record.
 """
 import argparse
 import csv
@@ -71,6 +74,17 @@ def scan_fovs(root):
     return sorted(found)
 
 
+def parse_batch_map(items):
+    """``["20260715:P-1:A1=443-2", ...]`` -> ``{("20260715", "P-1", "A1"): "443-2"}``."""
+    out = {}
+    for it in items or ():
+        m = re.fullmatch(r"([^:]+):([^:]+):([^=]+)=(.+)", it.strip())
+        if not m:
+            raise ValueError(f"--batch-map expects DAY:TOKEN:WELL=LINE, got {it!r}")
+        out[(m.group(1), m.group(2), m.group(3).upper())] = m.group(4)
+    return out
+
+
 def parse_plate_map(items):
     """``["20260715:P-1=5", ...]`` -> ``{("20260715", "P-1"): 5}``."""
     out = {}
@@ -95,10 +109,11 @@ def focus_of(fov_dir, nrow, ncol, bytes_per_frame):
     return round(focus_score(raw.reshape(FOCUS_FRAMES, nrow, ncol).mean(axis=0, dtype=np.float64)), 8)
 
 
-def inventory_row(fov_dir, root, experiment_id, plate_map=None, focus_dims=None):
+def inventory_row(fov_dir, root, experiment_id, plate_map=None, focus_dims=None, batch_map=None):
     """One inventory row for ``fov_dir`` (see the module docstring for the columns).
     ``focus_dims=(nrow, ncol)`` fills the ``focus`` QC column from the first 300 frames."""
     plate_map = plate_map or {}
+    batch_map = batch_map or {}
     fov_dir = os.path.abspath(fov_dir)
     name = os.path.basename(fov_dir)
     rel = os.path.relpath(fov_dir, os.path.abspath(root)).split(os.sep)
@@ -110,7 +125,7 @@ def inventory_row(fov_dir, root, experiment_id, plate_map=None, focus_dims=None)
     plate = plate_map.get((day, token), int(digits) if digits else 0)
     well = d["well"] or ""
     burst = d["burst"]
-    batch = d["cell_line"] or ""
+    batch = batch_map.get((day, token, well.upper()), d["cell_line"] or d["genotype"] or "")
 
     side = read_sidecar(fov_dir)
     bin_bytes = os.path.getsize(os.path.join(fov_dir, MOVIE))
@@ -141,10 +156,31 @@ def inventory_row(fov_dir, root, experiment_id, plate_map=None, focus_dims=None)
                 include=reason == "", exclude_reason=reason, focus=focus)
 
 
-def build_inventory(roots, out_csv, experiment_id, plate_map=None, wells=None, focus_dims=None):
+def mark_duplicates(rows):
+    """Exclude every row whose ``fov_name`` was already listed at a shallower path (the same
+    acquisition copied twice, e.g. ``20260717/20260717/<fov>``); the shallowest copy stays."""
+    first = {}
+    for r in sorted(rows, key=lambda r: (r["src_dir"].count(os.sep), r["src_dir"])):
+        if r["fov_name"] in first:
+            if r["include"]:
+                r["include"] = False
+                r["exclude_reason"] = f"duplicate of {first[r['fov_name']]}"
+                r["focus"] = ""
+        else:
+            first[r["fov_name"]] = r["src_dir"]
+    return rows
+
+
+def build_inventory(roots, out_csv, experiment_id, plate_map=None, wells=None, focus_dims=None,
+                    batch_map=None):
     """Scan ``roots``, write ``out_csv`` and return the rows (sorted by plate, well, burst, name)."""
-    rows = [inventory_row(f, root, experiment_id, plate_map, focus_dims)
-            for root in roots for f in scan_fovs(root)]
+    rows = mark_duplicates([inventory_row(f, root, experiment_id, plate_map, None, batch_map)
+                            for root in roots for f in scan_fovs(root)])
+    if focus_dims:                                   # only the copies that will be analysed
+        for r in rows:
+            if r["include"] and r["bytes_per_frame"]:
+                r["focus"] = focus_of(r["src_dir"], int(focus_dims[0]), int(focus_dims[1]),
+                                      r["bytes_per_frame"])
     if wells:
         keep = {w.upper() for w in wells}
         rows = [r for r in rows if r["well"].upper() in keep]
@@ -175,13 +211,16 @@ def main(argv=None):
     ap.add_argument("--experiment-id", required=True, help="experiment id used in fov_id / cell_id")
     ap.add_argument("--plate-map", action="append", default=[],
                     help="DAY:TOKEN=PLATE, repeatable, e.g. 20260715:P-1=5 (the folder token P-1 is plate 5)")
+    ap.add_argument("--batch-map", action="append", default=[],
+                    help="DAY:TOKEN:WELL=LINE, repeatable, e.g. 20260715:P-1:A1=443-2 (correct a well's "
+                         "cell-line label)")
     ap.add_argument("--wells", nargs="+", default=None, help="keep only these wells, e.g. A2 C3")
     ap.add_argument("--focus-dims", nargs=2, type=int, metavar=("NROW", "NCOL"), default=None,
                     help="fill the focus QC column from the first 300 frames of each included movie "
                          "(e.g. 800 800 for 443screen2); ~1e-4 or less means defocused")
     a = ap.parse_args(argv)
     rows = build_inventory(a.root, a.out, a.experiment_id, parse_plate_map(a.plate_map), a.wells,
-                           a.focus_dims)
+                           a.focus_dims, parse_batch_map(a.batch_map))
     print(f"[inventory] {len(rows)} FOV directories -> {a.out}")
     for run_id, inc, exc in summarize(rows):
         print(f"  {run_id:<10} include={inc:<4} excluded={exc}")
