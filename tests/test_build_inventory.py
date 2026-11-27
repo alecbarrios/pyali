@@ -179,3 +179,29 @@ def test_build_inventory_reports_exclusions(tmp_path, capsys):
     assert bi.summarize(rows) == [("P4_A2", 1, 1)]
     bi.main(["--root", root, "--out", out, "--experiment-id", "x"])
     assert "EXCLUDED 20260716/163547" in capsys.readouterr().out
+
+
+
+def test_batch_labels_wt_genotype_batch_map_and_duplicates(tmp_path):
+    """WT wells get the genotype as their label; --batch-map corrects a well's label on one day;
+    a directory copied into a nested day folder is excluded as a duplicate of the shallow copy."""
+    root = str(tmp_path)
+    _fov(root, "20260717", "102853_P-2_W-A1_WT_443screen2_DIV36__burst1")
+    _fov(root, "20260717/20260717", "102853_P-2_W-A1_WT_443screen2_DIV36__burst1")      # nested twin
+    _fov(root, "20260715", "114944P-1_W-A1_443_443screen2_DIV34__burst1")
+    _fov(root, "20260715", "115000P-1_W-A2_443-2_443screen2_DIV34__burst1")
+    bm = bi.parse_batch_map(["20260715:P-1:a1=443-2"])
+    assert bm == {("20260715", "P-1", "A1"): "443-2"}
+    with pytest.raises(ValueError):
+        bi.parse_batch_map(["20260715:P-1=443-2"])
+    rows = bi.build_inventory([root], str(tmp_path / "inv.csv"), "x",
+                              plate_map=bi.parse_plate_map(["20260715:P-1=5"]), batch_map=bm)
+    by = {(r["day"], r["fov_name"], r["src_dir"].count(os.sep)): r for r in rows}
+    wt = [r for r in rows if r["well"] == "A1" and r["plate"] == 2]
+    assert len(wt) == 2 and all(r["batch"] == "WT" for r in wt)
+    shallow, deep = sorted(wt, key=lambda r: r["src_dir"].count(os.sep))
+    assert shallow["include"] and not deep["include"]
+    assert deep["exclude_reason"] == f"duplicate of {shallow['src_dir']}"
+    p5 = {r["well"]: r["batch"] for r in rows if r["plate"] == 5}
+    assert p5 == {"A1": "443-2", "A2": "443-2"}                    # A1 corrected, A2 as named
+    assert len(by) == 4

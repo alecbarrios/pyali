@@ -107,7 +107,9 @@ def test_fov_command_assembly():
     cmd = rc.fov_command("/py", "/src/fov", "/scratch/fov", ident)
     assert cmd[:2] == ["/py", rc.RUN_PYALI] and cmd[2] == "/src/fov"
     assert cmd[3:] == ["--out", "/scratch/fov", "--experiment-id", "443screen2", "--plate", "5",
-                       "--well", "A2", "--fov", "12", "--fov-index", "7"]
+                       "--well", "A2", "--fov", "12", "--fov-index", "7", "--batch", "443-1"]
+    nob = rc.fov_command("/py", "/src/fov", "/o", Identity("443screen2", 5, "A2", 12))
+    assert "--batch" not in nob                                     # no label -> run_pyali's own
     cmd = rc.fov_command("/py", "/src/fov", "/o", ident, profile="443screen2", figures=True,
                          extra=["--compute-dtype", "float32"])
     assert cmd[-6:] == ["--profile", "443screen2", "--figures", "--compute-dtype", "float32"][-6:] or \
@@ -321,3 +323,9 @@ def test_rss_gb_and_avail_ram_are_sane():
     assert rc.rss_gb(os.getpid()) > 0.01
     assert rc.rss_gb(2 ** 22 + 12345) == 0.0
     assert rc.avail_ram_gb() > 0
+
+
+
+def test_dest_prefix_layouts():
+    assert rc.dest_prefix("s3://b/AB/x/", 3, "A2") == "s3://b/AB/x/Plate_3/Well_A2"
+    assert rc.dest_prefix("s3://b/AB/x/plate_3", 3, "A2", "well") == "s3://b/AB/x/plate_3/Well_A2"

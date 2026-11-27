@@ -128,6 +128,9 @@ def main(argv=None):
     ap.add_argument("--well", default=None, help="well, e.g. A2 (default: the W-A2 token)")
     ap.add_argument("--fov", type=int, default=None,
                     help="FOV number in fov_id (default: the burstN token)")
+    ap.add_argument("--batch", default=None,
+                    help="cell-line label recorded in the FOV identity (default: the 443-1 / 443-2 token "
+                         "of the dir name; run_corpus passes the inventory's, which also covers WT)")
     ap.add_argument("--fov-index", type=int, default=0,
                     help="1-based position of this FOV in a corpus run (default 0 = unknown)")
     ap.add_argument("--workers", type=int, default=None,
@@ -207,6 +210,9 @@ def main(argv=None):
     from pyali.metadata import identity_from_dir_name
     identity = identity_from_dir_name(a.fov_dir, experiment_id=a.experiment_id, plate=a.plate,
                                       well=a.well, fov=a.fov, fov_index=a.fov_index)
+    if a.batch is not None:
+        import dataclasses
+        identity = dataclasses.replace(identity, batch=a.batch)
     print(f"[pyali] identity: {identity.fov_id} (plate {identity.plate}, well {identity.well!r}, "
           f"fov {identity.fov}, batch {identity.batch!r})")
 

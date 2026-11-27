@@ -93,18 +93,18 @@ class Params:
     whiten_ridge: float = 1e-3               # ridge lambda as a fraction of mean(diag(F^T W F))
     whiten_sigma_floor_pct: float = 5.0      # floor per-pixel noise at this percentile (guards 1/sigma^2)
     whiten_isolated_only: bool = True        # only whiten cells with no overlapping-footprint neighbor
+                                             #   (overlapping cells keep the pinv row) -- guards
+                                             #   against the neighbor-crosstalk backfire mode
     # sparse solve (pyali.traces): pinv cutoff (None = numpy's max(P, N) * eps), the per-chunk
     # gather size, and the G condition number above which the dense pseudoinverse on the pixel
     # union is used instead of the normal equations
+    trace_rcond: Optional[float] = None
+    trace_chunk_bytes: int = 512 << 20
+    trace_cond_limit: float = 1e12
     # region loop (pyali.extract.extract_footprints): processes for the per-region work. 1 = inline
     # (the library default; tests and notebooks), N = a fork pool of N workers, 0 = all CPUs.
     # The output does not depend on it. scripts/run_pyali.py --workers sets it per field.
     region_workers: int = 1
-    trace_rcond: Optional[float] = None
-    trace_chunk_bytes: int = 512 << 20
-    trace_cond_limit: float = 1e12
-                                             #   (overlapping cells keep the faithful pinv row) -- guards
-                                             #   against the neighbor-crosstalk backfire mode
 
     def std_frames_index(self):
         """Baseline frames as a 0-indexed concatenated array (from ``std_ranges``)."""

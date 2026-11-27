@@ -9,8 +9,9 @@
 One subprocess per FOV (``scripts/run_pyali.py``, which owns profile/bit-depth/range logic), in a
 thread pool: wait for RAM and scratch disk -> run with a per-process RSS watchdog -> upload the
 output directory -> read the done-marker back from S3 -> delete the local copy. Each FOV lands at
-``<s3_prefix>/Plate_<plate>/Well_<well>/<fov_name>/``; the run's manifest, FOV index and logs go
-to ``<s3_prefix>/_runs/<run_id>/``. Resume: FOVs whose ``cells.parquet`` is already in S3 are
+``<s3_prefix>/Plate_<plate>/Well_<well>/<fov_name>/`` (``--layout well``: ``<s3_prefix>/Well_<well>/
+<fov_name>/``, when the prefix is already a plate folder, as ``scripts/run_plate.py`` uses it); the
+run's manifest, FOV index and logs go to ``<s3_prefix>/_runs/<run_id>/``. Resume: FOVs whose ``cells.parquet`` is already in S3 are
 skipped. Everything after ``--`` on the command line is passed to ``run_pyali.py`` unchanged.
 
 A Snakefile could wrap the same per-FOV unit for a cluster run; this script is the single-machine
@@ -81,7 +82,11 @@ def load_run(inventory_csv, run_id, src_root=None, experiment_id=None):
     return rows
 
 
-def dest_prefix(s3_prefix, plate, well):
+def dest_prefix(s3_prefix, plate, well, layout="plate_well"):
+    """Where a well's FOV folders go: ``<prefix>/Plate_<plate>/Well_<well>`` (``plate_well``) or
+    ``<prefix>/Well_<well>`` (``well``: the prefix is the plate's own folder)."""
+    if layout == "well":
+        return f"{s3_prefix.rstrip('/')}/Well_{well}"
     return f"{s3_prefix.rstrip('/')}/Plate_{int(plate)}/Well_{well}"
 
 
@@ -92,10 +97,10 @@ def sh(cmd):
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
-def existing_done(s3_prefix, plate, well):
-    """FOV names under ``<s3_prefix>/Plate_<plate>/Well_<well>/`` whose directory holds the
+def existing_done(s3_prefix, plate, well, layout="plate_well"):
+    """FOV names under the well's destination (:func:`dest_prefix`) whose directory holds the
     done-marker (``<fov_name>/cells.parquet``). A failed listing means nothing is there yet."""
-    out = sh(["aws", "s3", "ls", dest_prefix(s3_prefix, plate, well) + "/", "--recursive"])
+    out = sh(["aws", "s3", "ls", dest_prefix(s3_prefix, plate, well, layout) + "/", "--recursive"])
     done = set()
     if out.returncode != 0:
         return done
@@ -111,6 +116,8 @@ def fov_command(python, src, out_dir, identity, profile=None, figures=False, ext
     cmd = [python, RUN_PYALI, src, "--out", out_dir,
            "--experiment-id", identity.experiment_id, "--plate", str(identity.plate),
            "--well", identity.well, "--fov", str(identity.fov), "--fov-index", str(identity.fov_index)]
+    if identity.batch:
+        cmd += ["--batch", identity.batch]
     if profile:
         cmd += ["--profile", profile]
     if figures:
@@ -157,7 +164,7 @@ def run_one(r, cfg):
     ident = r["identity"]
     tag = f"fov{r['fov']:03d}_P{r['plate']}_{r['well']}"
     local = os.path.join(cfg.analysis_dir, f"Plate_{r['plate']}", f"Well_{r['well']}", r["fov_name"])
-    dest = f"{dest_prefix(cfg.s3_prefix, r['plate'], r['well'])}/{r['fov_name']}"
+    dest = f"{dest_prefix(cfg.s3_prefix, r['plate'], r['well'], getattr(cfg, 'layout', 'plate_well'))}/{r['fov_name']}"
     rec = dict(run_id=cfg.run_id, fov_index=r["fov_index"], fov=r["fov"], fov_id=r["fov_id"],
                fov_name=r["fov_name"], plate=r["plate"], well=r["well"], batch=ident.batch,
                src=r["src"], dest=dest, git_sha=cfg.git_sha,
@@ -285,6 +292,9 @@ def main(argv=None):
     ap.add_argument("--inventory", required=True, help="inventory CSV from scripts/build_inventory.py")
     ap.add_argument("--run-id", required=True, help="run_id column value to process, e.g. P4_A2")
     ap.add_argument("--s3-prefix", required=True, help="s3://bucket/prefix the Plate_N/Well_X tree goes under")
+    ap.add_argument("--layout", choices=["plate_well", "well"], default="plate_well",
+                    help="plate_well: <prefix>/Plate_N/Well_X/<fov>; well: <prefix>/Well_X/<fov> "
+                         "(the prefix is the plate folder)")
     ap.add_argument("--scratch", default="/home/jovyan/pyali_scratch",
                     help="local scratch; outputs live under <scratch>/<run_id>/Analysis until uploaded")
     ap.add_argument("--src-root", default=None,
@@ -330,7 +340,7 @@ def main(argv=None):
 
     done = set()
     if not a.no_resume:
-        done = existing_done(a.s3_prefix, rows[0]["plate"], rows[0]["well"])
+        done = existing_done(a.s3_prefix, rows[0]["plate"], rows[0]["well"], a.layout)
     todo = [r for r in included if r["fov_name"] not in done]
     if a.only is not None:
         todo = [r for r in todo if r["fov"] == a.only]
@@ -363,7 +373,7 @@ def main(argv=None):
         threads=a.threads, max_fov_rss_gb=a.max_fov_rss_gb, min_avail_gb=a.min_avail_gb,
         min_free_disk_gb=a.min_free_disk_gb, profile=a.profile, figures=a.figures, extra=extra,
         git_sha=sha, run_id=a.run_id, log=log, halt=threading.Event(), launch_lock=threading.Lock(),
-        stagger_s=a.stagger_s, watch_s=10.0)
+        stagger_s=a.stagger_s, watch_s=10.0, layout=a.layout)
     log(f"workers={a.workers} threads={a.threads} s3={a.s3_prefix} scratch={analysis_dir}")
     manifest = os.path.join(analysis_dir, "manifest.jsonl")
     t0 = time.perf_counter()
